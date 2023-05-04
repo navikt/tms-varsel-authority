@@ -1,0 +1,61 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: tms-varsel-authority
+  namespace: min-side
+  labels:
+    team: min-side
+spec:
+  image: {{version}}
+  port: 8080
+  liveness:
+    path: /isalive
+    initialDelay: 30
+  readiness:
+    path: /isready
+    initialDelay: 30
+  prometheus:
+    enabled: true
+    path: /metrics
+  replicas:
+    min: 1
+    max: 1
+    cpuThresholdPercentage: 50
+  ingresses:
+    - "https://tms-varsel-authority.nav.no"
+  leaderElection: true
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2400Mi
+    requests:
+      cpu: "100m"
+      memory: 256Mi
+  gcp:
+    sqlInstances:
+      - name: brukervarsler
+        type: POSTGRES_11
+        tier: db-custom-2-12288
+        diskType: SSD
+        highAvailability: true
+        diskSize: 50
+        diskAutoresize: true
+        autoBackupTime: "03:00"
+        databases:
+          - name: brukervarsler
+            envVarPrefix: DB
+        maintenanceWindow:
+          day: 1
+          hour: 4
+        cascadingDelete: false
+  kafka:
+    pool: nav-prod
+  tokenx:
+    enabled: true
+  azure:
+    application:
+      enabled: true
+    inbound:
+      rules:
+        - application: tms-varselbjelle-api
+        - application: tms-min-side-proxy
