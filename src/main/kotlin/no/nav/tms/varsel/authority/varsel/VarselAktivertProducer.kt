@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.sink.DatabaseVarsel
+import no.nav.tms.varsel.authority.write.sink.DatabaseVarsel
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger

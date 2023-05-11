@@ -1,19 +1,22 @@
 package no.nav.tms.varsel.authority.config
 
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
 import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.tms.varsel.authority.archive.PeriodicVarselArchiver
-import no.nav.tms.varsel.authority.archive.VarselArchiveRepository
-import no.nav.tms.varsel.authority.archive.VarselArkivertProducer
+import no.nav.tms.varsel.authority.write.archive.PeriodicVarselArchiver
+import no.nav.tms.varsel.authority.write.archive.VarselArchiveRepository
+import no.nav.tms.varsel.authority.write.archive.VarselArkivertProducer
 import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.eksternvarsling.EksternVarslingOppdatertProducer
-import no.nav.tms.varsel.authority.done.VarselInaktivertProducer
+import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
+import no.nav.tms.varsel.authority.write.done.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.election.LeaderElection
-import no.nav.tms.varsel.authority.expired.ExpiredVarselRepository
-import no.nav.tms.varsel.authority.expired.PeriodicExpiredVarselProcessor
-import no.nav.tms.varsel.authority.sink.VarselRepository
+import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.expired.ExpiredVarselRepository
+import no.nav.tms.varsel.authority.write.expired.PeriodicExpiredVarselProcessor
+import no.nav.tms.varsel.authority.write.sink.WriteVarselRepository
 import no.nav.tms.varsel.authority.varsel.VarselAktivertProducer
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -31,7 +34,7 @@ fun main() {
 }
 
 private fun startRapid(environment: Environment, database: Database) {
-    val varselRepository = VarselRepository(database)
+    val varselRepository = WriteVarselRepository(database)
     val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(
         kafkaProducer = initializeRapidKafkaProducer(environment),
         topicName = environment.rapidTopic,
@@ -50,10 +53,12 @@ private fun startRapid(environment: Environment, database: Database) {
     )
 
     val leaderElection = LeaderElection()
+    val prometheusMetricsRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val metricsReporter = VarselMetricsReporter(prometheusMetricsRegistry)
 
     val expiredVarselRepository = ExpiredVarselRepository(database)
     val periodicExpiredVarselProcessor =
-        PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
+        PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection, metricsReporter)
 
     val varselArkivertProducer = VarselArkivertProducer(
         initializeRapidKafkaProducer(environment),
@@ -61,7 +66,7 @@ private fun startRapid(environment: Environment, database: Database) {
     )
     val varselArchivingRepository = VarselArchiveRepository(database)
 
-    val varselArchiver = PeriodicVarselArchiver(varselArchivingRepository, varselArkivertProducer, environment.archivingThresholdDays, leaderElection)
+    val varselArchiver = PeriodicVarselArchiver(varselArchivingRepository, varselArkivertProducer, environment.archivingThresholdDays, leaderElection, metricsReporter)
 
     RapidApplication.Builder(fromEnv(environment.rapidConfig())).withKtorModule {
 //        doneApi(
