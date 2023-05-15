@@ -10,12 +10,12 @@ import io.mockk.mockk
 import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.LocalDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
+import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
-import no.nav.tms.varsel.authority.write.sink.AktiverVarselSink
-import no.nav.tms.varsel.authority.write.sink.WriteVarselRepository
-import no.nav.tms.varsel.authority.write.sink.aktiverVarselEvent
+import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
+import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.aktiver.aktiverVarselEvent
 import no.nav.tms.varsel.authority.toJson
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer

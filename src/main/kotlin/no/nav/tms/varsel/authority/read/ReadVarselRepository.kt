@@ -2,16 +2,16 @@ package no.nav.tms.varsel.authority.read
 
 import kotliquery.Row
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.common.database.json
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.json
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde.Frist
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
 
-    fun getVarselForUserAbbreviated(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<AbreviatedVarsel> {
+    fun getVarselForUserAbbreviated(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
         return database.list {
             queryOf("""
                 select
@@ -31,12 +31,12 @@ class ReadVarselRepository(private val database: Database) {
             """,
                 mapOf("ident" to ident, "type" to type?.lowercaseName, "aktiv" to aktiv)
             )
-                .map(toAbbreviatedVarsel())
+                .map(toVarselsammendrag())
                 .asList
         }
     }
 
-    fun getVarselForUserFull(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<FullVarsel> {
+    fun getVarselForUserFull(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
         return database.list {
             queryOf("""
                 select
@@ -56,13 +56,13 @@ class ReadVarselRepository(private val database: Database) {
             """,
                 mapOf("ident" to ident, "type" to type?.lowercaseName, "aktiv" to aktiv)
             )
-                .map(toFullVarsel())
+                .map(toDetaljertVarsel())
                 .asList
         }
     }
 
-    private fun toAbbreviatedVarsel(): (Row) -> AbreviatedVarsel = {
-        AbreviatedVarsel(
+    private fun toVarselsammendrag(): (Row) -> Varselsammendrag = {
+        Varselsammendrag(
             type = it.string("type"),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
@@ -74,12 +74,12 @@ class ReadVarselRepository(private val database: Database) {
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTimeOrNull("inaktivert"),
-            fristUtløpt = it.stringOrNull("inaktivertAv") == Frist.lowercaseName,
+            fristUtløpt = it.stringOrNull("inaktivertAv") ?.let { kilde -> kilde == Frist.lowercaseName }
         )
     }
 
-    private fun toFullVarsel(): (Row) -> FullVarsel = {
-        FullVarsel(
+    private fun toDetaljertVarsel(): (Row) -> DetaljertVarsel = {
+        DetaljertVarsel(
             type = it.string("type"),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
@@ -91,7 +91,7 @@ class ReadVarselRepository(private val database: Database) {
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTime("inaktivert"),
-            inaktivertAv = it.string("inaktivertAv")
+            inaktivertAv = it.stringOrNull("inaktivertAv")
         )
     }
 }

@@ -1,9 +1,9 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.common.database.toJsonb
-import no.nav.tms.varsel.authority.write.sink.EksternVarslingStatus
+import no.nav.tms.varsel.authority.EksternVarslingStatus
+import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.toJsonb
 
 class EksternVarslingStatusRepository(val database: Database) {
     fun updateEksternVarslingStatus(varselId: String, eksternVarslingStatus: EksternVarslingStatus) {

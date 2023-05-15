@@ -1,22 +1,24 @@
-package no.nav.tms.varsel.authority.write.done
+package no.nav.tms.varsel.authority.write.inaktiver
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde.Bruker
-import no.nav.tms.varsel.authority.write.sink.VarselType
-import no.nav.tms.varsel.authority.write.sink.WriteVarselRepository
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
+import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 
-class VarselBrukerService(
+class BeskjedInaktiverer(
     private val varselRepository: WriteVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer,
     private val metricsReporter: VarselMetricsReporter
 ) {
-    fun inaktiverBeskjed(varselId: String, ident: String) {
+    suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         val varsel = varselRepository.getVarsel(varselId)
 
         if (varsel == null || varsel.ident != ident) {
             throw UnprivilegedAccessException("Beskjed inaktivert tilhører ikke bruker.")
-        } else if ( varsel.type != VarselType.Beskjed) {
+        } else if (varsel.type != Beskjed) {
             throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type $")
         } else {
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
@@ -34,7 +36,6 @@ class VarselBrukerService(
             )
         }
     }
-
 }
 
 class UnprivilegedAccessException(message: String): RuntimeException(message)

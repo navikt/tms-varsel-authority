@@ -1,10 +1,14 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.EksternStatus
+import no.nav.tms.varsel.authority.EksternStatus.*
+import no.nav.tms.varsel.authority.EksternVarslingHistorikkEntry
+import no.nav.tms.varsel.authority.EksternVarslingStatus
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
-import no.nav.tms.varsel.authority.write.sink.*
-import no.nav.tms.varsel.authority.write.sink.EksternStatus.*
+import no.nav.tms.varsel.authority.write.aktiver.*
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 

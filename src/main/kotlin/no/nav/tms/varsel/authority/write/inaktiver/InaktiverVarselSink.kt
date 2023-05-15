@@ -1,14 +1,8 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority.write.inaktiver
 
-import no.nav.helse.rapids_rivers.JsonMessage
-import no.nav.helse.rapids_rivers.MessageContext
-import no.nav.helse.rapids_rivers.MessageProblems
-import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.helse.rapids_rivers.River
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertHendelse
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde.Produsent
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertProducer
+import no.nav.helse.rapids_rivers.*
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -35,21 +29,21 @@ internal class InaktiverVarselSink(
         val varsel = varselRepository.getVarsel(varselId)
 
         if (varsel != null) {
-            varselRepository.inaktiverVarsel(varselId, Produsent)
+            varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent)
 
-            metricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Produsent)
+            metricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent)
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselType = varsel.type,
                     varselId = varsel.varselId,
                     namespace = varsel.produsent.namespace,
                     appnavn = varsel.produsent.appnavn,
-                    kilde = Produsent
+                    kilde = VarselInaktivertKilde.Produsent
                 )
             )
         }
 
-        log.info("Behandlet inaktiverte varsel etter event fra rapid med varselId $varselId")
+        log.info("Inaktiverte varsel etter event fra rapid med varselId $varselId")
     }
 
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()

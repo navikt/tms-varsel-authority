@@ -1,11 +1,10 @@
-package no.nav.tms.varsel.authority.metrics
+package no.nav.tms.varsel.authority.config
 
 import io.micrometer.core.instrument.Tag
 import io.micrometer.prometheus.PrometheusMeterRegistry
-import io.prometheus.client.Counter
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde
-import no.nav.tms.varsel.authority.write.sink.Produsent
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.Produsent
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
 class VarselMetricsReporter(private val prometheusMeterRegistry: PrometheusMeterRegistry) {
 

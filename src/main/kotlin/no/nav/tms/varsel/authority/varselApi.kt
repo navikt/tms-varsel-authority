@@ -1,30 +1,35 @@
-package no.nav.tms.varsel.authority.write.done
+package no.nav.tms.varsel.authority
 
 import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import no.nav.tms.varsel.authority.common.database.log
+import mu.KotlinLogging
 import no.nav.tms.token.support.authentication.installer.installAuthenticators
-import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
+import no.nav.tms.token.support.azure.validation.AzureAuthenticator
+import no.nav.tms.varsel.authority.read.ReadVarselRepository
+import no.nav.tms.varsel.authority.read.systemVarselApi
+import no.nav.tms.varsel.authority.read.brukerVarselApi
+import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
+import no.nav.tms.varsel.authority.write.inaktiver.InvalidVarselTypeException
+import no.nav.tms.varsel.authority.write.inaktiver.UnprivilegedAccessException
+import no.nav.tms.varsel.authority.write.inaktiver.inaktiverBeskjedApi
 
 
-fun Application.doneApi(
-    varselUpdater: VarselBrukerService,
+fun Application.varselApi(
+    readVarselRepository: ReadVarselRepository,
+    varselUpdater: BeskjedInaktiverer,
     installAuthenticatorsFunction: Application.() -> Unit = installAuth(),
 ) {
+
+    val log = KotlinLogging.logger {}
 
     installAuthenticatorsFunction()
 
@@ -53,6 +58,13 @@ fun Application.doneApi(
                     )
                 }
 
+                is InvalidVarselTypeException -> {
+                    call.respondText(
+                        status = HttpStatusCode.Forbidden,
+                        text = "kan kun inaktivere beskjed fra api"
+                    )
+                }
+
                 else -> call.respond(HttpStatusCode.InternalServerError)
             }
 
@@ -62,19 +74,14 @@ fun Application.doneApi(
 
     routing {
         authenticate {
-            route("beskjed/done") {
-                post {
-                    varselUpdater.inaktiverBeskjed(call.varselId(), call.tokenXUser.ident)
-
-                    call.respond(HttpStatusCode.OK)
-                }
-            }
+            inaktiverBeskjedApi(varselUpdater)
+            brukerVarselApi(readVarselRepository)
+        }
+        authenticate(AzureAuthenticator.name) {
+            systemVarselApi(readVarselRepository)
         }
     }
 }
-
-private suspend fun ApplicationCall.varselId(): String =
-    receive<EventIdBody>().eventId ?: throw EventIdMissingException()
 
 private fun installAuth(): Application.() -> Unit = {
     installAuthenticators {
@@ -86,9 +93,3 @@ private fun installAuth(): Application.() -> Unit = {
         }
     }
 }
-
-private val ApplicationCall.tokenXUser get() = TokenXUserFactory.createTokenXUser(this)
-
-data class EventIdBody(val eventId: String? = null)
-
-class EventIdMissingException : IllegalArgumentException("eventid parameter mangler")

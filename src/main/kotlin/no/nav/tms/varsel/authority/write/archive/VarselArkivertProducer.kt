@@ -3,7 +3,7 @@ package no.nav.tms.varsel.authority.write.archive
 import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.VarselType
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger

@@ -1,7 +1,8 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tms.varsel.authority.LocalDateTimeHelper
+import no.nav.tms.varsel.authority.Produsent
 import java.time.LocalDateTime
 
 fun aktiverVarselEvent(

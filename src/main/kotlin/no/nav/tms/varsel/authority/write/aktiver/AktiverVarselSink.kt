@@ -1,14 +1,14 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority.write.aktiver
 
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
+import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asOptionalZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.varsel.VarselAktivertProducer
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

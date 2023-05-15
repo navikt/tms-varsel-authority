@@ -1,7 +1,7 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority
 
 import com.fasterxml.jackson.annotation.JsonValue
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.ZonedDateTime
 
 data class DatabaseVarsel(

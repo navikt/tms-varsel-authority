@@ -1,11 +1,11 @@
-package no.nav.tms.varsel.authority.varsel
+package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.sink.DatabaseVarsel
+import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
@@ -24,13 +24,15 @@ class VarselAktivertProducer(
         .build()
 
     fun varselAktivert(dbVarsel: DatabaseVarsel) {
+
         val varselJson = dbVarsel.varsel.asJson()
 
         val eksternVarslingBestilling = dbVarsel.eksternVarslingBestilling?.asJson()
 
         varselJson.put("@event_name", "aktivert")
+        varselJson.put("@source", "varsel-authority")
         varselJson.put("eksternVarslingBestilling", eksternVarslingBestilling)
-        varselJson.put("tidspunkt", nowAtUtc().toString())
+        varselJson.put("tidspunkt", ZonedDateTimeHelper.nowAtUtc().toString())
 
         val producerRecord = ProducerRecord(topicName, dbVarsel.varselId, varselJson.toString())
         kafkaProducer.send(producerRecord)

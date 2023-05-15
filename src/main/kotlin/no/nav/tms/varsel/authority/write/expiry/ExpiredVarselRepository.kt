@@ -1,11 +1,11 @@
-package no.nav.tms.varsel.authority.write.expired
+package no.nav.tms.varsel.authority.write.expiry
 
 import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde.Frist
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
+import no.nav.tms.varsel.authority.VarselType
 
 class ExpiredVarselRepository(private val database: Database) {
 

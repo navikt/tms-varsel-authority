@@ -1,15 +1,17 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority.write.aktiver
 
 import kotlinx.coroutines.runBlocking
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.Varsel
+import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.common.database.json
-import no.nav.tms.varsel.authority.common.database.optionalJson
-import no.nav.tms.varsel.authority.common.database.toJsonb
+import no.nav.tms.varsel.authority.common.json
+import no.nav.tms.varsel.authority.common.optionalJson
+import no.nav.tms.varsel.authority.common.toJsonb
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
 class WriteVarselRepository(val database: Database) {
 

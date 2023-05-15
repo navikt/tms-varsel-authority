@@ -1,6 +1,5 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
-import no.nav.tms.varsel.authority.write.sink.EksternStatus
 import java.time.ZonedDateTime
 
 data class DoknotifikasjonStatusEvent(
@@ -14,15 +13,5 @@ data class DoknotifikasjonStatusEvent(
 )
 
 enum class DoknotifikasjonStatusEnum {
-    FEILET, INFO, OVERSENDT, FERDIGSTILT;
-
-    companion object {
-        fun fromInternal(status: EksternStatus) = when(status) {
-            EksternStatus.Feilet -> FEILET
-            EksternStatus.Info -> INFO
-            EksternStatus.Bestilt -> OVERSENDT
-            EksternStatus.Sendt -> FERDIGSTILT
-            EksternStatus.Ferdigstilt -> FERDIGSTILT
-        }
-    }
+    FEILET, INFO, OVERSENDT, FERDIGSTILT
 }

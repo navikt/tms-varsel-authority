@@ -11,11 +11,12 @@ import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.election.LeaderElection
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.sink.*
-import no.nav.tms.varsel.authority.write.sink.VarselType.Beskjed
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.*
+import no.nav.tms.varsel.authority.VarselType.Beskjed
+import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.*

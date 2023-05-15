@@ -2,7 +2,7 @@ package no.nav.tms.varsel.authority.config
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import no.nav.tms.varsel.authority.common.database.Database
+import no.nav.tms.varsel.authority.common.Database
 
 class PostgresDatabase(env: Environment) : Database {
 

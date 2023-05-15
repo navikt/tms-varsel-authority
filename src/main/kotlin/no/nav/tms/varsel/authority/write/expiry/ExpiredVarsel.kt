@@ -1,7 +1,7 @@
-package no.nav.tms.varsel.authority.write.expired
+package no.nav.tms.varsel.authority.write.expiry
 
-import no.nav.tms.varsel.authority.write.sink.Produsent
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.Produsent
 
 data class ExpiredVarsel(
     val varselId: String,

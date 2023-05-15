@@ -4,16 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.common.database.json
-import no.nav.tms.varsel.authority.common.database.optionalJson
-import no.nav.tms.varsel.authority.common.database.toJsonb
+import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.json
+import no.nav.tms.varsel.authority.common.optionalJson
+import no.nav.tms.varsel.authority.common.toJsonb
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde
-import no.nav.tms.varsel.authority.write.sink.EksternVarslingBestilling
-import no.nav.tms.varsel.authority.write.sink.EksternVarslingStatus
-import no.nav.tms.varsel.authority.write.sink.Produsent
-import no.nav.tms.varsel.authority.write.sink.Varsel
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
+import no.nav.tms.varsel.authority.EksternVarslingBestilling
+import no.nav.tms.varsel.authority.EksternVarslingStatus
+import no.nav.tms.varsel.authority.Produsent
+import no.nav.tms.varsel.authority.Varsel
 import java.time.ZonedDateTime
 
 class VarselArchiveRepository(private val database: Database) {

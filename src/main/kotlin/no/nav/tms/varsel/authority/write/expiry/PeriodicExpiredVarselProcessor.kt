@@ -1,11 +1,11 @@
-package no.nav.tms.varsel.authority.write.expired
+package no.nav.tms.varsel.authority.write.expiry
 
 import no.nav.tms.varsel.authority.common.PeriodicJob
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertHendelse
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertKilde.Frist
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertProducer
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.election.LeaderElection
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration

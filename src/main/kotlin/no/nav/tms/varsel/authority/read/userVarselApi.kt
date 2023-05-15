@@ -3,56 +3,68 @@ package no.nav.tms.varsel.authority.read
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.pipeline.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
-import no.nav.tms.varsel.authority.write.sink.VarselType.*
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.VarselType.*
 
-fun Route.userVarselApi(readRepository: ReadVarselRepository) {
+fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
+
+    suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
+        type: VarselType? = null,
+        aktiv: Boolean? = null
+    ) = withContext(Dispatchers.IO) {
+        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = type, aktiv = aktiv))
+    }
+
     get("/varsel/all") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident))
+        fetchVarslerAndRespond()
     }
 
     get("/varsel/aktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, aktiv = true))
+        fetchVarslerAndRespond(aktiv = true)
     }
 
     get("/varsel/inaktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, aktiv = false))
+        fetchVarslerAndRespond(aktiv = false)
     }
 
     get("/beskjed/all") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Beskjed))
+        fetchVarslerAndRespond(type = Beskjed)
     }
 
     get("/beskjed/aktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Beskjed, aktiv = true))
+        fetchVarslerAndRespond(type = Beskjed, aktiv = true)
     }
 
     get("/beskjed/inaktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Beskjed, aktiv = false))
+        fetchVarslerAndRespond(type = Beskjed, aktiv = false)
     }
 
     get("/oppgave/all") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Oppgave))
+        fetchVarslerAndRespond(type = Oppgave)
     }
 
     get("/oppgave/aktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Oppgave, aktiv = true))
+        fetchVarslerAndRespond(type = Oppgave, aktiv = true)
     }
 
     get("/oppgave/inaktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Oppgave, aktiv = false))
+        fetchVarslerAndRespond(type = Oppgave, aktiv = false)
     }
 
     get("/innboks/all") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Innboks))
+        fetchVarslerAndRespond(type = Innboks)
     }
 
     get("/innboks/aktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Innboks, aktiv = true))
+        fetchVarslerAndRespond(type = Innboks, aktiv = true)
     }
 
     get("/innboks/inaktive") {
-        call.respond(readRepository.getVarselForUserAbbreviated(call.ident, type = Innboks, aktiv = false))
+        fetchVarslerAndRespond(type = Innboks, aktiv = false)
     }
 }
 

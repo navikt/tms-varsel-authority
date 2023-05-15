@@ -3,9 +3,8 @@ package no.nav.tms.varsel.authority.write.archive
 import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.PeriodicJob
-import no.nav.tms.varsel.authority.common.exceptions.RetriableDatabaseException
 import no.nav.tms.varsel.authority.election.LeaderElection
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import java.time.Duration
 
 class PeriodicVarselArchiver(
@@ -35,8 +34,6 @@ class PeriodicVarselArchiver(
                     metricsReporter.registerVarselArkivert(arkivertVarsel.varsel.type, arkivertVarsel.produsent)
                 }
 
-        } catch (rt: RetriableDatabaseException) {
-            log.warn("Fikk en periodisk feil mot databasen ved arkivering av Beskjed. Forsøker igjen senere.", rt)
         } catch (e: Exception) {
             log.error("Fikk feil mot databasen ved arkivering av beskjed. Forsøker igjen senere.", e)
         }

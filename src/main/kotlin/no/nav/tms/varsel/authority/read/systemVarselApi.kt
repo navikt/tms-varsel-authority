@@ -5,55 +5,67 @@ import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import no.nav.tms.varsel.authority.write.sink.VarselType.*
+import io.ktor.util.pipeline.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.VarselType.*
 
 fun Route.systemVarselApi(readRepository: ReadVarselRepository) {
-    get("/system/system/varsel/all") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader))
+
+    suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
+        type: VarselType? = null,
+        aktiv: Boolean? = null
+    ) = withContext(Dispatchers.IO) {
+        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = type, aktiv = aktiv))
     }
 
-    get("/system/system/varsel/aktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, aktiv = true))
+    get("/system/varsel/all") {
+        fetchVarslerAndRespond()
     }
 
-    get("/system/system/varsel/inaktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, aktiv = false))
+    get("/system/varsel/aktive") {
+        fetchVarslerAndRespond(aktiv = true)
+    }
+
+    get("/system/varsel/inaktive") {
+        fetchVarslerAndRespond(aktiv = false)
     }
 
     get("/system/beskjed/all") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Beskjed))
+        fetchVarslerAndRespond(type = Beskjed)
     }
 
     get("/system/beskjed/aktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Beskjed, aktiv = true))
+        fetchVarslerAndRespond(type = Beskjed, aktiv = true)
     }
 
     get("/system/beskjed/inaktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Beskjed, aktiv = false))
+        fetchVarslerAndRespond(type = Beskjed, aktiv = false)
     }
 
     get("/system/oppgave/all") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Oppgave))
+        fetchVarslerAndRespond(type = Oppgave)
     }
 
     get("/system/oppgave/aktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Oppgave, aktiv = true))
+        fetchVarslerAndRespond(type = Oppgave, aktiv = true)
     }
 
     get("/system/oppgave/inaktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Oppgave, aktiv = false))
+        fetchVarslerAndRespond(type = Oppgave, aktiv = false)
     }
 
     get("/system/innboks/all") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Innboks))
+        fetchVarslerAndRespond(type = Innboks)
     }
 
     get("/system/innboks/aktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Innboks, aktiv = true))
+        fetchVarslerAndRespond(type = Innboks, aktiv = true)
     }
 
     get("/system/innboks/inaktive") {
-        call.respond(readRepository.getVarselForUserFull(call.request.identHeader, type = Innboks, aktiv = false))
+        fetchVarslerAndRespond(type = Innboks, aktiv = false)
     }
 }
 

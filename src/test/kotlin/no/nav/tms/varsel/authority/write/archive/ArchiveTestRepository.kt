@@ -2,8 +2,8 @@ package no.nav.tms.varsel.authority.write.archive
 
 import kotliquery.Row
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.common.database.Database
-import no.nav.tms.varsel.authority.common.database.json
+import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.json
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 
 class ArchiveTestRepository(private val database: Database) {

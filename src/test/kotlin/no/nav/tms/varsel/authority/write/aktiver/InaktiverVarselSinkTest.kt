@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.sink
+package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
@@ -7,11 +7,11 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.mockk
 import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
-import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertProducer
+import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.toJson
-import no.nav.tms.varsel.authority.varsel.VarselAktivertProducer
+import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach

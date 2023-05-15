@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.expired
+package no.nav.tms.varsel.authority.write.expiry
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -6,13 +6,17 @@ import io.mockk.clearMocks
 import io.mockk.mockk
 import io.mockk.verify
 import kotliquery.queryOf
+import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.Produsent
+import no.nav.tms.varsel.authority.Varsel
+import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.write.done.VarselInaktivertProducer
+import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.election.LeaderElection
-import no.nav.tms.varsel.authority.metrics.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.sink.*
-import no.nav.tms.varsel.authority.write.sink.VarselType.Beskjed
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,7 +26,7 @@ internal class PeriodicExpiredVarselProcessorTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
     private val varselRepository = WriteVarselRepository(database)
-    
+
     private val metricsReporter: VarselMetricsReporter = mockk(relaxed = true)
     private val varselInaktivertProducer = mockk<VarselInaktivertProducer>(relaxed = true)
     private val leaderElection = mockk<LeaderElection>(relaxed = true)

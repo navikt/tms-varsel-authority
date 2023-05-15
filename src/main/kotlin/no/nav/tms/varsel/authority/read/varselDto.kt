@@ -1,10 +1,10 @@
 package no.nav.tms.varsel.authority.read
 
-import no.nav.tms.varsel.authority.write.sink.EksternVarslingStatus
-import no.nav.tms.varsel.authority.write.sink.Produsent
+import no.nav.tms.varsel.authority.EksternVarslingStatus
+import no.nav.tms.varsel.authority.Produsent
 import java.time.ZonedDateTime
 
-data class AbreviatedVarsel(
+data class Varselsammendrag(
     val type: String,
     val varselId: String,
     val aktiv: Boolean,
@@ -19,7 +19,7 @@ data class AbreviatedVarsel(
     val fristUtløpt: Boolean?
 )
 
-data class FullVarsel(
+data class DetaljertVarsel(
     val type: String,
     val varselId: String,
     val aktiv: Boolean,
@@ -31,5 +31,5 @@ data class FullVarsel(
     val opprettet: ZonedDateTime,
     val aktivFremTil: ZonedDateTime?,
     val inaktivert: ZonedDateTime?,
-    val inaktivertAv: String
+    val inaktivertAv: String?
 )

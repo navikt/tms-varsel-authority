@@ -1,8 +1,8 @@
-package no.nav.tms.varsel.authority.database
+package no.nav.tms.varsel.authority
 
 import com.zaxxer.hikari.HikariDataSource
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.common.database.Database
+import no.nav.tms.varsel.authority.common.Database
 import org.flywaydb.core.Flyway
 import org.testcontainers.containers.PostgreSQLContainer
 

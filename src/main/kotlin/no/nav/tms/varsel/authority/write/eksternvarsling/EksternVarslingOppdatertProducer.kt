@@ -2,8 +2,8 @@ package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.sink.EksternStatus
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.EksternStatus
+import no.nav.tms.varsel.authority.VarselType
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
@@ -19,6 +19,7 @@ class EksternVarslingOppdatertProducer(private val kafkaProducer: Producer<Strin
 
         val objectNode = objectMapper.createObjectNode()
         objectNode.put("@event_name", "eksternStatusOppdatert")
+        objectNode.put("@source", "varsel-authority")
         objectNode.put("status", oppdatering.status.lowercaseName)
         objectNode.put("eventId", oppdatering.varselId)
         objectNode.put("ident", oppdatering.ident)

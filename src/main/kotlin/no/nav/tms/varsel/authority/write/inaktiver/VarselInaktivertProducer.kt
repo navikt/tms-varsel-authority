@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.done
+package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.sink.VarselType
+import no.nav.tms.varsel.authority.VarselType
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
@@ -54,4 +54,5 @@ data class VarselInaktivertHendelse(
 ) {
     @JsonProperty("kilde") val inaktivertKilde = kilde.lowercaseName
     @JsonProperty("@event_name") val eventName = "inaktivert"
+    @JsonProperty("@source") val source = "varsel-authority"
 }

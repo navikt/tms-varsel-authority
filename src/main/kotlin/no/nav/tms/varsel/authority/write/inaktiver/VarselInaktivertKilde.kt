@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.done
+package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.annotation.JsonValue
 

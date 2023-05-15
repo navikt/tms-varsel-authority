@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.common.database
+package no.nav.tms.varsel.authority.common
 
 import com.zaxxer.hikari.HikariDataSource
 import kotliquery.Query
