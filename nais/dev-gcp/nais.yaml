@@ -34,7 +34,7 @@ spec:
   gcp:
     sqlInstances:
       - name: brukervarsler
-        type: POSTGRES_15
+        type: POSTGRES_14
         tier: db-f1-micro
         diskType: SSD
         highAvailability: false
