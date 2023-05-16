@@ -33,8 +33,8 @@ spec:
       memory: 256Mi
   gcp:
     sqlInstances:
-      - name: tms-varsel-db
-        type: POSTGRES_14
+      - name: brukervarsler
+        type: POSTGRES_15
         tier: db-f1-micro
         diskType: SSD
         highAvailability: false
@@ -42,7 +42,7 @@ spec:
         diskAutoresize: true
         autoBackupTime: "03:00"
         databases:
-          - name: tms-varsel-db
+          - name: brukervarsler
             envVarPrefix: DB
         maintenanceWindow:
           day: 1
