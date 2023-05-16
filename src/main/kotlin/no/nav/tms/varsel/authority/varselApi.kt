@@ -17,6 +17,7 @@ import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.systemVarselApi
 import no.nav.tms.varsel.authority.read.brukerVarselApi
+import no.nav.tms.varsel.authority.read.debugVarselApi
 import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.InvalidVarselTypeException
 import no.nav.tms.varsel.authority.write.inaktiver.UnprivilegedAccessException
@@ -73,6 +74,7 @@ fun Application.varselApi(
 
 
     routing {
+        debugVarselApi(readVarselRepository)
         authenticate {
             inaktiverBeskjedApi(varselUpdater)
             brukerVarselApi(readVarselRepository)

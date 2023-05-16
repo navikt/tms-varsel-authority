@@ -12,7 +12,8 @@ data class Environment(
     val kafkaBrokers: String = getEnvVar("KAFKA_BROKERS"),
     val kafkaTruststorePath: String = getEnvVar("KAFKA_TRUSTSTORE_PATH"),
     val kafkaKeystorePath: String = getEnvVar("KAFKA_KEYSTORE_PATH"),
-    val kafkaCredstorePassword: String = getEnvVar("KAFKA_CREDSTORE_PASSWORD")
+    val kafkaCredstorePassword: String = getEnvVar("KAFKA_CREDSTORE_PASSWORD"),
+    val kafkaConsumerGroupId: String = getEnvVar("KAFKA_GROUP_ID")
 ) {
     val rapidConfig = mapOf(
         "KAFKA_RAPID_TOPIC" to internalVarselTopic,

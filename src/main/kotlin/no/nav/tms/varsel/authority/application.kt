@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.config
+package no.nav.tms.varsel.authority
 
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
@@ -7,6 +7,10 @@ import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
 import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.config.Environment
+import no.nav.tms.varsel.authority.config.Flyway
+import no.nav.tms.varsel.authority.config.PostgresDatabase
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.archive.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.archive.VarselArchiveRepository
 import no.nav.tms.varsel.authority.write.archive.VarselArkivertProducer
@@ -14,7 +18,6 @@ import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdater
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.election.LeaderElection
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
-import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
