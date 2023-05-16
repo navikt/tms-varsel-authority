@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.config
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.apache.*
@@ -10,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
 import no.nav.personbruker.dittnav.common.util.config.StringEnvVar.getEnvVar
 import java.net.InetAddress
+import java.text.DateFormat
 import java.time.Instant
 import java.time.ZonedDateTime
 
@@ -31,7 +33,10 @@ class LeaderElection(
 
     private val httpCLient = HttpClient(Apache) {
         install(ContentNegotiation) {
-            jackson()
+            jackson {
+                registerModule(JavaTimeModule())
+                dateFormat = DateFormat.getDateTimeInstance()
+            }
         }
 
         install(HttpTimeout)

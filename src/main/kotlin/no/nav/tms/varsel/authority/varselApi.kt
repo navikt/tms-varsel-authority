@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority
 
 import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
@@ -22,6 +23,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.InvalidVarselTypeException
 import no.nav.tms.varsel.authority.write.inaktiver.UnprivilegedAccessException
 import no.nav.tms.varsel.authority.write.inaktiver.inaktiverBeskjedApi
+import java.text.DateFormat
 
 
 fun Application.varselApi(
@@ -37,6 +39,8 @@ fun Application.varselApi(
     install(ContentNegotiation) {
         jackson {
             configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+            registerModule(JavaTimeModule())
+            dateFormat = DateFormat.getDateTimeInstance()
         }
     }
 
