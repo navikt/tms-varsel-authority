@@ -16,7 +16,7 @@ import no.nav.tms.varsel.authority.write.archive.VarselArchiveRepository
 import no.nav.tms.varsel.authority.write.archive.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.election.LeaderElection
+import no.nav.tms.varsel.authority.config.LeaderElection
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository

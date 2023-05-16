@@ -4,7 +4,7 @@ import no.nav.tms.varsel.authority.common.PeriodicJob
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.election.LeaderElection
+import no.nav.tms.varsel.authority.config.LeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

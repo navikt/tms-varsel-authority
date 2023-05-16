@@ -14,7 +14,7 @@ import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.election.LeaderElection
+import no.nav.tms.varsel.authority.config.LeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach

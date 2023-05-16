@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.election
+package no.nav.tms.varsel.authority.config
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.ktor.client.*
@@ -8,14 +8,13 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
-import no.nav.personbruker.dittnav.common.util.config.UrlEnvVar
+import no.nav.personbruker.dittnav.common.util.config.StringEnvVar.getEnvVar
 import java.net.InetAddress
-import java.net.URL
 import java.time.Instant
 import java.time.ZonedDateTime
 
 class LeaderElection(
-    private val electionPath: URL = UrlEnvVar.getEnvVarAsURL("ELECTOR_PATH"),
+    private val electionPath: String = getElectionUrl(),
     private val podName: String = InetAddress.getLocalHost().hostName,
     private val queryIntervalSeconds: Long = 60L
 ) {
@@ -51,6 +50,16 @@ class LeaderElection(
             true
         } else {
             (Instant.now().epochSecond - previousQuery!!.epochSecond) > queryIntervalSeconds
+        }
+    }
+
+    companion object {
+        private fun getElectionUrl(): String {
+            val path = getEnvVar("ELECTOR_PATH", "")
+
+            return if (path.isNotBlank()) {
+                "http://$path"
+            } else throw RuntimeException("Fant ikke variabel ELECTOR_PATH")
         }
     }
 }
