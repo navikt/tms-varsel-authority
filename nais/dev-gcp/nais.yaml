@@ -61,9 +61,9 @@ spec:
         - application: tms-min-side-proxy
         - application: tms-event-api
   env:
-    - name: "ARCHIVING_THRESHOLD"
+    - name: ARCHIVING_THRESHOLD
       value: 365
-    - name: "INTERNAL_RAPID_TOPIC"
-      value:
-    - name: "KAFKA_GROUP_ID"
-      value:
+    - name: INTERNAL_RAPID_TOPIC
+      value: min-side.brukervarsel-v1
+    - name: KAFKA_GROUP_ID"
+      value: varsel-authority-001
