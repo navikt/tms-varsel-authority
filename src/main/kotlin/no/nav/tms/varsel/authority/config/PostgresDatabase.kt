@@ -37,7 +37,7 @@ class PostgresDatabase(env: Environment) : Database {
                 connectionTimeout = 4000
                 validationTimeout = 1000
                 idleTimeout = 30000
-                isAutoCommit = false
+                isAutoCommit = true
                 transactionIsolation = "TRANSACTION_REPEATABLE_READ"
                 username = env.dbUser
                 password = env.dbPassword

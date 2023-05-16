@@ -1,6 +1,5 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
-import kotlinx.coroutines.runBlocking
 import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.DatabaseVarsel
@@ -17,7 +16,7 @@ class WriteVarselRepository(val database: Database) {
 
     private val objectMapper = defaultObjectMapper()
 
-    fun createVarsel(dbVarsel: DatabaseVarsel) = runBlocking {
+    fun createVarsel(dbVarsel: DatabaseVarsel) {
 
         database.update {
             queryOf(
