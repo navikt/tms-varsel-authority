@@ -70,7 +70,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("no.nav.tms.varsel.authority.config.ApplicationKt")
+    mainClass.set("no.nav.tms.varsel.authority.ApplicationKt")
 }
 
 tasks {
