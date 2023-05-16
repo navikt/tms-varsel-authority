@@ -70,7 +70,10 @@ fun Application.varselApi(
                     )
                 }
 
-                else -> call.respond(HttpStatusCode.InternalServerError)
+                else -> {
+                    call.respond(HttpStatusCode.InternalServerError)
+                    log.warn(cause.message, cause.stackTrace)
+                }
             }
 
         }
