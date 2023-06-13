@@ -69,8 +69,11 @@ class PeriodicArkivVarselMigrator(
             true
         } else {
             val count = migrationRepository.migrateArkivVarsler(varsler)
+            val duplicates = varsler.size - count
             val time = Duration.between(startTime, Instant.now()).toMillis()
-            log.info("Migrerte $count arkiverte varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: ${varsler - count}")
+            MigrationMetricsReporter.registerArkivertVarselMigrert(type, count, duplicates)
+
+            log.info("Migrerte $count arkiverte varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
             false
         }
     }

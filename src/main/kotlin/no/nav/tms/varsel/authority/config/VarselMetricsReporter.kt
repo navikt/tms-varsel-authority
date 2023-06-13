@@ -1,8 +1,5 @@
 package no.nav.tms.varsel.authority.config
 
-import io.micrometer.core.instrument.Tag
-import io.micrometer.prometheus.PrometheusMeterRegistry
-import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import no.nav.tms.varsel.authority.Produsent
 import no.nav.tms.varsel.authority.VarselType
