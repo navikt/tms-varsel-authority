@@ -31,7 +31,11 @@ class PeriodicArkivVarselMigrator(
 
     override val job = initializeJob {
         if (leaderElection.isLeader()) {
-            migrateNextBatch()
+            try {
+                migrateNextBatch()
+            } catch (e: Exception) {
+                log.warn("Feil ved migrering av arkiverte varsler. Forsøker igjen.", e)
+            }
         }
     }
 
