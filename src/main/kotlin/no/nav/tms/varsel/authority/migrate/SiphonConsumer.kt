@@ -32,14 +32,14 @@ class SiphonConsumer(
     }
 
     suspend fun fetchVarsler(type: VarselType, from: ZonedDateTime, to: ZonedDateTime, max: Int): List<LegacyVarsel> {
-        return httpClient.get("$varselSiphonBaseURL/varsel") {
+        return httpClient.get("$varselSiphonBaseURL/varsler") {
             setAzureHeader()
             setQueryParams(type, from, to, max)
         }.body()
     }
 
     suspend fun fetchArkivVarsler(type: VarselType, from: ZonedDateTime, to: ZonedDateTime, max: Int): List<LegacyArkivertVarsel> {
-        return httpClient.get("$varselSiphonBaseURL/arkiv/varsel") {
+        return httpClient.get("$varselSiphonBaseURL/arkiv/varsler") {
             setAzureHeader()
             setQueryParams(type, from, to, max)
         }.body()
