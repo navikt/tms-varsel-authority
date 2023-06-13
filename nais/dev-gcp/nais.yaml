@@ -74,4 +74,4 @@ spec:
     - name: VARSEL_SIPHON_CLIENT_ID
       value: "dev-gcp:min-side:tms-varsel-siphon"
     - name: MIGRATION_THRESHOLD_DATE
-      value: "2023-06-13"
+      value: "2023-06-05"
