@@ -11,7 +11,6 @@ import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.LocalDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -29,8 +28,6 @@ class EksternVarslingStatusSinkTest {
     private val database = LocalPostgresDatabase.cleanDb()
     private val varselRepository = WriteVarselRepository(database)
 
-    private val metricsReporter: VarselMetricsReporter = mockk(relaxed = true)
-
     private val mockProducer = MockProducer(
         false,
         StringSerializer(),
@@ -40,7 +37,7 @@ class EksternVarslingStatusSinkTest {
     private val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(mockProducer, "testtopic")
     private val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     private val eksternVarslingStatusUpdater =
-        EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer, metricsReporter)
+        EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer)
 
     @BeforeEach
     fun resetDb() {
@@ -219,8 +216,7 @@ class EksternVarslingStatusSinkTest {
     private fun setupVarselSink(testRapid: TestRapid) = AktiverVarselSink(
         rapidsConnection = testRapid,
         varselRepository = varselRepository,
-        varselAktivertProducer = mockk(relaxed = true),
-        metricsReporter = mockk(relaxed = true)
+        varselAktivertProducer = mockk(relaxed = true)
     )
 }
 

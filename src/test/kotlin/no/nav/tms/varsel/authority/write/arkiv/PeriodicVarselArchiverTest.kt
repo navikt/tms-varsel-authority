@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.archive
+package no.nav.tms.varsel.authority.write.arkiv
 
 import io.kotest.matchers.shouldBe
 import io.mockk.clearMocks
@@ -27,9 +27,8 @@ import java.time.ZonedDateTime
 internal class PeriodicVarselArchiverTest {
 
     private val database = LocalPostgresDatabase.cleanDb()
-    private val archiveRepository = VarselArchiveRepository(database)
+    private val archiveRepository = VarselArkivRepository(database)
     private val leaderElection: LeaderElection = mockk()
-    private val metricsReporter: VarselMetricsReporter = mockk(relaxed = true)
 
     private val testRepository = ArchiveTestRepository(database)
 
@@ -57,14 +56,14 @@ internal class PeriodicVarselArchiverTest {
         clearMocks(leaderElection)
         mockProducer.clear()
         database.update { queryOf("delete from varsel") }
-        database.update { queryOf("delete from varsel_archive") }
+        database.update { queryOf("delete from varsel_arkiv") }
     }
 
 
     fun createVarsel(vararg varsler: DatabaseVarsel) {
         val varselRepository = WriteVarselRepository(database)
 
-        varsler.forEach { varselRepository.createVarsel(it) }
+        varsler.forEach { varselRepository.insertVarsel(it) }
     }
 
     @Test
@@ -77,7 +76,7 @@ internal class PeriodicVarselArchiverTest {
         val arkiverteVarsler = testRepository.getAllArchivedVarsel()
         arkiverteVarsler.size shouldBe 1
         arkiverteVarsler.first().apply {
-            varsel.type shouldBe Beskjed
+            type shouldBe Beskjed
             varselId shouldBe gammelBeskjed.varselId
         }
 
@@ -107,11 +106,10 @@ internal class PeriodicVarselArchiverTest {
 
         arkiverteVarsler.size shouldBe 1
         arkiverteVarsler.first().apply {
-            varsel.ident shouldBe gammelBeskjed.ident
             varselId shouldBe gammelBeskjed.varselId
-            varsel.tekst shouldBe gammelBeskjed.varsel.tekst
-            varsel.link shouldBe gammelBeskjed.varsel.link
-            varsel.sikkerhetsnivaa shouldBe gammelBeskjed.varsel.sikkerhetsnivaa
+            innhold.tekst shouldBe gammelBeskjed.innhold.tekst
+            innhold.link shouldBe gammelBeskjed.innhold.link
+            sensitivitet shouldBe gammelBeskjed.sensitivitet
             aktiv shouldBe gammelBeskjed.aktiv
             produsent.appnavn shouldBe gammelBeskjed.produsent.appnavn
             produsent.namespace shouldBe gammelBeskjed.produsent.namespace
@@ -130,8 +128,7 @@ internal class PeriodicVarselArchiverTest {
             ageThresholdDays = 10,
             interval = ofMinutes(10),
             leaderElection = leaderElection,
-            varselArkivertProducer = arkivertProducer,
-            metricsReporter = metricsReporter
+            varselArkivertProducer = arkivertProducer
         )
 
         archiver.start()
@@ -150,8 +147,7 @@ internal class PeriodicVarselArchiverTest {
             ageThresholdDays = 10,
             interval = ofMinutes(10),
             leaderElection = leaderElection,
-            varselArkivertProducer = arkivertProducer,
-            metricsReporter = metricsReporter
+            varselArkivertProducer = arkivertProducer
         )
 
         archiver.start()
@@ -180,12 +176,12 @@ internal class PeriodicVarselArchiverTest {
         type: VarselType,
         opprettet: ZonedDateTime,
     ) = DatabaseVarsel(
+        type = type,
+        varselId = varselId,
         aktiv = true,
-        varsel = Varsel(
-            type = type,
-            varselId = varselId,
-            ident = "123",
-            sikkerhetsnivaa = 3,
+        ident = "123",
+        sensitivitet = Sensitivitet.Substantial,
+        innhold = Innhold(
             tekst = "Bla.",
             link = "http://link",
         ),

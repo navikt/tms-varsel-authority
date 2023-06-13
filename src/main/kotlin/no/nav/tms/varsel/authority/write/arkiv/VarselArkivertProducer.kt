@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.archive
+package no.nav.tms.varsel.authority.write.arkiv
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
@@ -18,11 +18,11 @@ class VarselArkivertProducer(
 
     private val objectMapper = defaultObjectMapper()
 
-    fun varselArkivert(arkivVarsel: ArchiveVarsel) {
+    fun varselArkivert(arkivVarsel: ArkivVarsel) {
 
         val hendelse = VarselArkivertHendelse(
             varselId = arkivVarsel.varselId,
-            varselType = arkivVarsel.varsel.type,
+            varselType = arkivVarsel.type,
             namespace = arkivVarsel.produsent.namespace,
             appnavn = arkivVarsel.produsent.appnavn,
             opprettet = arkivVarsel.opprettet

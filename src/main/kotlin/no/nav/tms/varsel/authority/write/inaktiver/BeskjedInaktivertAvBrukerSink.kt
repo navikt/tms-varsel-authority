@@ -9,8 +9,7 @@ import org.slf4j.LoggerFactory
 internal class BeskjedInaktivertAvBrukerSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
-    private val varselInaktivertProducer: VarselInaktivertProducer,
-    private val metricsReporter: VarselMetricsReporter
+    private val varselInaktivertProducer: VarselInaktivertProducer
 ) :
     River.PacketListener {
 
@@ -34,7 +33,8 @@ internal class BeskjedInaktivertAvBrukerSink(
         if (varsel != null) {
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Bruker)
 
-            metricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Bruker)
+            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Bruker)
+
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselType = varsel.type,

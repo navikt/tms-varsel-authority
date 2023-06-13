@@ -27,7 +27,6 @@ internal class InaktiverVarselSinkTest {
 
     private val aktivertProducer = VarselAktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-    private val metricsReporter: VarselMetricsReporter = mockk(relaxed = true)
 
     private val testRapid = TestRapid()
     private val database = LocalPostgresDatabase.cleanDb()
@@ -39,8 +38,8 @@ internal class InaktiverVarselSinkTest {
 
     @BeforeEach
     fun setup() {
-        AktiverVarselSink(testRapid, repository, aktivertProducer, metricsReporter)
-        InaktiverVarselSink(testRapid, repository, inaktivertProducer, metricsReporter)
+        AktiverVarselSink(testRapid, repository, aktivertProducer)
+        InaktiverVarselSink(testRapid, repository, inaktivertProducer)
     }
 
     @AfterEach

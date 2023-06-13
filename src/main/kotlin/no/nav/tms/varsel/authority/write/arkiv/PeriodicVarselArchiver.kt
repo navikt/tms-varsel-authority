@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.archive
+package no.nav.tms.varsel.authority.write.arkiv
 
 import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
@@ -8,11 +8,10 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import java.time.Duration
 
 class PeriodicVarselArchiver(
-    private val varselArchivingRepository: VarselArchiveRepository,
+    private val varselArchivingRepository: VarselArkivRepository,
     private val varselArkivertProducer: VarselArkivertProducer,
     private val ageThresholdDays: Int,
     private val leaderElection: LeaderElection,
-    private val metricsReporter: VarselMetricsReporter,
     interval: Duration = Duration.ofSeconds(10)
 ): PeriodicJob(interval) {
 
@@ -31,7 +30,7 @@ class PeriodicVarselArchiver(
             varselArchivingRepository.archiveOldVarsler(thresholdDate)
                 .forEach { arkivertVarsel ->
                     varselArkivertProducer.varselArkivert(arkivertVarsel)
-                    metricsReporter.registerVarselArkivert(arkivertVarsel.varsel.type, arkivertVarsel.produsent)
+                    VarselMetricsReporter.registerVarselArkivert(arkivertVarsel.type, arkivertVarsel.produsent)
                 }
 
         } catch (e: Exception) {

@@ -1,8 +1,8 @@
-package no.nav.tms.varsel.authority.write.archive
+package no.nav.tms.varsel.authority.write.arkiv
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.common.json
@@ -10,29 +10,25 @@ import no.nav.tms.varsel.authority.common.optionalJson
 import no.nav.tms.varsel.authority.common.toJsonb
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
-import no.nav.tms.varsel.authority.EksternVarslingBestilling
-import no.nav.tms.varsel.authority.EksternVarslingStatus
-import no.nav.tms.varsel.authority.Produsent
-import no.nav.tms.varsel.authority.Varsel
 import java.time.ZonedDateTime
 
-class VarselArchiveRepository(private val database: Database) {
+class VarselArkivRepository(private val database: Database) {
 
     private val objectMapper = defaultObjectMapper()
 
-    fun archiveOldVarsler(dateThreshold: ZonedDateTime): List<ArchiveVarsel> {
+    fun archiveOldVarsler(dateThreshold: ZonedDateTime): List<ArkivVarsel> {
 
-        val archivableVarsler = getArchivableVarsler(dateThreshold)
+        val archivableVarsler = getVarslerOlderThanThreshold(dateThreshold)
 
         if (archivableVarsler.isNotEmpty()) {
-            insertArchiveVarsler(archivableVarsler)
+            insertArkivVarsler(archivableVarsler)
             deleteVarsler(archivableVarsler.map { it.varselId })
         }
 
         return archivableVarsler
     }
 
-    private fun getArchivableVarsler(dateThreshold: ZonedDateTime): List<ArchiveVarsel> {
+    private fun getVarslerOlderThanThreshold(dateThreshold: ZonedDateTime): List<ArkivVarsel> {
         return database.list {
             queryOf(
                 "select * from varsel where opprettet < :threshold",
@@ -42,10 +38,10 @@ class VarselArchiveRepository(private val database: Database) {
         }
     }
 
-    private fun insertArchiveVarsler(varsler: List<ArchiveVarsel>) {
+    private fun insertArkivVarsler(varsler: List<ArkivVarsel>) {
         database.batch(
             """
-                insert into varsel_archive(varselId, ident, varsel, arkivert)
+                insert into varsel_arkiv(varselId, ident, varsel, arkivert)
                 values(:varselId, :ident, :varsel, :arkivert)
                 on conflict do nothing
             """,
@@ -72,12 +68,14 @@ class VarselArchiveRepository(private val database: Database) {
         }
     }
 
-    private fun toArchiveVarsel(): (Row) -> ArchiveVarsel = { row ->
-        val varselInnhold: Varsel = row.json("innhold")
-
-        ArchiveVarsel(
+    private fun toArchiveVarsel(): (Row) -> ArkivVarsel = { row ->
+        ArkivVarsel(
+            type = row.string("type").let(VarselType::parse),
+            varselId = row.string("varselId"),
+            ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            varsel = varselInnhold,
+            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
+            innhold = row.json("innhold"),
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
             eksternVarslingStatus = row.optionalJson("eksternVarslingStatus", objectMapper),
@@ -88,16 +86,17 @@ class VarselArchiveRepository(private val database: Database) {
     }
 }
 
-data class ArchiveVarsel(
+data class ArkivVarsel(
+    val type: VarselType,
+    val varselId: String,
+    val ident: String,
     val aktiv: Boolean,
-    val varsel: Varsel,
+    val sensitivitet: Sensitivitet,
+    val innhold: Innhold,
     val produsent: Produsent,
     val eksternVarslingBestilling: EksternVarslingBestilling? = null,
     val eksternVarslingStatus: EksternVarslingStatus? = null,
     val opprettet: ZonedDateTime,
     val inaktivert: ZonedDateTime? = null,
     val inaktivertAv: VarselInaktivertKilde? = null
-) {
-    @JsonIgnore val varselId = varsel.varselId
-    @JsonIgnore val ident = varsel.ident
-}
+)

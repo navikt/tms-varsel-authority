@@ -15,8 +15,7 @@ import java.time.temporal.ChronoUnit
 class EksternVarslingStatusUpdater(
     private val eksternVarslingStatusRepository: EksternVarslingStatusRepository,
     private val varselRepository: WriteVarselRepository,
-    private val eksternVarslingOppdatertProducer: EksternVarslingOppdatertProducer,
-    private val metricsReporter: VarselMetricsReporter
+    private val eksternVarslingOppdatertProducer: EksternVarslingOppdatertProducer
 ) {
 
     fun updateEksternVarslingStatus(statusEvent: DoknotifikasjonStatusEvent) {
@@ -121,7 +120,7 @@ class EksternVarslingStatusUpdater(
 
     private fun registerMetricsIfSendt(varsel: DatabaseVarsel, newStatus: EksternVarslingHistorikkEntry) {
         if (newStatus.status == Sendt) {
-            metricsReporter.registerEksternVarslingSendt(varsel.type, varsel.produsent, newStatus.kanal ?: "N/A")
+            VarselMetricsReporter.registerEksternVarslingSendt(varsel.type, varsel.produsent, newStatus.kanal ?: "N/A")
         }
     }
 }

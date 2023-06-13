@@ -3,7 +3,9 @@ package no.nav.tms.varsel.authority.write.aktiver
 import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.DatabaseVarsel
-import no.nav.tms.varsel.authority.Varsel
+import no.nav.tms.varsel.authority.Innhold
+import no.nav.tms.varsel.authority.Sensitivitet
+import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.json
@@ -16,15 +18,16 @@ class WriteVarselRepository(val database: Database) {
 
     private val objectMapper = defaultObjectMapper()
 
-    fun createVarsel(dbVarsel: DatabaseVarsel) {
+    fun insertVarsel(dbVarsel: DatabaseVarsel) {
 
         database.update {
             queryOf(
                 """
                     insert into varsel(
-                        varselId,
                         type,
+                        varselId,
                         ident,
+                        sensitivitet,
                         innhold,
                         produsent,
                         eksternVarslingBestilling,
@@ -32,11 +35,13 @@ class WriteVarselRepository(val database: Database) {
                         aktiv,
                         opprettet,
                         aktivFremTil,
-                        inaktivert
+                        inaktivert,
+                        inaktivertAv
                     ) values (
-                        :varselId,
                         :type,
+                        :varselId,
                         :ident,
+                        :sensitivitet,
                         :innhold,
                         :produsent,
                         :eksternVarslingBestilling,
@@ -44,21 +49,24 @@ class WriteVarselRepository(val database: Database) {
                         :aktiv,
                         :opprettet,
                         :aktivFremTil,
-                        :inaktivert
+                        :inaktivert,
+                        :inaktivertAv
                     )
                 """,
                 mapOf(
-                    "varselId" to dbVarsel.varselId,
                     "type" to dbVarsel.type.lowercaseName,
+                    "varselId" to dbVarsel.varselId,
                     "ident" to dbVarsel.ident,
-                    "innhold" to dbVarsel.varsel.toJsonb(),
+                    "sensitivitet" to dbVarsel.sensitivitet.lowercaseName,
+                    "innhold" to dbVarsel.innhold.toJsonb(),
                     "produsent" to dbVarsel.produsent.toJsonb(),
-                    "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(),
-                    "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(),
+                    "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(objectMapper),
+                    "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(objectMapper),
                     "aktiv" to dbVarsel.aktiv,
                     "opprettet" to dbVarsel.opprettet,
                     "aktivFremTil" to dbVarsel.aktivFremTil,
-                    "inaktivert" to dbVarsel.inaktivert
+                    "inaktivert" to dbVarsel.inaktivert,
+                    "inaktivertAv" to dbVarsel.inaktivertAv
                 )
             )
         }
@@ -89,11 +97,15 @@ class WriteVarselRepository(val database: Database) {
     }
 
     private fun toDbVarsel(): (Row) -> DatabaseVarsel = { row ->
-        val varselInnhold: Varsel = row.json("innhold", objectMapper)
+        val varselInnhold: Innhold = row.json("innhold", objectMapper)
 
         DatabaseVarsel(
+            type = row.string("type").let(VarselType::parse),
+            varselId = row.string("varselId"),
+            ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            varsel = varselInnhold,
+            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
+            innhold = varselInnhold,
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
             eksternVarslingStatus = row.optionalJson("eksternVarslingStatus", objectMapper),

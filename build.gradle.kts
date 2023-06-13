@@ -48,6 +48,7 @@ dependencies {
     implementation(TmsKtorTokenSupport.azureValidation)
     implementation(TmsKtorTokenSupport.tokenXValidation)
     implementation(TmsKtorTokenSupport.authenticationInstaller)
+    implementation(TmsKtorTokenSupport.azureExchange)
     implementation(KotliQuery.kotliquery)
     implementation(JacksonDatatype.moduleKotlin)
     implementation(KotlinLogging.logging)

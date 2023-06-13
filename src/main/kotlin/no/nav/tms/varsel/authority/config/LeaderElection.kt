@@ -31,7 +31,7 @@ class LeaderElection(
         return isLeader
     }
 
-    private val httpCLient = HttpClient(Apache) {
+    private val httpClient = HttpClient(Apache) {
         install(ContentNegotiation) {
             jackson {
                 registerModule(JavaTimeModule())
@@ -43,7 +43,7 @@ class LeaderElection(
     }
 
     private suspend fun queryForLeader() {
-        val response: ElectorResponse = httpCLient.get(electionPath).body()
+        val response: ElectorResponse = httpClient.get(electionPath).body()
 
         isLeader = response.name == podName
 

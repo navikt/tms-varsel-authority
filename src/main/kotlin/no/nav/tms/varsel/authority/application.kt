@@ -1,22 +1,21 @@
 package no.nav.tms.varsel.authority
 
-import io.micrometer.prometheus.PrometheusConfig
-import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlinx.coroutines.runBlocking
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
 import no.nav.helse.rapids_rivers.RapidsConnection
+import no.nav.tms.token.support.azure.exchange.AzureServiceBuilder
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.config.Flyway
 import no.nav.tms.varsel.authority.config.PostgresDatabase
-import no.nav.tms.varsel.authority.config.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.archive.PeriodicVarselArchiver
-import no.nav.tms.varsel.authority.write.archive.VarselArchiveRepository
-import no.nav.tms.varsel.authority.write.archive.VarselArkivertProducer
+import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
+import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
+import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.migrate.*
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
@@ -46,9 +45,6 @@ fun main() {
 
 private fun startRapid(environment: Environment, database: Database) {
 
-    val prometheusMetricsRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    val metricsReporter = VarselMetricsReporter(prometheusMetricsRegistry)
-
     val varselRepository = WriteVarselRepository(database)
     val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(
         kafkaProducer = initializeRapidKafkaProducer(environment),
@@ -56,7 +52,7 @@ private fun startRapid(environment: Environment, database: Database) {
     )
 
     val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
-    val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer, metricsReporter)
+    val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer)
 
     val varselAktivertProducer = VarselAktivertProducer(
         kafkaProducer = initializeRapidKafkaProducer(environment),
@@ -72,44 +68,47 @@ private fun startRapid(environment: Environment, database: Database) {
 
     val expiredVarselRepository = ExpiredVarselRepository(database)
     val periodicExpiredVarselProcessor =
-        PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection, metricsReporter)
+        PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
 
     val varselArkivertProducer = VarselArkivertProducer(
         initializeRapidKafkaProducer(environment),
         environment.internalVarselTopic
     )
 
-    val varselArchivingRepository = VarselArchiveRepository(database)
+    val varselArchivingRepository = VarselArkivRepository(database)
 
-    val varselArchiver = PeriodicVarselArchiver(varselArchivingRepository, varselArkivertProducer, environment.archivingThresholdDays, leaderElection, metricsReporter)
+    val varselArchiver = PeriodicVarselArchiver(varselArchivingRepository, varselArkivertProducer, environment.archivingThresholdDays, leaderElection)
 
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
-    val beskjedService = BeskjedInaktiverer(writeVarselRepository, varselInaktivertProducer, metricsReporter)
+    val beskjedService = BeskjedInaktiverer(writeVarselRepository, varselInaktivertProducer)
 
-    RapidApplication.Builder(fromEnv(environment.rapidConfig)).withKtorModule {
-        varselApi(
-            readVarselRepository, beskjedService
-        )
+    val azureService = AzureServiceBuilder.buildAzureService()
+    val siphonConsumer = SiphonConsumer(environment.varselSiphonClientId, azureService)
+    val migrationRepository = MigrationRepository(database)
+    val periodicVarselMigrator = PeriodicVarselMigrator(migrationRepository, siphonConsumer, leaderElection, environment.migrationThresholdDate)
+    val periodicArkivVarselMigrator = PeriodicArkivVarselMigrator(migrationRepository, siphonConsumer, leaderElection, environment.migrationThresholdDate)
 
+    RapidApplication.Builder(fromEnv(environment.rapidConfig))
+        .withKtorModule {
+            varselApi(
+                readVarselRepository, beskjedService
+            )
     }.build().apply {
         AktiverVarselSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
-            varselAktivertProducer = varselAktivertProducer,
-            metricsReporter = metricsReporter
+            varselAktivertProducer = varselAktivertProducer
         )
         InaktiverVarselSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
-            varselInaktivertProducer = varselInaktivertProducer,
-            metricsReporter = metricsReporter
+            varselInaktivertProducer = varselInaktivertProducer
         )
         BeskjedInaktivertAvBrukerSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
-            varselInaktivertProducer = varselInaktivertProducer,
-            metricsReporter = metricsReporter
+            varselInaktivertProducer = varselInaktivertProducer
         )
         EksternVarslingStatusSink(
             rapidsConnection = this,
@@ -121,12 +120,16 @@ private fun startRapid(environment: Environment, database: Database) {
                 Flyway.runFlywayMigrations(environment)
                 periodicExpiredVarselProcessor.start()
                 varselArchiver.start()
+                periodicVarselMigrator.start()
+                periodicArkivVarselMigrator.start()
             }
 
             override fun onShutdown(rapidsConnection: RapidsConnection) {
                 runBlocking {
                     periodicExpiredVarselProcessor.stop()
                     varselArchiver.stop()
+                    periodicVarselMigrator.stop()
+                    periodicArkivVarselMigrator.stop()
                     varselInaktivertProducer.flushAndClose()
                     varselAktivertProducer.flushAndClose()
                     varselArkivertProducer.flushAndClose()

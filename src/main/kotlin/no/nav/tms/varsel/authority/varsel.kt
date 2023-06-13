@@ -5,8 +5,12 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.ZonedDateTime
 
 data class DatabaseVarsel(
+    val type: VarselType,
+    val varselId: String,
+    val ident: String,
     val aktiv: Boolean,
-    val varsel: Varsel,
+    val sensitivitet: Sensitivitet,
+    val innhold: Innhold,
     val produsent: Produsent,
     val eksternVarslingBestilling: EksternVarslingBestilling? = null,
     val eksternVarslingStatus: EksternVarslingStatus? = null,
@@ -14,17 +18,9 @@ data class DatabaseVarsel(
     val aktivFremTil: ZonedDateTime? = null,
     val inaktivert: ZonedDateTime? = null,
     val inaktivertAv: VarselInaktivertKilde? = null
-) {
-    val type get() = varsel.type
-    val varselId get() = varsel.varselId
-    val ident get() = varsel.ident
-}
+)
 
-data class Varsel(
-    val type: VarselType,
-    val varselId: String,
-    val ident: String,
-    val sikkerhetsnivaa: Int,
+data class Innhold(
     val tekst: String,
     val link: String,
 )
@@ -42,6 +38,24 @@ enum class VarselType {
             return values()
                 .filter { it.lowercaseName == string.lowercase() }
                 .firstOrNull() ?: throw RuntimeException("Could not parse varselType $string")
+        }
+    }
+}
+
+enum class Sensitivitet {
+    Substantial,
+    High;
+
+    val lowercaseName = name.lowercase()
+
+    @JsonValue
+    fun toJson() = lowercaseName
+
+    companion object {
+        fun parse(string: String): Sensitivitet {
+            return Sensitivitet.values()
+                .filter { it.lowercaseName == string.lowercase() }
+                .firstOrNull() ?: throw RuntimeException("Could not parse sensitivitet $string")
         }
     }
 }

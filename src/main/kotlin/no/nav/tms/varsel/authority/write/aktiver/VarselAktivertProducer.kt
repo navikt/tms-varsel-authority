@@ -1,15 +1,19 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
-import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.ZonedDateTime
 
 class VarselAktivertProducer(
     private val kafkaProducer: Producer<String, String>,
@@ -25,16 +29,9 @@ class VarselAktivertProducer(
 
     fun varselAktivert(dbVarsel: DatabaseVarsel) {
 
-        val varselJson = dbVarsel.varsel.asJson()
+        val varselAktivertEvent = VarselAktivert.fromDatabaseVarsel(dbVarsel)
 
-        val eksternVarslingBestilling = dbVarsel.eksternVarslingBestilling?.asJson()
-
-        varselJson.put("@event_name", "aktivert")
-        varselJson.put("@source", "varsel-authority")
-        varselJson.put("eksternVarslingBestilling", eksternVarslingBestilling)
-        varselJson.put("tidspunkt", ZonedDateTimeHelper.nowAtUtc().toString())
-
-        val producerRecord = ProducerRecord(topicName, dbVarsel.varselId, varselJson.toString())
+        val producerRecord = ProducerRecord(topicName, dbVarsel.varselId, varselAktivertEvent.asJson().toString())
         kafkaProducer.send(producerRecord)
     }
 
@@ -50,5 +47,35 @@ class VarselAktivertProducer(
         } catch (e: Exception) {
             log.warn("Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert.")
         }
+    }
+}
+
+private data class VarselAktivert(
+    val type: VarselType,
+    val varselId: String,
+    val ident: String,
+    val sensitivitet: Sensitivitet,
+    val innhold: Innhold,
+    val produsent: Produsent,
+    val eksternVarslingBestilling: EksternVarslingBestilling?,
+    val opprettet: ZonedDateTime,
+    val aktivFremTil: ZonedDateTime?
+) {
+    @JsonProperty("@event_name") val eventName = "aktivert"
+    @JsonProperty("@source") val source = "varsel-authority"
+    val tidspunkt = nowAtUtc()
+
+    companion object {
+        fun fromDatabaseVarsel(dbVarsel: DatabaseVarsel) = VarselAktivert(
+             type = dbVarsel.type,
+             varselId = dbVarsel.varselId,
+             ident = dbVarsel.ident,
+             sensitivitet = dbVarsel.sensitivitet,
+             innhold = dbVarsel.innhold,
+             produsent = dbVarsel.produsent,
+             eksternVarslingBestilling = dbVarsel.eksternVarslingBestilling,
+             opprettet = dbVarsel.opprettet,
+             aktivFremTil = dbVarsel.aktivFremTil,
+        )
     }
 }

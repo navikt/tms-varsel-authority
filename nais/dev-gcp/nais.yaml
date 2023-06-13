@@ -55,6 +55,10 @@ spec:
   azure:
     application:
       enabled: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: tms-varsel-siphon
     inbound:
       rules:
         - application: tms-varselbjelle-api
@@ -66,4 +70,8 @@ spec:
     - name: INTERNAL_RAPID_TOPIC
       value: "min-side.brukervarsel-v1"
     - name: KAFKA_GROUP_ID
-      value: "varsel-authority-002"
+      value: "varsel-authority-003"
+    - name: VARSEL_SIPHON_CLIENT_ID
+      value: "dev-gcp:min-side:tms-varsel-siphon"
+    - name: MIGRATION_THRESHOLD_DATE
+      value: "2023-06-13"

@@ -9,8 +9,7 @@ import org.slf4j.LoggerFactory
 internal class InaktiverVarselSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
-    private val varselInaktivertProducer: VarselInaktivertProducer,
-    private val metricsReporter: VarselMetricsReporter
+    private val varselInaktivertProducer: VarselInaktivertProducer
 ) :
     River.PacketListener {
 
@@ -31,7 +30,7 @@ internal class InaktiverVarselSink(
         if (varsel != null) {
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent)
 
-            metricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent)
+            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent)
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselType = varsel.type,

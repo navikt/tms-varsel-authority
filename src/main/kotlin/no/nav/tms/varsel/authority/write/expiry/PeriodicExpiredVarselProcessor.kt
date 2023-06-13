@@ -14,7 +14,6 @@ class PeriodicExpiredVarselProcessor(
     private val expiredVarselRepository: ExpiredVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer,
     private val leaderElection: LeaderElection,
-    private val metricsReporter: VarselMetricsReporter,
     interval: Duration = Duration.ofMinutes(10)
 ) : PeriodicJob(interval) {
 
@@ -53,7 +52,7 @@ class PeriodicExpiredVarselProcessor(
                     kilde = Frist
                 )
             )
-            metricsReporter.registerVarselInaktivert(expired.varselType, expired.produsent, Frist)
+            VarselMetricsReporter.registerVarselInaktivert(expired.varselType, expired.produsent, Frist)
         }
 
     }

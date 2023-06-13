@@ -4,11 +4,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.mockk.mockk
 import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.toJson
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
@@ -25,7 +23,6 @@ internal class AktiverVarselSinkTest {
     )
 
     private val rapidProducer = VarselAktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-    private val metricsReporter: VarselMetricsReporter = mockk(relaxed = true)
 
     private val testRapid = TestRapid()
     private val database = LocalPostgresDatabase.cleanDb()
@@ -37,7 +34,7 @@ internal class AktiverVarselSinkTest {
 
     @BeforeEach
     fun setup() {
-        AktiverVarselSink(testRapid, repository, rapidProducer, metricsReporter)
+        AktiverVarselSink(testRapid, repository, rapidProducer)
     }
 
     @AfterEach

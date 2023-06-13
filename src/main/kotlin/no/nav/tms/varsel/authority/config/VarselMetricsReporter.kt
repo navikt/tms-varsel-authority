@@ -2,71 +2,71 @@ package no.nav.tms.varsel.authority.config
 
 import io.micrometer.core.instrument.Tag
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.Counter
 import no.nav.tms.varsel.authority.Produsent
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
-class VarselMetricsReporter(private val prometheusMeterRegistry: PrometheusMeterRegistry) {
+object VarselMetricsReporter {
 
-    private val NAMESPACE = "tms.varsel.authority.v1"
+    private const val NAMESPACE = "tms_varsel_authority_v1"
 
-    private val VARSEL_AKTIVERT_NAME = "$NAMESPACE.varsel.aktivert"
-    private val VARSEL_INAKTIVERT_NAME = "$NAMESPACE.varsel.inaktivert"
-    private val VARSEL_ARKIVERT_NAME = "$NAMESPACE.varsel.arkivert"
+    private const val VARSEL_AKTIVERT_NAME = "varsel_aktivert"
+    private const val VARSEL_INAKTIVERT_NAME = "varsel_inaktivert"
+    private const val VARSEL_ARKIVERT_NAME = "varsel_arkivert"
 
-    private val EKSTERN_VARSLING_SENDT_NAME = "$NAMESPACE.ekstern.varsling.sendt"
+    private const val EKSTERN_VARSLING_SENDT_NAME = "ekstern_varsling_sendt"
+
+    private val VARSEL_AKTIVERT: Counter = Counter.build()
+        .name(VARSEL_AKTIVERT_NAME)
+        .namespace(NAMESPACE)
+        .help("Varsler aktivert")
+        .labelNames("type", "produsent_namespace", "produsent_app")
+        .register()
+
+    private val VARSEL_INAKTIVERT: Counter = Counter.build()
+        .name(VARSEL_INAKTIVERT_NAME)
+        .namespace(NAMESPACE)
+        .help("Varsler inaktivert")
+        .labelNames("type", "produsent_namespace", "produsent_app", "kilde")
+        .register()
+
+    private val VARSEL_ARKIVERT: Counter = Counter.build()
+        .name(VARSEL_ARKIVERT_NAME)
+        .namespace(NAMESPACE)
+        .help("Varsler arkivert")
+        .labelNames("type", "produsent_namespace", "produsent_app")
+        .register()
+
+    private val EKSTERN_VARSLING_SENDT: Counter = Counter.build()
+        .name(EKSTERN_VARSLING_SENDT_NAME)
+        .namespace(NAMESPACE)
+        .help("Eksterne varsler sendt")
+        .labelNames("type", "produsent_namespace", "produsent_app", "kanal")
+        .register()
 
     fun registerVarselAktivert(varselType: VarselType, produsent: Produsent) {
-        prometheusMeterRegistry.counter(VARSEL_AKTIVERT_NAME,
-            tags(
-                "type" to varselType.lowercaseName,
-                "produsent_namespace" to produsent.namespace,
-                "produsent_app" to produsent.appnavn
-            )
-        ).increment()
+        VARSEL_AKTIVERT
+            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
+            .inc()
     }
 
     fun registerVarselInaktivert(varselType: VarselType, produsent: Produsent, kilde: VarselInaktivertKilde) {
-        prometheusMeterRegistry.counter(VARSEL_INAKTIVERT_NAME,
-            tags(
-                "type" to varselType.lowercaseName,
-                "produsent_namespace" to produsent.namespace,
-                "produsent_app" to produsent.appnavn,
-                "kilde" to kilde.lowercaseName
-            )
-        ).increment()
+        VARSEL_INAKTIVERT
+            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kilde.lowercaseName)
+            .inc()
     }
 
     fun registerVarselArkivert(varselType: VarselType, produsent: Produsent) {
-        prometheusMeterRegistry.counter(VARSEL_ARKIVERT_NAME,
-            tags(
-                "type" to varselType.lowercaseName,
-                "produsent_namespace" to produsent.namespace,
-                "produsent_app" to produsent.appnavn
-            )
-        ).increment()
+        VARSEL_ARKIVERT
+            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
+            .inc()
     }
 
     fun registerEksternVarslingSendt(varselType: VarselType, produsent: Produsent, kanal: String) {
-        prometheusMeterRegistry.counter(EKSTERN_VARSLING_SENDT_NAME,
-            tags(
-                "type" to varselType.lowercaseName,
-                "produsent_namespace" to produsent.namespace,
-                "produsent_app" to produsent.appnavn,
-                "kanal" to kanal
-            )
-        ).increment()
-    }
-
-    private fun tags(vararg tagPairs: Pair<String, String>): List<Tag> {
-        return tagPairs.map { (k, v) -> TagImpl(k, v)}
-    }
-
-    private class TagImpl(
-        private val key: String,
-        private val value: String
-    ): Tag {
-        override fun getKey() = key
-        override fun getValue() = value
+        EKSTERN_VARSLING_SENDT
+            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kanal)
+            .inc()
     }
 }

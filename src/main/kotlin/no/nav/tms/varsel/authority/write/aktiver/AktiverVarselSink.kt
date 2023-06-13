@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
+import com.fasterxml.jackson.databind.JsonNode
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -15,8 +16,7 @@ import org.slf4j.LoggerFactory
 internal class AktiverVarselSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
-    private val varselAktivertProducer: VarselAktivertProducer,
-    private val metricsReporter: VarselMetricsReporter
+    private val varselAktivertProducer: VarselAktivertProducer
 ) :
     River.PacketListener {
 
@@ -50,7 +50,11 @@ internal class AktiverVarselSink(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
 
         val dbVarsel = DatabaseVarsel(
-            varsel = unpackVarsel(packet),
+            varselId = packet["eventId"].textValue(),
+            type = packet["@event_name"].textValue().let { VarselType.parse(it) },
+            ident = packet["fodselsnummer"].textValue(),
+            sensitivitet = packet["sikkerhetsnivaa"].asSensitivitet(),
+            innhold = unpackVarsel(packet),
             produsent = unpackProdusent(packet),
             eksternVarslingBestilling = unpackEksternVarslingBestilling(packet),
             aktiv = true,
@@ -58,9 +62,9 @@ internal class AktiverVarselSink(
             aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime()
         )
 
-        varselRepository.createVarsel(dbVarsel)
+        varselRepository.insertVarsel(dbVarsel)
         varselAktivertProducer.varselAktivert(dbVarsel)
-        metricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
+        VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
         log.info("Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}")
     }
 
@@ -71,14 +75,10 @@ internal class AktiverVarselSink(
         )
     }
 
-    private fun unpackVarsel(packet: JsonMessage): Varsel {
-        return Varsel(
-            type = packet["@event_name"].textValue().let { VarselType.parse(it) },
-            varselId = packet["eventId"].textValue(),
-            ident = packet["fodselsnummer"].textValue(),
+    private fun unpackVarsel(packet: JsonMessage): Innhold {
+        return Innhold(
             tekst = packet["tekst"].textValue(),
-            link = packet["link"].textValue(),
-            sikkerhetsnivaa = packet["sikkerhetsnivaa"].intValue(),
+            link = packet["link"].textValue()
         )
     }
 
@@ -92,6 +92,14 @@ internal class AktiverVarselSink(
             )
         } else {
             null
+        }
+    }
+
+    private fun JsonNode.asSensitivitet(): Sensitivitet {
+        return when(intValue()) {
+            3 -> Sensitivitet.Substantial
+            4 -> Sensitivitet.High
+            else -> throw RuntimeException("Feil verdi for 'sikkerhetsnivaa': ${textValue()}")
         }
     }
 

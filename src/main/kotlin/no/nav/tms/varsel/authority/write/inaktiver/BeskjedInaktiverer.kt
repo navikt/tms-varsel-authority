@@ -10,8 +10,7 @@ import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 
 class BeskjedInaktiverer(
     private val varselRepository: WriteVarselRepository,
-    private val varselInaktivertProducer: VarselInaktivertProducer,
-    private val metricsReporter: VarselMetricsReporter
+    private val varselInaktivertProducer: VarselInaktivertProducer
 ) {
     suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         val varsel = varselRepository.getVarsel(varselId)
@@ -23,15 +22,15 @@ class BeskjedInaktiverer(
         } else {
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
-            metricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)
+            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)
+
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselId = varsel.varselId,
                     varselType = varsel.type,
                     namespace = varsel.produsent.namespace,
                     appnavn = varsel.produsent.appnavn,
-                    kilde = Bruker,
-                    tidspunkt = nowAtUtc(),
+                    kilde = Bruker
                 )
             )
         }

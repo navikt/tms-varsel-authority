@@ -49,10 +49,10 @@ data class VarselInaktivertHendelse(
     val varselType: VarselType,
     val namespace: String,
     val appnavn: String,
-    @JsonIgnore val kilde: VarselInaktivertKilde,
-    val tidspunkt: ZonedDateTime = nowAtUtc()
+    @JsonIgnore val kilde: VarselInaktivertKilde
 ) {
     @JsonProperty("kilde") val inaktivertKilde = kilde.lowercaseName
     @JsonProperty("@event_name") val eventName = "inaktivert"
     @JsonProperty("@source") val source = "varsel-authority"
+    val tidspunkt = nowAtUtc()
 }
