@@ -32,24 +32,17 @@ class PeriodicVarselMigrator(
     override val job = initializeJob {
         if (leaderElection.isLeader()) {
             try {
-                migrateNextBatch()
+                val type = varselTyper.first()
+
+                migrateBatchOfType(type)
             } catch (e: Exception) {
                 log.warn("Feil ved migrering av varsler. Forsøker igjen.", e)
             }
         }
     }
 
-    private suspend fun migrateNextBatch() {
-        val type = varselTyper.first()
-
-        val isComplete = migrateBatchOfType(type)
-
-        if (isComplete) {
-            finalizeMigrationOfType(type)
-        }
-    }
-
     private suspend fun finalizeMigrationOfType(type: VarselType) {
+        log.info("Fant ingen flere $type opprettet før $upperTimeThreshold som ikke er migrert.")
         varselTyper.remove(type)
         if (varselTyper.isEmpty()) {
             log.info("Migrering av varsler fullført.")
@@ -57,7 +50,7 @@ class PeriodicVarselMigrator(
         }
     }
 
-    private suspend fun migrateBatchOfType(type: VarselType): Boolean {
+    private suspend fun migrateBatchOfType(type: VarselType) {
         val mostRecentlyMigrated = migrationRepository.getMostRecentVarsel(type)
 
         val fromTime = mostRecentlyMigrated?.forstBehandlet ?: lowerTimeThreshold
@@ -68,17 +61,19 @@ class PeriodicVarselMigrator(
 
         val varsler = siphonConsumer.fetchVarsler(type, fromTime, upperTimeThreshold, batchSize)
 
-        return if (varsler.isEmpty()) {
-            log.info("Fant ingen flere $type opprettet før $upperTimeThreshold som ikke er migrert.")
-            true
-        } else {
-            val count = migrationRepository.migrateVarsler(varsler)
-            val duplicates = varsler.size - count
-            val time = Duration.between(startTime, Instant.now()).toMillis()
-            MigrationMetricsReporter.registerVarselMigrert(type, count, duplicates)
+        if (varsler.isEmpty()) {
+            finalizeMigrationOfType(type)
+        }
 
-            log.info("Migrerte $count varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
-            false
+        val count = migrationRepository.migrateVarsler(varsler)
+
+        val duplicates = varsler.size - count
+        val time = Duration.between(startTime, Instant.now()).toMillis()
+        MigrationMetricsReporter.registerVarselMigrert(type, count, duplicates)
+        log.info("Migrerte $count varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
+
+        if (count == 0) {
+            finalizeMigrationOfType(type)
         }
     }
 }
