@@ -110,6 +110,7 @@ class MigrationRepository(private val database: Database) {
                 select 
                   type,
                   varselId,
+                  duplikat,
                   forstBehandlet,
                   migrert
                 from varsel_migration_log
@@ -131,6 +132,7 @@ class MigrationRepository(private val database: Database) {
                 select 
                   type,
                   varselId,
+                  duplikat,
                   arkivert,
                   migrert
                 from arkivert_varsel_migration_log
