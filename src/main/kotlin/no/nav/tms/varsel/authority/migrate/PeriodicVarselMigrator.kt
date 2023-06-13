@@ -41,20 +41,10 @@ class PeriodicVarselMigrator(
         }
     }
 
-    private suspend fun finalizeMigrationOfType(type: VarselType) {
-        log.info("Fant ingen flere $type opprettet før $upperTimeThreshold som ikke er migrert.")
-        varselTyper.remove(type)
-        if (varselTyper.isEmpty()) {
-            log.info("Migrering av varsler fullført.")
-            stop()
-        }
-    }
-
     private suspend fun migrateBatchOfType(type: VarselType) {
         val mostRecentlyMigrated = migrationRepository.getMostRecentVarsel(type)
 
         val fromTime = mostRecentlyMigrated?.forstBehandlet ?: lowerTimeThreshold
-
         val startTime = Instant.now()
 
         log.info("Migrerer batch med $type...")
@@ -66,14 +56,23 @@ class PeriodicVarselMigrator(
         }
 
         val count = migrationRepository.migrateVarsler(varsler)
-
         val duplicates = varsler.size - count
         val time = Duration.between(startTime, Instant.now()).toMillis()
+
         MigrationMetricsReporter.registerVarselMigrert(type, count, duplicates)
         log.info("Migrerte $count varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
 
         if (count == 0) {
             finalizeMigrationOfType(type)
+        }
+    }
+
+    private suspend fun finalizeMigrationOfType(type: VarselType) {
+        log.info("Fant ingen flere $type opprettet før $upperTimeThreshold som ikke er migrert.")
+        varselTyper.remove(type)
+        if (varselTyper.isEmpty()) {
+            log.info("Migrering av varsler fullført.")
+            stop()
         }
     }
 }
