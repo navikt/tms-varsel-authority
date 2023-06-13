@@ -9,6 +9,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
+import mu.KotlinLogging
 import no.nav.personbruker.dittnav.common.util.config.StringEnvVar.getEnvVar
 import java.net.InetAddress
 import java.text.DateFormat
@@ -22,6 +23,8 @@ class LeaderElection(
 ) {
     private var isLeader: Boolean = false
     private var previousQuery: Instant? = null
+
+    private val log = KotlinLogging.logger {}
 
     suspend fun isLeader(): Boolean {
         if (shouldQueryForLeader()) {
@@ -46,6 +49,8 @@ class LeaderElection(
         val response: ElectorResponse = httpClient.get(electionPath).body()
 
         isLeader = response.name == podName
+
+        log.debug("This pod ($podName) is ${if (isLeader) "the " else ""} leader.")
 
         previousQuery = Instant.now()
     }
