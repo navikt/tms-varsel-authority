@@ -47,7 +47,7 @@ class SiphonConsumer(
 
     private fun HttpRequestBuilder.setQueryParams(type: VarselType, from: ZonedDateTime, to: ZonedDateTime, max: Int) {
         url {
-            parameters.append("type", type.name)
+            parameters.append("type", type.lowercaseName)
             parameters.append("fraDato", from.toString())
             parameters.append("tilDato", to.toString())
             parameters.append("max", max.toString())
