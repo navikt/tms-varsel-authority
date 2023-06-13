@@ -63,7 +63,7 @@ class MigrationRepository(private val database: Database) {
             """,
             varsler.map { varsel ->
                 mapOf(
-                    "varselId" to varsel.aktiv,
+                    "varselId" to varsel.eventId,
                     "type" to varsel.type.lowercaseName,
                     "ident" to varsel.fodselsnummer,
                     "sensitivitet" to varsel.sensitivitet.lowercaseName,

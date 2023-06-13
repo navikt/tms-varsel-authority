@@ -5,6 +5,7 @@ import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
 import no.nav.tms.varsel.authority.common.PeriodicJob
 import no.nav.tms.varsel.authority.config.LeaderElection
+import org.postgresql.util.PSQLException
 import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -35,8 +36,8 @@ class PeriodicVarselMigrator(
                 val type = varselTyper.first()
 
                 migrateBatchOfType(type)
-            } catch (e: Exception) {
-                log.warn("Feil ved migrering av varsler. Forsøker igjen.", e)
+            } catch (pe: PSQLException) {
+                log.warn("Feil ved migrering av varsler. Forsøker igjen.", pe)
             }
         }
     }
