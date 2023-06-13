@@ -24,8 +24,6 @@ class LeaderElection(
     private var isLeader: Boolean = false
     private var previousQuery: Instant? = null
 
-    private val log = KotlinLogging.logger {}
-
     suspend fun isLeader(): Boolean {
         if (shouldQueryForLeader()) {
             queryForLeader()
@@ -49,8 +47,6 @@ class LeaderElection(
         val response: ElectorResponse = httpClient.get(electionPath).body()
 
         isLeader = response.name == podName
-
-        log.debug("This pod ($podName) is ${if (isLeader) "the " else ""} leader.")
 
         previousQuery = Instant.now()
     }

@@ -72,6 +72,6 @@ spec:
     - name: KAFKA_GROUP_ID
       value: "varsel-authority-003"
     - name: VARSEL_SIPHON_CLIENT_ID
-      value: "dev-gcp:min-side:tms-varsel-siphon"
+      value: "dev-gcp.min-side.tms-varsel-siphon"
     - name: MIGRATION_THRESHOLD_DATE
       value: "2023-06-05"
