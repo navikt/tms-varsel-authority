@@ -136,7 +136,7 @@ class MigrationRepository(private val database: Database) {
                 from arkivert_varsel_migration_log
                 where 
                   type = :type 
-                order by forstBehandlet desc
+                order by arkivert desc
                   limit 1
             """,
                 mapOf("type" to type.lowercaseName)
@@ -167,8 +167,8 @@ class MigrationRepository(private val database: Database) {
     fun insertArkivertVarselMigrationLog(arkiverteVarsler: List<ArkivertVarselMigrationLogEntry>) {
         database.batch(
             """
-                insert into varsel_migration_log(type, varselId, duplikat, forstBehandlet, migrert)
-                    values(:type, :varselId, :duplikat, :forstBehandlet, :migrert)
+                insert into varsel_migration_log(type, varselId, duplikat, arkivert, migrert)
+                    values(:type, :varselId, :duplikat, :arkivert, :migrert)
             """,
             arkiverteVarsler.map { varsel ->
                 mapOf(
