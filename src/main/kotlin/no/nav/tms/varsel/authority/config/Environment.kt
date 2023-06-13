@@ -20,7 +20,7 @@ data class Environment(
     val rapidConfig = mapOf(
         "KAFKA_RAPID_TOPIC" to internalVarselTopic,
         "KAFKA_BROKERS" to kafkaBrokers,
-        "KAFKA_CONSUMER_GROUP_ID" to "tms-varsel-authority-v1",
+        "KAFKA_CONSUMER_GROUP_ID" to kafkaConsumerGroupId,
         "KAFKA_KEYSTORE_PATH" to kafkaKeystorePath,
         "KAFKA_CREDSTORE_PASSWORD" to kafkaCredstorePassword,
         "KAFKA_TRUSTSTORE_PATH" to kafkaTruststorePath,
