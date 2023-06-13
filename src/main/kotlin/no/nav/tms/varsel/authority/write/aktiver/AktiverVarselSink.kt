@@ -10,6 +10,7 @@ import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asOptionalZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import org.postgresql.util.PSQLException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -62,10 +63,18 @@ internal class AktiverVarselSink(
             aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime()
         )
 
-        varselRepository.insertVarsel(dbVarsel)
-        varselAktivertProducer.varselAktivert(dbVarsel)
-        VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
-        log.info("Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}")
+        aktiverVarsel(dbVarsel)
+    }
+
+    private fun aktiverVarsel(dbVarsel: DatabaseVarsel) {
+        try {
+            varselRepository.insertVarsel(dbVarsel)
+            varselAktivertProducer.varselAktivert(dbVarsel)
+            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
+            log.info("Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}")
+        } catch (e: PSQLException) {
+            log.warn("Feil ved aktivering av varsel med id [${dbVarsel.varselId}].", e)
+        }
     }
 
     private fun unpackProdusent(packet: JsonMessage): Produsent {
