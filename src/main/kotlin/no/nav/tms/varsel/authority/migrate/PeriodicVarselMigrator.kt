@@ -68,7 +68,7 @@ class PeriodicVarselMigrator(
 
         val varsler = siphonConsumer.fetchVarsler(type, fromTime, upperTimeThreshold, batchSize)
 
-        return if (varsler.isNotEmpty()) {
+        return if (varsler.isEmpty()) {
             log.info("Fant ingen flere $type opprettet før $upperTimeThreshold som ikke er migrert.")
             true
         } else {
