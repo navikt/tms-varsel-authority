@@ -5,6 +5,7 @@ import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
 import no.nav.tms.varsel.authority.common.PeriodicJob
 import no.nav.tms.varsel.authority.config.LeaderElection
+import org.postgresql.util.PSQLException
 import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -28,57 +29,50 @@ class PeriodicArkivVarselMigrator(
         Oppgave,
         Innboks
     )
-
     override val job = initializeJob {
         if (leaderElection.isLeader()) {
             try {
-                migrateNextBatch()
-            } catch (e: Exception) {
-                log.warn("Feil ved migrering av arkiverte varsler. Forsøker igjen.", e)
+                val type = varselTyper.first()
+
+                migrateBatchOfType(type)
+            } catch (pe: PSQLException) {
+                log.warn("Feil ved migrering av arkiverte varsler. Forsøker igjen.", pe)
             }
         }
     }
 
-    private suspend fun migrateNextBatch() {
-        val type = varselTyper.first()
+    private suspend fun migrateBatchOfType(type: VarselType) {
+        val mostRecentlyMigrated = migrationRepository.getMostRecentArkivertVarsel(type)
 
-        val isComplete = migrateBatchOfType(type)
+        val fromTime = mostRecentlyMigrated?.arkivert ?: lowerTimeThreshold
+        val startTime = Instant.now()
 
-        if (isComplete) {
+        log.info("Migrerer batch med arkivert $type...")
+
+        val varsler = siphonConsumer.fetchArkivVarsler(type, fromTime, upperTimeThreshold, batchSize)
+
+        if (varsler.isEmpty()) {
+            finalizeMigrationOfType(type)
+        }
+
+        val count = migrationRepository.migrateArkivVarsler(varsler)
+        val duplicates = varsler.size - count
+        val time = Duration.between(startTime, Instant.now()).toMillis()
+
+        MigrationMetricsReporter.registerArkivertVarselMigrert(type, count, duplicates)
+        log.info("Migrerte $count arkiverte varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
+
+        if (count == 0) {
             finalizeMigrationOfType(type)
         }
     }
 
     private suspend fun finalizeMigrationOfType(type: VarselType) {
+        log.info("Fant ingen flere arkivert $type opprettet før $upperTimeThreshold som ikke er migrert.")
         varselTyper.remove(type)
         if (varselTyper.isEmpty()) {
             log.info("Migrering av arkiverte varsler fullført.")
             stop()
-        }
-    }
-
-    private suspend fun migrateBatchOfType(type: VarselType): Boolean {
-        val mostRecentlyMigrated = migrationRepository.getMostRecentArkivertVarsel(type)
-
-        val fromDate = mostRecentlyMigrated?.arkivert ?: lowerTimeThreshold
-
-        val startTime = Instant.now()
-
-        log.info("Migrerer batch med arkivert $type...")
-
-        val varsler = siphonConsumer.fetchArkivVarsler(type, fromDate, upperTimeThreshold, batchSize)
-
-        return if (varsler.isNotEmpty()) {
-            log.info("Fant ingen flere $type arkivert før $upperTimeThreshold.")
-            true
-        } else {
-            val count = migrationRepository.migrateArkivVarsler(varsler)
-            val duplicates = varsler.size - count
-            val time = Duration.between(startTime, Instant.now()).toMillis()
-            MigrationMetricsReporter.registerArkivertVarselMigrert(type, count, duplicates)
-
-            log.info("Migrerte $count arkiverte varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
-            false
         }
     }
 }
