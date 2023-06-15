@@ -53,6 +53,7 @@ class PeriodicArkivVarselMigrator(
 
         if (varsler.isEmpty()) {
             finalizeMigrationOfType(type)
+            return
         }
 
         val count = migrationRepository.migrateArkivVarsler(varsler)

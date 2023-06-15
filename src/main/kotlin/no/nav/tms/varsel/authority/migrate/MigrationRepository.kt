@@ -169,7 +169,7 @@ class MigrationRepository(private val database: Database) {
     fun insertArkivertVarselMigrationLog(arkiverteVarsler: List<ArkivertVarselMigrationLogEntry>) {
         database.batch(
             """
-                insert into varsel_migration_log(type, varselId, duplikat, arkivert, migrert)
+                insert into arkivert_varsel_migration_log(type, varselId, duplikat, arkivert, migrert)
                     values(:type, :varselId, :duplikat, :arkivert, :migrert)
             """,
             arkiverteVarsler.map { varsel ->
