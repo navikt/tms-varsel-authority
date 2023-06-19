@@ -11,7 +11,6 @@ import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.LeaderElection
-import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,6 +48,13 @@ internal class PeriodicExpiredVarselProcessorTest {
         aktivFremTil = futureDate
     )
 
+    private val inactiveVarsel = varsel(
+        varselId = "b3",
+        type = Beskjed,
+        aktiv = false,
+        aktivFremTil = pastDate
+    )
+
 
     @AfterEach
     fun cleanUp() {
@@ -62,6 +68,7 @@ internal class PeriodicExpiredVarselProcessorTest {
     fun setup() {
         varselRepository.insertVarsel(expiredBeskjed)
         varselRepository.insertVarsel(activeBeskjed)
+        varselRepository.insertVarsel(inactiveVarsel)
     }
 
     @Test
@@ -86,12 +93,13 @@ internal class PeriodicExpiredVarselProcessorTest {
 private fun varsel(
     varselId: String,
     type: VarselType,
+    aktiv: Boolean = true,
     aktivFremTil: ZonedDateTime,
 ) = DatabaseVarsel(
     type = type,
     varselId = varselId,
     sensitivitet = Sensitivitet.Substantial,
-    aktiv = true,
+    aktiv = aktiv,
     produsent = Produsent("namespace", "appname"),
     ident = "123",
     innhold = Innhold(

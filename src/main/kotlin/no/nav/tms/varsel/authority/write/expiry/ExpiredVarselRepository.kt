@@ -18,7 +18,9 @@ class ExpiredVarselRepository(private val database: Database) {
                          produsent->>'namespace' as namespace,
                          produsent->>'appnavn' as appnavn
                     from varsel
-                    where aktivFremTil < :now
+                    where
+                        aktiv = true
+                        and aktivFremTil < :now
                 """,
                 mapOf("now" to nowAtUtc())
             )
