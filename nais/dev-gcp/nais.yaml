@@ -21,8 +21,6 @@ spec:
     min: 2
     max: 4
     cpuThresholdPercentage: 50
-  ingresses:
-    - "https://tms-varsel-authority.intern.dev.nav.no"
   leaderElection: true
   resources:
     limits:
