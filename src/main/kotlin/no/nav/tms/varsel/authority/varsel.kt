@@ -22,7 +22,7 @@ data class DatabaseVarsel(
 
 data class Innhold(
     val tekst: String,
-    val link: String,
+    val link: String?
 )
 
 enum class VarselType {
@@ -37,7 +37,7 @@ enum class VarselType {
         fun parse(string: String): VarselType {
             return values()
                 .filter { it.lowercaseName == string.lowercase() }
-                .firstOrNull() ?: throw RuntimeException("Could not parse varselType $string")
+                .firstOrNull() ?: throw IllegalArgumentException("Could not parse varselType $string")
         }
     }
 }
@@ -55,7 +55,7 @@ enum class Sensitivitet {
         fun parse(string: String): Sensitivitet {
             return Sensitivitet.values()
                 .filter { it.lowercaseName == string.lowercase() }
-                .firstOrNull() ?: throw RuntimeException("Could not parse sensitivitet $string")
+                .firstOrNull() ?: throw IllegalArgumentException("Could not parse sensitivitet $string")
         }
     }
 }

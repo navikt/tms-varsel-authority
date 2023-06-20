@@ -8,14 +8,14 @@ data class Environment(
     val dbPassword: String = getEnvVar("DB_PASSWORD"),
     val dbUrl: String = getDbUrl(),
     val archivingThresholdDays: Int = getEnvVarAsInt("ARCHIVING_THRESHOLD"),
-    val internalVarselTopic: String = getEnvVar("INTERNAL_RAPID_TOPIC"),
     val kafkaBrokers: String = getEnvVar("KAFKA_BROKERS"),
     val kafkaTruststorePath: String = getEnvVar("KAFKA_TRUSTSTORE_PATH"),
     val kafkaKeystorePath: String = getEnvVar("KAFKA_KEYSTORE_PATH"),
     val kafkaCredstorePassword: String = getEnvVar("KAFKA_CREDSTORE_PASSWORD"),
     val kafkaConsumerGroupId: String = getEnvVar("KAFKA_GROUP_ID"),
     val varselSiphonClientId: String = getEnvVar("VARSEL_SIPHON_CLIENT_ID"),
-    val migrationThresholdDate: String = getEnvVar("MIGRATION_THRESHOLD_DATE")
+    val migrationThresholdDate: String = getEnvVar("MIGRATION_THRESHOLD_DATE"),
+    val internalVarselTopic: String = "min-side.brukervarsel-v1"
 ) {
     val rapidConfig = mapOf(
         "KAFKA_RAPID_TOPIC" to internalVarselTopic,

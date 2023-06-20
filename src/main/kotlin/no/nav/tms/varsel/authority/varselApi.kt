@@ -16,15 +16,10 @@ import mu.KotlinLogging
 import no.nav.tms.token.support.authentication.installer.installAuthenticators
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
-import no.nav.tms.varsel.authority.read.systemVarselApi
+import no.nav.tms.varsel.authority.read.saksbehandlerVarselApi
 import no.nav.tms.varsel.authority.read.brukerVarselApi
-import no.nav.tms.varsel.authority.read.debugVarselApi
-import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
-import no.nav.tms.varsel.authority.write.inaktiver.InvalidVarselTypeException
-import no.nav.tms.varsel.authority.write.inaktiver.UnprivilegedAccessException
-import no.nav.tms.varsel.authority.write.inaktiver.inaktiverBeskjedApi
+import no.nav.tms.varsel.authority.write.inaktiver.*
 import java.text.DateFormat
-
 
 fun Application.varselApi(
     readVarselRepository: ReadVarselRepository,
@@ -47,16 +42,8 @@ fun Application.varselApi(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is IllegalArgumentException -> {
-                    call.respondText(
-                        status = HttpStatusCode.BadRequest,
-                        text = cause.message ?: "Feil i parametre"
-                    )
 
-                    log.warn(cause.message, cause.stackTrace)
-                }
-
-                is UnprivilegedAccessException -> {
+                is UnprivilegedAccessException, is VarselNotFoundException -> {
                     call.respondText(
                         status = HttpStatusCode.Forbidden,
                         text = "feilaktig varselId"
@@ -70,6 +57,15 @@ fun Application.varselApi(
                     )
                 }
 
+                is IllegalArgumentException -> {
+                    call.respondText(
+                        status = HttpStatusCode.BadRequest,
+                        text = cause.message ?: "Feil i parametre"
+                    )
+
+                    log.warn(cause.message, cause.stackTrace)
+                }
+
                 else -> {
                     call.respond(HttpStatusCode.InternalServerError)
                     log.warn(cause.message, cause.stackTrace)
@@ -81,13 +77,12 @@ fun Application.varselApi(
 
 
     routing {
-        debugVarselApi(readVarselRepository)
         authenticate {
             inaktiverBeskjedApi(varselUpdater)
             brukerVarselApi(readVarselRepository)
         }
         authenticate(AzureAuthenticator.name) {
-            systemVarselApi(readVarselRepository)
+            saksbehandlerVarselApi(readVarselRepository)
         }
     }
 }

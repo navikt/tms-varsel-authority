@@ -1,10 +1,9 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
+import mu.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 internal class InaktiverVarselSink(
     rapidsConnection: RapidsConnection,
@@ -13,7 +12,7 @@ internal class InaktiverVarselSink(
 ) :
     River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger(InaktiverVarselSink::class.java)
+    private val log = KotlinLogging.logger {}
 
     init {
         River(rapidsConnection).apply {

@@ -7,10 +7,6 @@ import kotliquery.action.ListResultQueryAction
 import kotliquery.action.NullableResultQueryAction
 import kotliquery.sessionOf
 import kotliquery.using
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-val log: Logger = LoggerFactory.getLogger(Database::class.java)
 
 interface Database {
 

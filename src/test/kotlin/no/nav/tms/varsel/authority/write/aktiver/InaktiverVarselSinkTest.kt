@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.mockk
@@ -61,10 +62,10 @@ internal class InaktiverVarselSinkTest {
 
         val dbVarsel = repository.getVarsel(beskjedEvent.eventId)
 
-        dbVarsel shouldNotBe null
+        dbVarsel.shouldNotBeNull()
 
-        dbVarsel!!.aktiv shouldBe false
-        dbVarsel.inaktivert shouldNotBe null
+        dbVarsel.aktiv shouldBe false
+        dbVarsel.inaktivert.shouldNotBeNull()
 
         val outputJson = mockProducer.history()
             .map { it.value() }

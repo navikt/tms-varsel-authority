@@ -15,10 +15,12 @@ class BeskjedInaktiverer(
     suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         val varsel = varselRepository.getVarsel(varselId)
 
-        if (varsel == null || varsel.ident != ident) {
-            throw UnprivilegedAccessException("Beskjed inaktivert tilhører ikke bruker.")
+        if (varsel == null) {
+            throw VarselNotFoundException("Fant ikke varsel med id $varselId")
+        } else if (varsel.ident != ident) {
+            throw UnprivilegedAccessException("Kan ikke inaktivere beskjed med id $varselId. Tilhører annen bruker.")
         } else if (varsel.type != Beskjed) {
-            throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type $")
+            throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
         } else {
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
@@ -37,6 +39,8 @@ class BeskjedInaktiverer(
     }
 }
 
-class UnprivilegedAccessException(message: String): RuntimeException(message)
+class UnprivilegedAccessException(message: String): IllegalArgumentException(message)
 
-class InvalidVarselTypeException(message: String): RuntimeException(message)
+class InvalidVarselTypeException(message: String): IllegalArgumentException(message)
+
+class VarselNotFoundException(message: String): IllegalArgumentException(message)

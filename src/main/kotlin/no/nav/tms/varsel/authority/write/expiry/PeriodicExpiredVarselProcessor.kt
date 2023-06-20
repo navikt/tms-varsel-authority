@@ -1,23 +1,22 @@
 package no.nav.tms.varsel.authority.write.expiry
 
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.PeriodicJob
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class PeriodicExpiredVarselProcessor(
     private val expiredVarselRepository: ExpiredVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer,
-    private val leaderElection: LeaderElection,
+    private val leaderElection: PodLeaderElection,
     interval: Duration = Duration.ofMinutes(10)
 ) : PeriodicJob(interval) {
 
-    private val log: Logger = LoggerFactory.getLogger(PeriodicExpiredVarselProcessor::class.java)
+    private val log = KotlinLogging.logger { }
 
     override val job = initializeJob {
         if (leaderElection.isLeader()) {
@@ -27,10 +26,9 @@ class PeriodicExpiredVarselProcessor(
 
     fun updateExpiredVarsel() {
         try {
-            val expiredVarselList = expiredVarselRepository.getExpiredVarsel()
+            val expiredVarselList = expiredVarselRepository.updateExpiredVarsel()
 
             if (expiredVarselList.isNotEmpty()) {
-                expiredVarselRepository.setExpiredVarselInaktiv(expiredVarselList)
                 varselInaktivert(expiredVarselList)
                 log.info("Prosesserte ${expiredVarselList.size} utgåtte oppgaver.")
             } else {

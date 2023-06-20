@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.mockk
@@ -99,8 +100,8 @@ class EksternVarslingStatusSinkTest {
         testRapid.sendMessageAsJson(smsEvent)
 
         val status = varselRepository.getVarsel("111")?.eksternVarslingStatus
-        status shouldNotBe null
-        status!!.kanaler shouldContainExactlyInAnyOrder setOf("EPOST", "SMS")
+        status.shouldNotBeNull()
+        status.kanaler shouldContainExactlyInAnyOrder setOf("EPOST", "SMS")
 
         status.sendt shouldBe true
 
@@ -141,7 +142,7 @@ class EksternVarslingStatusSinkTest {
 
             val ferdigstilt = output.find { it["status"].textValue() == "sendt" }!!
             ferdigstilt["@event_name"].textValue() shouldBe "eksternStatusOppdatert"
-            ferdigstilt["eventId"].textValue() shouldBe "111"
+            ferdigstilt["varselId"].textValue() shouldBe "111"
             ferdigstilt["ident"].textValue() shouldBe "147"
             ferdigstilt["kanal"].textValue() shouldBe "SMS"
             ferdigstilt["renotifikasjon"].booleanValue() shouldBe false

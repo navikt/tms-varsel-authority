@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.write.expiry
 
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.varsel.authority.Produsent
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
@@ -9,44 +10,30 @@ import no.nav.tms.varsel.authority.VarselType
 
 class ExpiredVarselRepository(private val database: Database) {
 
-    fun getExpiredVarsel(): List<ExpiredVarsel> {
+    fun updateExpiredVarsel(): List<ExpiredVarsel> {
         return database.list {
-            queryOf("""
-                    select 
-                         varselId,
-                         type as varselType,
-                         produsent->>'namespace' as namespace,
-                         produsent->>'appnavn' as appnavn
-                    from varsel
+            queryOf(
+                """
+                    update varsel set 
+                        aktiv = false,
+                        inaktivert = :now,
+                        inaktivertAv = :frist
                     where
                         aktiv = true
                         and aktivFremTil < :now
-                """,
-                mapOf("now" to nowAtUtc())
-            )
-            .map(toExpiredVasel())
-            .asList
-        }
-    }
-
-    fun setExpiredVarselInaktiv(expiredVarsel: List<ExpiredVarsel>) {
-        database.update {
-            val varselIds = it.createArrayOf("VARCHAR", expiredVarsel.map { it.varselId })
-
-            queryOf("""
-                update varsel set 
-                    aktiv = false,
-                    inaktivert = :now,
-                    inaktivertAv = :frist
-                where
-                    varselId = any(:varselIds)
+                    returning
+                        varselId,
+                        type as varselType,
+                        produsent->>'namespace' as namespace,
+                        produsent->>'appnavn' as appnavn
                 """,
                 mapOf(
-                    "varselIds" to varselIds,
                     "now" to nowAtUtc(),
                     "frist" to Frist.lowercaseName
                 )
             )
+                .map(toExpiredVasel())
+                .asList
         }
     }
 
@@ -60,3 +47,11 @@ class ExpiredVarselRepository(private val database: Database) {
     }
 }
 
+data class ExpiredVarsel(
+    val varselId: String,
+    val varselType: VarselType,
+    val namespace: String,
+    val appnavn: String
+) {
+    val produsent get() = Produsent(namespace, appnavn)
+}

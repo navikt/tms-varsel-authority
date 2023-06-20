@@ -1,39 +1,24 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 class EksternVarslingOppdatertProducer(private val kafkaProducer: Producer<String, String>,
                                        private val topicName: String
 ) {
-    val log: Logger = LoggerFactory.getLogger(Producer::class.java)
-    private val objectMapper = jacksonObjectMapper()
+    private val log = KotlinLogging.logger { }
+    private val objectMapper = defaultObjectMapper()
 
     fun eksternStatusOppdatert(oppdatering: EksternStatusOppdatering) {
 
-        val objectNode = objectMapper.createObjectNode()
-        objectNode.put("@event_name", "eksternStatusOppdatert")
-        objectNode.put("@source", "varsel-authority")
-        objectNode.put("status", oppdatering.status.lowercaseName)
-        objectNode.put("eventId", oppdatering.varselId)
-        objectNode.put("ident", oppdatering.ident)
-        objectNode.put("varselType", oppdatering.varselType.lowercaseName)
-        objectNode.put("namespace", oppdatering.namespace)
-        objectNode.put("appnavn", oppdatering.appnavn)
-        objectNode.put("tidspunkt", nowAtUtc().toString())
-
-        if (oppdatering.status == EksternStatus.Sendt) {
-            objectNode.put("kanal", oppdatering.kanal)
-            objectNode.put("renotifikasjon", oppdatering.renotifikasjon)
-        }
-
-        val producerRecord = ProducerRecord(topicName, oppdatering.varselId, objectNode.toString())
+        val producerRecord = ProducerRecord(topicName, oppdatering.varselId, objectMapper.writeValueAsString(oppdatering))
 
         kafkaProducer.send(producerRecord)
     }
@@ -58,4 +43,8 @@ data class EksternStatusOppdatering(
     val appnavn: String,
     val kanal: String?,
     val renotifikasjon: Boolean?
-)
+) {
+    @JsonProperty("@event_name") val eventName = "eksternStatusOppdatert"
+    @JsonProperty("@source") val source = "varsel-authority"
+    val tidspunkt = nowAtUtc()
+}

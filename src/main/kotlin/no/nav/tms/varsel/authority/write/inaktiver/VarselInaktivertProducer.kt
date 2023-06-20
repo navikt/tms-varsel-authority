@@ -1,36 +1,25 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.time.ZonedDateTime
 
 class VarselInaktivertProducer(
     private val kafkaProducer: Producer<String, String>,
     private val topicName: String,
 ) {
-    val log: Logger = LoggerFactory.getLogger(Producer::class.java)
+    private val log = KotlinLogging.logger {}
 
-    private val objectMapper = jacksonMapperBuilder()
-        .addModule(JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .build()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    private val objectMapper = defaultObjectMapper()
 
     fun varselInaktivert(hendelse: VarselInaktivertHendelse) {
 
-        val producerRecord = ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse))
-
-        kafkaProducer.send(producerRecord)
+        kafkaProducer.send(ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse)))
     }
 
     fun flushAndClose() {

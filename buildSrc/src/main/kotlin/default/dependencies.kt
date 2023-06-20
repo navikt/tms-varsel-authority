@@ -157,7 +157,7 @@ interface KotestDefaults: DependencyGroup {
 
 interface KotlinDefaults: DependencyGroup {
     override val groupId get() = "org.jetbrains.kotlin"
-    override val version get() = "1.6.10"
+    override val version get() = "1.8.21"
 
     val reflect get() = dependency("kotlin-reflect")
 }
@@ -208,7 +208,7 @@ interface KtorDefaults: DependencyGroup {
 }
 
 object Ktor2Defaults {
-    val version get() = "2.1.1"
+    val version get() = "2.3.0"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
@@ -337,7 +337,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsKtorTokenSupportDefaults: DependencyGroup {
     override val groupId get() = "com.github.navikt.tms-ktor-token-support"
-    override val version get() = "2.0.0"
+    override val version get() = "2.1.3"
 
     val authenticationInstaller get() = dependency("token-support-authentication-installer")
     val azureExchange get() = dependency("token-support-azure-exchange")

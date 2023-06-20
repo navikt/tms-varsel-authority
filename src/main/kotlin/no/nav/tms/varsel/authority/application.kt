@@ -14,7 +14,7 @@ import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.migrate.*
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
@@ -64,7 +64,7 @@ private fun startRapid(environment: Environment, database: Database) {
         topicName = environment.internalVarselTopic,
     )
 
-    val leaderElection = LeaderElection()
+    val leaderElection = PodLeaderElection()
 
     val expiredVarselRepository = ExpiredVarselRepository(database)
     val periodicExpiredVarselProcessor =
@@ -133,6 +133,7 @@ private fun startRapid(environment: Environment, database: Database) {
                     varselInaktivertProducer.flushAndClose()
                     varselAktivertProducer.flushAndClose()
                     varselArkivertProducer.flushAndClose()
+                    eksternVarslingOppdatertProducer.flushAndClose()
                 }
             }
         })

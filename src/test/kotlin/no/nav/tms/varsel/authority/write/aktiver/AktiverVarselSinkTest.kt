@@ -2,6 +2,8 @@ package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import io.kotest.assertions.show.show
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotliquery.queryOf
@@ -53,9 +55,9 @@ internal class AktiverVarselSinkTest {
 
         val dbVarsel = repository.getVarsel(beskjedEvent.eventId)
 
-        dbVarsel shouldNotBe null
+        dbVarsel.shouldNotBeNull()
 
-        dbVarsel!!.type.lowercaseName shouldBe beskjedEvent.eventName
+        dbVarsel.type.lowercaseName shouldBe beskjedEvent.eventName
         dbVarsel.aktiv shouldBe true
         dbVarsel.ident shouldBe beskjedEvent.fodselsnummer
         dbVarsel.produsent.namespace shouldBe beskjedEvent.namespace

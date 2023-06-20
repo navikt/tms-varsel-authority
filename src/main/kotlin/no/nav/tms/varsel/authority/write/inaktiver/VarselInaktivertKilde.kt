@@ -13,7 +13,7 @@ enum class VarselInaktivertKilde {
             return values().filter { it.lowercaseName == string.lowercase() }
                 .takeIf { it.size == 1 }
                 ?.first()
-                ?: throw RuntimeException("No VarselInaktivertKilde enum matches $string")
+                ?: throw IllegalArgumentException("No VarselInaktivertKilde enum matches $string")
         }
     }
 }

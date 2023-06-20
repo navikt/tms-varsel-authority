@@ -25,12 +25,12 @@ class EksternVarslingStatusUpdater(
             return
         }
 
-        val currentStatus = varsel.eksternVarslingStatus ?: initializeEksternVarsling()
+        val currentStatus = varsel.eksternVarslingStatus ?: emptyEksternVarsling()
 
         updateExistingStatus(statusEvent, currentStatus, varsel)
     }
 
-    private fun initializeEksternVarsling() = EksternVarslingStatus(
+    private fun emptyEksternVarsling() = EksternVarslingStatus(
         sendt = false,
         renotifikasjonSendt = false,
         kanaler = emptyList(),

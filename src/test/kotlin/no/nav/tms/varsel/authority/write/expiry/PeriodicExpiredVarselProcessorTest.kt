@@ -10,7 +10,7 @@ import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +23,7 @@ internal class PeriodicExpiredVarselProcessorTest {
     private val varselRepository = WriteVarselRepository(database)
 
     private val varselInaktivertProducer = mockk<VarselInaktivertProducer>(relaxed = true)
-    private val leaderElection = mockk<LeaderElection>(relaxed = true)
+    private val leaderElection = mockk<PodLeaderElection>(relaxed = true)
 
     private val expiredVarselRepository = ExpiredVarselRepository(database)
     private val expiredVarselProcessor =

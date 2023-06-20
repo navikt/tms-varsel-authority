@@ -16,7 +16,7 @@ import java.text.DateFormat
 import java.time.Instant
 import java.time.ZonedDateTime
 
-class LeaderElection(
+class PodLeaderElection(
     private val electionPath: String = getElectionUrl(),
     private val podName: String = InetAddress.getLocalHost().hostName,
     private val queryIntervalSeconds: Long = 60L
@@ -51,13 +51,13 @@ class LeaderElection(
         previousQuery = Instant.now()
     }
 
-    private fun shouldQueryForLeader(): Boolean {
-        return if(previousQuery == null) {
+    private fun shouldQueryForLeader() =
+        if(previousQuery == null) {
             true
         } else {
             (Instant.now().epochSecond - previousQuery!!.epochSecond) > queryIntervalSeconds
         }
-    }
+
 
     companion object {
         private fun getElectionUrl(): String {

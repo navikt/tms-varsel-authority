@@ -5,14 +5,11 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.*
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
 
 class VarselAktivertProducer(
@@ -20,7 +17,7 @@ class VarselAktivertProducer(
     private val topicName: String
 ) {
 
-    private val log: Logger = LoggerFactory.getLogger(Producer::class.java)
+    private val log = KotlinLogging.logger { }
 
     private val objectMapper = jacksonMapperBuilder()
         .addModule(JavaTimeModule())

@@ -4,7 +4,7 @@ import mu.KotlinLogging
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
 import no.nav.tms.varsel.authority.common.PeriodicJob
-import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import org.postgresql.util.PSQLException
 import java.time.Duration
 import java.time.Instant
@@ -13,7 +13,7 @@ import java.time.ZonedDateTime
 class PeriodicVarselMigrator(
     private val migrationRepository: MigrationRepository,
     private val siphonConsumer: SiphonConsumer,
-    private val leaderElection: LeaderElection,
+    private val leaderElection: PodLeaderElection,
     upperDateThreshold: String,
     private val batchSize: Int = 1000,
     interval: Duration = Duration.ofSeconds(1)

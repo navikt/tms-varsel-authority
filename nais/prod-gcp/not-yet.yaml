@@ -64,8 +64,6 @@ spec:
   env:
     - name: ARCHIVING_THRESHOLD
       value: "365"
-    - name: INTERNAL_RAPID_TOPIC
-      value: "min-side.brukervarsel-v1"
     - name: KAFKA_GROUP_ID
       value: "varsel-authority-001"
     - name: VARSEL_SIPHON_CLIENT_ID

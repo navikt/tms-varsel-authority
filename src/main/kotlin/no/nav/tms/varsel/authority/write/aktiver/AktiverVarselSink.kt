@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.databind.JsonNode
+import mu.KotlinLogging
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -11,8 +12,6 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asOptionalZonedDat
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import org.postgresql.util.PSQLException
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 internal class AktiverVarselSink(
     rapidsConnection: RapidsConnection,
@@ -21,7 +20,7 @@ internal class AktiverVarselSink(
 ) :
     River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger(AktiverVarselSink::class.java)
+    private val log = KotlinLogging.logger { }
 
     init {
         River(rapidsConnection).apply {
@@ -108,7 +107,7 @@ internal class AktiverVarselSink(
         return when(intValue()) {
             3 -> Sensitivitet.Substantial
             4 -> Sensitivitet.High
-            else -> throw RuntimeException("Feil verdi for 'sikkerhetsnivaa': ${textValue()}")
+            else -> throw IllegalArgumentException("Feil verdi for 'sikkerhetsnivaa': ${textValue()}")
         }
     }
 

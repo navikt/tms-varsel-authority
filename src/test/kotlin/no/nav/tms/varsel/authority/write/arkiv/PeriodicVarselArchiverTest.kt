@@ -12,8 +12,7 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.config.LeaderElection
-import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -28,7 +27,7 @@ internal class PeriodicVarselArchiverTest {
 
     private val database = LocalPostgresDatabase.cleanDb()
     private val archiveRepository = VarselArkivRepository(database)
-    private val leaderElection: LeaderElection = mockk()
+    private val leaderElection: PodLeaderElection = mockk()
 
     private val testRepository = ArchiveTestRepository(database)
 

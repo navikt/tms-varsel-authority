@@ -1,11 +1,9 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import com.fasterxml.jackson.databind.JsonNode
-import kotlinx.coroutines.runBlocking
+import mu.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 internal class EksternVarslingStatusSink(
     rapidsConnection: RapidsConnection,
@@ -13,7 +11,7 @@ internal class EksternVarslingStatusSink(
 ) :
     River.PacketListener {
 
-    private val log: Logger = LoggerFactory.getLogger(EksternVarslingStatusSink::class.java)
+    private val log = KotlinLogging.logger { }
 
     init {
         River(rapidsConnection).apply {
@@ -42,10 +40,8 @@ internal class EksternVarslingStatusSink(
             tidspunkt = packet["tidspunkt"].asZonedDateTime()
         )
 
-        runBlocking {
-            eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
-            log.info("Behandlet eksternVarslingStatus fra rapid med eventid ${eksternVarslingStatus.eventId}")
-        }
+        eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
+        log.info("Behandlet eksternVarslingStatus fra rapid med eventid ${eksternVarslingStatus.eventId}")
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {

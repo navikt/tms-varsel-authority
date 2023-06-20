@@ -2,6 +2,8 @@ package no.nav.tms.varsel.authority.read
 
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.varsel.authority.Innhold
+import no.nav.tms.varsel.authority.Sensitivitet
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.common.json
@@ -11,7 +13,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
 
-    fun getVarselForUserAbbreviated(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
+    fun getVarselSammendragForUser(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
         return database.list {
             queryOf("""
                 select
@@ -36,7 +38,7 @@ class ReadVarselRepository(private val database: Database) {
         }
     }
 
-    fun getVarselForUserFull(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
+    fun getDetaljertVarselForUser(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
         return database.list {
             queryOf("""
                 select
@@ -66,15 +68,16 @@ class ReadVarselRepository(private val database: Database) {
             type = it.string("type"),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
-            tekst = it.string("tekst"),
-            link = it.string("link"),
-            sikkerhetsnivaa = it.int("sikkerhetsnivaa"),
+            innhold = Innhold(
+                tekst = it.string("tekst"),
+                link = it.stringOrNull("link")
+            ),
+            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
             eksternVarslingKanaler = it.json("eksternVarslingKanaler", objectMapper),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
-            inaktivert = it.zonedDateTimeOrNull("inaktivert"),
-            fristUtløpt = it.stringOrNull("inaktivertAv") ?.let { kilde -> kilde == Frist.lowercaseName }
+            inaktivert = it.zonedDateTimeOrNull("inaktivert")
         )
     }
 
@@ -84,9 +87,11 @@ class ReadVarselRepository(private val database: Database) {
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             produsent = it.json("produsent", objectMapper),
-            tekst = it.string("tekst"),
-            link = it.string("link"),
-            sikkerhetsnivaa = it.int("sikkerhetsnivaa"),
+            innhold = Innhold(
+                tekst = it.string("tekst"),
+                link = it.stringOrNull("link")
+            ),
+            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarsling = it.json("eksternVarsling", objectMapper),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),

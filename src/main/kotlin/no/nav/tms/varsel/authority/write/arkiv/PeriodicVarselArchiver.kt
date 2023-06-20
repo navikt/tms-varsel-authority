@@ -3,7 +3,7 @@ package no.nav.tms.varsel.authority.write.arkiv
 import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.PeriodicJob
-import no.nav.tms.varsel.authority.config.LeaderElection
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import java.time.Duration
 
@@ -11,7 +11,7 @@ class PeriodicVarselArchiver(
     private val varselArchivingRepository: VarselArkivRepository,
     private val varselArkivertProducer: VarselArkivertProducer,
     private val ageThresholdDays: Int,
-    private val leaderElection: LeaderElection,
+    private val leaderElection: PodLeaderElection,
     interval: Duration = Duration.ofSeconds(10)
 ): PeriodicJob(interval) {
 

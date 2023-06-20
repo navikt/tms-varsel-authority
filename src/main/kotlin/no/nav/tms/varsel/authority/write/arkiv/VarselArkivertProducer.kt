@@ -1,20 +1,19 @@
 package no.nav.tms.varsel.authority.write.arkiv
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.VarselType
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
 
 class VarselArkivertProducer(
     private val kafkaProducer: Producer<String, String>,
     private val topicName: String
 ) {
-    val log: Logger = LoggerFactory.getLogger(Producer::class.java)
+    private val log = KotlinLogging.logger { }
 
     private val objectMapper = defaultObjectMapper()
 

@@ -14,7 +14,7 @@ class LocalPostgresDatabase private constructor() : Database {
     companion object {
         private val instance by lazy {
             LocalPostgresDatabase().also {
-                it.migrate()
+                it.migrate(expectedMigrations = 1)
             }
         }
 
@@ -42,12 +42,13 @@ class LocalPostgresDatabase private constructor() : Database {
         }
     }
 
-    private fun migrate() {
+    private fun migrate(expectedMigrations: Int) {
         Flyway.configure()
             .connectRetries(3)
             .dataSource(dataSource)
             .load()
             .migrate()
+            .let { assert(it == expectedMigrations) }
     }
 }
 
