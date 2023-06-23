@@ -21,6 +21,7 @@ class ReadVarselRepository(private val database: Database) {
                   type,
                   aktiv,
                   innhold,
+                  sensitivitet,
                   eksternVarslingStatus -> 'sendt' as eksternVarslingSendt,
                   eksternVarslingStatus -> 'kanaler' as eksternVarslingKanaler,
                   opprettet,
@@ -47,6 +48,7 @@ class ReadVarselRepository(private val database: Database) {
                   aktiv,
                   produsent,
                   innhold,
+                  sensitivitet,
                   eksternVarslingStatus,
                   opprettet,
                   aktivFremTil,
@@ -65,13 +67,10 @@ class ReadVarselRepository(private val database: Database) {
 
     private fun toVarselsammendrag(): (Row) -> Varselsammendrag = {
         Varselsammendrag(
-            type = it.string("type"),
+            type = it.string("type").let(VarselType::parse),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
-            innhold = Innhold(
-                tekst = it.string("tekst"),
-                link = it.stringOrNull("link")
-            ),
+            innhold = it.json("innhold", objectMapper),
             sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
             eksternVarslingKanaler = it.json("eksternVarslingKanaler", objectMapper),
@@ -83,19 +82,16 @@ class ReadVarselRepository(private val database: Database) {
 
     private fun toDetaljertVarsel(): (Row) -> DetaljertVarsel = {
         DetaljertVarsel(
-            type = it.string("type"),
+            type = it.string("type").let(VarselType::parse),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             produsent = it.json("produsent", objectMapper),
-            innhold = Innhold(
-                tekst = it.string("tekst"),
-                link = it.stringOrNull("link")
-            ),
+            innhold = it.json("innhold", objectMapper),
             sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
-            eksternVarsling = it.json("eksternVarsling", objectMapper),
+            eksternVarsling = it.json("eksternVarslingStatus", objectMapper),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
-            inaktivert = it.zonedDateTime("inaktivert"),
+            inaktivert = it.zonedDateTimeOrNull("inaktivert"),
             inaktivertAv = it.stringOrNull("inaktivertAv")
         )
     }

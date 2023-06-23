@@ -20,6 +20,9 @@ class LocalPostgresDatabase private constructor() : Database {
 
         fun cleanDb(): LocalPostgresDatabase {
             instance.update { queryOf("delete from varsel") }
+            instance.update { queryOf("delete from varsel_arkiv") }
+            instance.update { queryOf("delete from varsel_migration_log") }
+            instance.update { queryOf("delete from arkivert_varsel_migration_log") }
             return instance
         }
     }

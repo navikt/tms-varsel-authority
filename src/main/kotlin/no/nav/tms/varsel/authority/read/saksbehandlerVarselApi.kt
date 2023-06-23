@@ -21,51 +21,51 @@ fun Route.saksbehandlerVarselApi(readRepository: ReadVarselRepository) {
         call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv))
     }
 
-    get("/system/varsel/all") {
+    get("/varsel/detaljert/alle") {
         fetchVarslerAndRespond(ident = call.request.identHeader)
     }
 
-    get("/system/varsel/aktive") {
+    get("/varsel/detaljert/aktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, aktiv = true)
     }
 
-    get("/system/varsel/inaktive") {
+    get("/varsel/detaljert/inaktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, aktiv = false)
     }
 
-    get("/system/beskjed/all") {
+    get("/beskjed/detaljert/alle") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed)
     }
 
-    get("/system/beskjed/aktive") {
+    get("/beskjed/detaljert/aktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed, aktiv = true)
     }
 
-    get("/system/beskjed/inaktive") {
+    get("/beskjed/detaljert/inaktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed, aktiv = false)
     }
 
-    get("/system/oppgave/all") {
+    get("/oppgave/detaljert/alle") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave)
     }
 
-    get("/system/oppgave/aktive") {
+    get("/oppgave/detaljert/aktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave, aktiv = true)
     }
 
-    get("/system/oppgave/inaktive") {
+    get("/oppgave/detaljert/inaktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave, aktiv = false)
     }
 
-    get("/system/innboks/all") {
+    get("/innboks/detaljert/alle") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks)
     }
 
-    get("/system/innboks/aktive") {
+    get("/innboks/detaljert/aktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks, aktiv = true)
     }
 
-    get("/system/innboks/inaktive") {
+    get("/innboks/detaljert/inaktive") {
         fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks, aktiv = false)
     }
 }

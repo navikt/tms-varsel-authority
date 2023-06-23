@@ -23,7 +23,7 @@ import java.text.DateFormat
 
 fun Application.varselApi(
     readVarselRepository: ReadVarselRepository,
-    varselUpdater: BeskjedInaktiverer,
+    beskjedInaktiverer: BeskjedInaktiverer,
     installAuthenticatorsFunction: Application.() -> Unit = installAuth(),
 ) {
 
@@ -78,7 +78,7 @@ fun Application.varselApi(
 
     routing {
         authenticate {
-            inaktiverBeskjedApi(varselUpdater)
+            inaktiverBeskjedApi(beskjedInaktiverer)
             brukerVarselApi(readVarselRepository)
         }
         authenticate(AzureAuthenticator.name) {

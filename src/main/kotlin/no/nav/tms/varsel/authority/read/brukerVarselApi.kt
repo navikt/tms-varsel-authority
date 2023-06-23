@@ -6,67 +6,87 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
+import no.nav.tms.token.support.tokenx.validation.user.TokenXUser
 import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
+import no.nav.tms.varsel.authority.Sensitivitet
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
 
 fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
-        ident: String,
+        user: TokenXUser,
         type: VarselType? = null,
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
-        call.respond(readRepository.getVarselSammendragForUser(ident, type = type, aktiv = aktiv))
+
+        val varsler = if (loaIsLowerThanHigh(user)) {
+            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv).maskInnhold()
+        } else {
+            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
+        }
+
+        call.respond(varsler)
     }
 
-    get("/varsel/all") {
-        fetchVarslerAndRespond(ident = call.ident)
+    get("/varsel/sammendrag/alle") {
+        fetchVarslerAndRespond(user = call.user)
     }
 
-    get("/varsel/aktive") {
-        fetchVarslerAndRespond(ident = call.ident, aktiv = true)
+    get("/varsel/sammendrag/aktive") {
+        fetchVarslerAndRespond(user = call.user, aktiv = true)
     }
 
-    get("/varsel/inaktive") {
-        fetchVarslerAndRespond(ident = call.ident, aktiv = false)
+    get("/varsel/sammendrag/inaktive") {
+        fetchVarslerAndRespond(user = call.user, aktiv = false)
     }
 
-    get("/beskjed/all") {
-        fetchVarslerAndRespond(ident = call.ident, type = Beskjed)
+    get("/beskjed/sammendrag/alle") {
+        fetchVarslerAndRespond(user = call.user, type = Beskjed)
     }
 
-    get("/beskjed/aktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Beskjed, aktiv = true)
+    get("/beskjed/sammendrag/aktive") {
+        fetchVarslerAndRespond(user = call.user, type = Beskjed, aktiv = true)
     }
 
-    get("/beskjed/inaktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Beskjed, aktiv = false)
+    get("/beskjed/sammendrag/inaktive") {
+        fetchVarslerAndRespond(user = call.user, type = Beskjed, aktiv = false)
     }
 
-    get("/oppgave/all") {
-        fetchVarslerAndRespond(ident = call.ident, type = Oppgave)
+    get("/oppgave/sammendrag/alle") {
+        fetchVarslerAndRespond(user = call.user, type = Oppgave)
     }
 
-    get("/oppgave/aktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Oppgave, aktiv = true)
+    get("/oppgave/sammendrag/aktive") {
+        fetchVarslerAndRespond(user = call.user, type = Oppgave, aktiv = true)
     }
 
-    get("/oppgave/inaktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Oppgave, aktiv = false)
+    get("/oppgave/sammendrag/inaktive") {
+        fetchVarslerAndRespond(user = call.user, type = Oppgave, aktiv = false)
     }
 
-    get("/innboks/all") {
-        fetchVarslerAndRespond(ident = call.ident, type = Innboks)
+    get("/innboks/sammendrag/alle") {
+        fetchVarslerAndRespond(user = call.user, type = Innboks)
     }
 
-    get("/innboks/aktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Innboks, aktiv = true)
+    get("/innboks/sammendrag/aktive") {
+        fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = true)
     }
 
-    get("/innboks/inaktive") {
-        fetchVarslerAndRespond(ident = call.ident, type = Innboks, aktiv = false)
+    get("/innboks/sammendrag/inaktive") {
+        fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = false)
     }
 }
 
-private val ApplicationCall.ident get() = TokenXUserFactory.createTokenXUser(this).ident
+private val ApplicationCall.user get() = TokenXUserFactory.createTokenXUser(this)
+
+private fun loaIsLowerThanHigh(user: TokenXUser) = user.levelOfAssurance != LevelOfAssurance.HIGH
+
+private fun List<Varselsammendrag>.maskInnhold() = map { varsel ->
+    if (varsel.sensitivitet == Sensitivitet.High) {
+        varsel.copy(innhold = null)
+    } else {
+        varsel.copy()
+    }
+}
