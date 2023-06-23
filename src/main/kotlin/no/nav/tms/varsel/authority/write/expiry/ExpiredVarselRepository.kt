@@ -7,10 +7,18 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.VarselType
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class ExpiredVarselRepository(private val database: Database) {
 
-    fun updateExpiredVarsel(): List<ExpiredVarsel> {
+    private val epoch = ZonedDateTime.ofInstant(Instant.EPOCH, ZoneId.of("UTC"))
+
+    fun updateAllTimeExpired() = updateExpiredVarsel(epoch)
+    fun updateExpiredPastHour() = updateExpiredVarsel(nowAtUtc().minusHours(1))
+
+    private fun updateExpiredVarsel(checkFromDate: ZonedDateTime): List<ExpiredVarsel> {
         return database.list {
             queryOf(
                 """
@@ -20,7 +28,7 @@ class ExpiredVarselRepository(private val database: Database) {
                         inaktivertAv = :frist
                     where
                         aktiv = true
-                        and aktivFremTil < :now
+                        and aktivFremTil between :startDate and :now
                     returning
                         varselId,
                         type as varselType,
@@ -28,6 +36,7 @@ class ExpiredVarselRepository(private val database: Database) {
                         produsent->>'appnavn' as appnavn
                 """,
                 mapOf(
+                    "startDate" to checkFromDate,
                     "now" to nowAtUtc(),
                     "frist" to Frist.lowercaseName
                 )

@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.write.expiry
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotliquery.queryOf
@@ -15,6 +16,8 @@ import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 internal class PeriodicExpiredVarselProcessorTest {
@@ -87,6 +90,26 @@ internal class PeriodicExpiredVarselProcessorTest {
 
 
         verify(exactly = 1) { varselInaktivertProducer.varselInaktivert(any()) }
+    }
+
+    @Test
+    fun `behandler alle varsler hver n-te iterasjon`() {
+        val repository = mockk<ExpiredVarselRepository>()
+
+        every { repository.updateAllTimeExpired() } returns emptyList()
+        every { repository.updateExpiredPastHour() } returns emptyList()
+
+        val processor = PeriodicExpiredVarselProcessor(repository, mockk(relaxed = true), mockk(relaxed = true), iterationsPerCycle = 5)
+
+        processor.updateExpiredVarsel()
+        processor.updateExpiredVarsel()
+        processor.updateExpiredVarsel()
+        processor.updateExpiredVarsel()
+        processor.updateExpiredVarsel()
+        processor.updateExpiredVarsel()
+
+        verify(exactly = 2) { repository.updateAllTimeExpired() }
+        verify(exactly = 4) { repository.updateExpiredPastHour() }
     }
 }
 
