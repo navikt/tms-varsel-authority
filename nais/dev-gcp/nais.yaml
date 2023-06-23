@@ -59,9 +59,8 @@ spec:
         - application: tms-varsel-siphon
     inbound:
       rules:
-        - application: tms-varselbjelle-api
-        - application: tms-min-side-proxy
         - application: tms-event-api
+        - application: tms-varsel-api
   env:
     - name: ARCHIVING_THRESHOLD
       value: "365"
