@@ -1,0 +1,72 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: tms-varsel-authority
+  namespace: min-side
+  labels:
+    team: min-side
+spec:
+  image: {{version}}
+  port: 8080
+  liveness:
+    path: /isalive
+    initialDelay: 30
+  readiness:
+    path: /isready
+    initialDelay: 30
+  prometheus:
+    enabled: true
+    path: /metrics
+  replicas:
+    min: 2
+    max: 4
+    cpuThresholdPercentage: 50
+  leaderElection: true
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2400Mi
+    requests:
+      cpu: "100m"
+      memory: 256Mi
+  gcp:
+    sqlInstances:
+      - name: brukervarsler
+        type: POSTGRES_14
+        tier: db-f1-micro
+        diskType: SSD
+        highAvailability: false
+        diskSize: 10
+        diskAutoresize: true
+        autoBackupTime: "03:00"
+        databases:
+          - name: brukervarsler
+            envVarPrefix: DB
+        maintenanceWindow:
+          day: 1
+          hour: 4
+        cascadingDelete: false
+  kafka:
+    pool: nav-dev
+  tokenx:
+    enabled: true
+  azure:
+    application:
+      enabled: true
+  accessPolicy:
+    outbound:
+      rules:
+        - application: tms-varsel-siphon
+    inbound:
+      rules:
+        - application: tms-event-api
+        - application: tms-varsel-api
+  env:
+    - name: ARCHIVING_THRESHOLD
+      value: "365"
+    - name: KAFKA_GROUP_ID
+      value: "varsel-authority-008"
+    - name: VARSEL_SIPHON_CLIENT_ID
+      value: "dev-gcp.min-side.tms-varsel-siphon"
+    - name: MIGRATION_THRESHOLD_DATE
+      value: "2023-06-05"
