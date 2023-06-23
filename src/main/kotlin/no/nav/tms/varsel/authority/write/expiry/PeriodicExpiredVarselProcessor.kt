@@ -41,7 +41,7 @@ class PeriodicExpiredVarselProcessor(
 
             if (expiredVarselList.isNotEmpty()) {
                 varselInaktivert(expiredVarselList)
-                log.info("Prosesserte ${expiredVarselList.size} utgåtte oppgaver.")
+                log.info("Prosesserte ${expiredVarselList.size} utgåtte varsler.")
             } else {
                 log.info("Ingen varsler har utgått siden forrige sjekk.")
             }
