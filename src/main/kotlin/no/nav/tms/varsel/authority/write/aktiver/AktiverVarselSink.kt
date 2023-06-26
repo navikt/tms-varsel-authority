@@ -9,7 +9,7 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.helse.rapids_rivers.River
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asOptionalZonedDateTime
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import org.postgresql.util.PSQLException
 
@@ -58,7 +58,7 @@ internal class AktiverVarselSink(
             produsent = unpackProdusent(packet),
             eksternVarslingBestilling = unpackEksternVarslingBestilling(packet),
             aktiv = true,
-            opprettet = nowAtUtc(),
+            opprettet = packet["forstBehandlet"].asZonedDateTime(),
             aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime()
         )
 

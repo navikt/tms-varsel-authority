@@ -65,8 +65,8 @@ spec:
     - name: ARCHIVING_THRESHOLD
       value: "365"
     - name: KAFKA_GROUP_ID
-      value: "varsel-authority-001"
+      value: "varsel-authority-002"
     - name: VARSEL_SIPHON_CLIENT_ID
       value: "prod-gcp.min-side.tms-varsel-siphon"
     - name: MIGRATION_THRESHOLD_DATE
-      value: "2023-06-10"
+      value: "2023-06-14"
