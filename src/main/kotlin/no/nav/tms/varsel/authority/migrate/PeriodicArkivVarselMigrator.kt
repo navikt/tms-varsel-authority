@@ -63,7 +63,7 @@ class PeriodicArkivVarselMigrator(
         MigrationMetricsReporter.registerArkivertVarselMigrert(type, count, duplicates)
         log.info("Migrerte $count arkiverte varsler av $type på $time ms. Forsøkt: ${varsler.size}. Duplikat: $duplicates")
 
-        if (count == 0) {
+        if (varsler.size < batchSize) {
             finalizeMigrationOfType(type)
         }
     }
