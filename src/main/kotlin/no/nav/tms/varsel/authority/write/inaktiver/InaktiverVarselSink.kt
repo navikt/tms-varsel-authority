@@ -26,7 +26,7 @@ internal class InaktiverVarselSink(
 
         val varsel = varselRepository.getVarsel(varselId)
 
-        if (varsel != null) {
+        if (varsel != null && varsel.aktiv) {
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent)
 
             VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent)

@@ -5,7 +5,7 @@ import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 
-internal class BeskjedInaktivertAvBrukerSink(
+class BeskjedInaktivertAvBrukerSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer
@@ -29,7 +29,7 @@ internal class BeskjedInaktivertAvBrukerSink(
 
         val varsel = varselRepository.getVarsel(varselId)
 
-        if (varsel != null) {
+        if (varsel != null && varsel.aktiv) {
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Bruker)
 
             VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Bruker)
