@@ -33,7 +33,7 @@ spec:
     sqlInstances:
       - name: brukervarsler
         type: POSTGRES_14
-        tier: db-custom-4-18432
+        tier: db-custom-4-24576
         diskType: SSD
         highAvailability: true
         diskSize: 50
