@@ -54,9 +54,6 @@ spec:
     application:
       enabled: true
   accessPolicy:
-    outbound:
-      rules:
-        - application: tms-varsel-siphon
     inbound:
       rules:
         - application: tms-event-api
@@ -66,7 +63,3 @@ spec:
       value: "365"
     - name: KAFKA_GROUP_ID
       value: "varsel-authority-01"
-    - name: VARSEL_SIPHON_CLIENT_ID
-      value: "prod-gcp.min-side.tms-varsel-siphon"
-    - name: MIGRATION_THRESHOLD_DATE
-      value: "2023-06-14"
