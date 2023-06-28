@@ -14,15 +14,13 @@ class LocalPostgresDatabase private constructor() : Database {
     companion object {
         private val instance by lazy {
             LocalPostgresDatabase().also {
-                it.migrate(expectedMigrations = 1)
+                it.migrate(expectedMigrations = 2)
             }
         }
 
         fun cleanDb(): LocalPostgresDatabase {
             instance.update { queryOf("delete from varsel") }
             instance.update { queryOf("delete from varsel_arkiv") }
-            instance.update { queryOf("delete from varsel_migration_log") }
-            instance.update { queryOf("delete from arkivert_varsel_migration_log") }
             return instance
         }
     }

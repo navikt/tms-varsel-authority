@@ -4,7 +4,6 @@ import kotlinx.coroutines.runBlocking
 import no.nav.helse.rapids_rivers.RapidApplication
 import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
 import no.nav.helse.rapids_rivers.RapidsConnection
-import no.nav.tms.token.support.azure.exchange.AzureServiceBuilder
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.config.Flyway
@@ -15,7 +14,6 @@ import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.PodLeaderElection
-import no.nav.tms.varsel.authority.migrate.*
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
@@ -83,12 +81,6 @@ private fun startRapid(environment: Environment, database: Database) {
     val writeVarselRepository = WriteVarselRepository(database)
     val beskjedService = BeskjedInaktiverer(writeVarselRepository, varselInaktivertProducer)
 
-    val azureService = AzureServiceBuilder.buildAzureService()
-    val siphonConsumer = SiphonConsumer(environment.varselSiphonClientId, azureService)
-    val migrationRepository = MigrationRepository(database)
-    val periodicVarselMigrator = PeriodicVarselMigrator(migrationRepository, siphonConsumer, leaderElection, environment.migrationThresholdDate)
-    val periodicArkivVarselMigrator = PeriodicArkivVarselMigrator(migrationRepository, siphonConsumer, leaderElection, environment.migrationThresholdDate)
-
     RapidApplication.Builder(fromEnv(environment.rapidConfig))
         .withKtorModule {
             varselApi(
@@ -120,16 +112,12 @@ private fun startRapid(environment: Environment, database: Database) {
                 Flyway.runFlywayMigrations(environment)
                 periodicExpiredVarselProcessor.start()
                 varselArchiver.start()
-                periodicVarselMigrator.start()
-                periodicArkivVarselMigrator.start()
             }
 
             override fun onShutdown(rapidsConnection: RapidsConnection) {
                 runBlocking {
                     periodicExpiredVarselProcessor.stop()
                     varselArchiver.stop()
-                    periodicVarselMigrator.stop()
-                    periodicArkivVarselMigrator.stop()
                     varselInaktivertProducer.flushAndClose()
                     varselAktivertProducer.flushAndClose()
                     varselArkivertProducer.flushAndClose()
