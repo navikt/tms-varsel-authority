@@ -15,6 +15,7 @@ import io.ktor.util.*
 import no.nav.tms.token.support.authentication.installer.mock.installMockedAuthenticators
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.Sensitivitet.High
 import no.nav.tms.varsel.authority.Sensitivitet.Substantial
@@ -56,7 +57,7 @@ class BrukerVarselApiTest {
     fun `henter varsler for bruker`() = testVarselApi(userIdent = ident){  client ->
         val annenIdent = "456"
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
+        val beskjed = dbVarsel(type = Beskjed, ident = ident, innhold = Innhold("Tekst uten lenke", null))
         val oppgave = dbVarsel(type = Oppgave, ident = ident)
         val innboks = dbVarsel(type = Innboks, ident = ident)
         val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)

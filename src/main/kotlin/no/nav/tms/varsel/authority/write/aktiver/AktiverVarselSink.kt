@@ -86,7 +86,7 @@ internal class AktiverVarselSink(
     private fun unpackVarsel(packet: JsonMessage): Innhold {
         return Innhold(
             tekst = packet["tekst"].textValue(),
-            link = packet["link"].textValue()
+            link = packet["link"].textValue().let { it.ifBlank { null } }
         )
     }
 

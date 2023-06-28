@@ -48,7 +48,7 @@ internal class AktiverVarselSinkTest {
     }
 
     @Test
-    fun test() {
+    fun `aktiverer varsler`() {
         val beskjedEvent = aktiverVarselEvent("beskjed", "123")
 
         testRapid.sendTestMessage(beskjedEvent.toJson())
@@ -58,6 +58,8 @@ internal class AktiverVarselSinkTest {
         dbVarsel.shouldNotBeNull()
 
         dbVarsel.type.lowercaseName shouldBe beskjedEvent.eventName
+        dbVarsel.innhold.tekst shouldBe beskjedEvent.tekst
+        dbVarsel.innhold.link shouldBe beskjedEvent.link
         dbVarsel.aktiv shouldBe true
         dbVarsel.ident shouldBe beskjedEvent.fodselsnummer
         dbVarsel.produsent.namespace shouldBe beskjedEvent.namespace
@@ -71,5 +73,30 @@ internal class AktiverVarselSinkTest {
 
         varselAktivert["varselId"].asText() shouldBe beskjedEvent.eventId
         varselAktivert["type"].asText() shouldBe "beskjed"
+        varselAktivert["innhold"]["tekst"].asText() shouldBe beskjedEvent.tekst
+        varselAktivert["innhold"]["link"].asText() shouldBe beskjedEvent.link
+    }
+
+    @Test
+    fun `blank link tolkes som null`() {
+        val beskjedEvent = aktiverVarselEvent("beskjed", "123", link = "")
+
+        testRapid.sendTestMessage(beskjedEvent.toJson())
+
+        val dbVarsel = repository.getVarsel(beskjedEvent.eventId)
+
+        dbVarsel.shouldNotBeNull()
+
+        dbVarsel.innhold.link shouldNotBe beskjedEvent.link
+        dbVarsel.innhold.link shouldBe null
+
+        val varselAktivert = mockProducer.history()
+            .first()
+            .value()
+            .let { objectMapper.readTree(it) }
+
+        varselAktivert["varselId"].asText() shouldBe beskjedEvent.eventId
+        varselAktivert["type"].asText() shouldBe "beskjed"
+        varselAktivert["innhold"]["link"].isNull shouldBe true
     }
 }
