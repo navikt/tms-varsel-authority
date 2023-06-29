@@ -2,8 +2,8 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mu.KotlinLogging
 import no.nav.tms.varsel.authority.VarselType.Beskjed
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -12,6 +12,8 @@ class BeskjedInaktiverer(
     private val varselRepository: WriteVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer
 ) {
+    private val log = KotlinLogging.logger {}
+
     suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         val varsel = varselRepository.getVarsel(varselId)
 
@@ -22,6 +24,8 @@ class BeskjedInaktiverer(
         } else if (varsel.type != Beskjed) {
             throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
         } else {
+            log.info("Inaktiverer beskjed med varselId $varselId på vegne av bruker.")
+
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
             VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)

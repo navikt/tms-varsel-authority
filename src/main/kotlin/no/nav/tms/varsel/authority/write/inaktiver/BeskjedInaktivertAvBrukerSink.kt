@@ -30,6 +30,8 @@ class BeskjedInaktivertAvBrukerSink(
         val varsel = varselRepository.getVarsel(varselId)
 
         if (varsel != null && varsel.aktiv) {
+            log.info("Speiler bruker-initiert inaktivering av beskjed hos aggregator med varselId $varselId")
+
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Bruker)
 
             VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Bruker)
@@ -44,8 +46,6 @@ class BeskjedInaktivertAvBrukerSink(
                 )
             )
         }
-
-        log.info("Speiler bruker-initiert inaktivering av beskjed hos aggregator med varselId $varselId")
     }
 
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()
