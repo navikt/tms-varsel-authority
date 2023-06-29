@@ -41,7 +41,7 @@ internal class EksternVarslingStatusSink(
         )
 
         eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
-        log.info("Behandlet eksternVarslingStatus fra rapid med eventid ${eksternVarslingStatus.eventId}")
+        log.info("Behandlet eksternVarslingStatus fra rapid med varselId ${eksternVarslingStatus.eventId}")
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {

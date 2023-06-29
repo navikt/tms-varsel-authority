@@ -68,7 +68,7 @@ fun Application.varselApi(
 
                 else -> {
                     call.respond(HttpStatusCode.InternalServerError)
-                    log.warn(cause.message, cause.stackTrace)
+                    log.warn("Ukjent feil", cause)
                 }
             }
 
