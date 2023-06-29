@@ -7,6 +7,7 @@ import no.nav.tms.varsel.authority.Sensitivitet
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.common.json
+import no.nav.tms.varsel.authority.common.optionalJson
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 
@@ -73,7 +74,7 @@ class ReadVarselRepository(private val database: Database) {
             innhold = it.json("innhold", objectMapper),
             sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
-            eksternVarslingKanaler = it.json("eksternVarslingKanaler", objectMapper),
+            eksternVarslingKanaler = it.optionalJson("eksternVarslingKanaler", objectMapper) ?: emptyList(),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTimeOrNull("inaktivert")
@@ -88,7 +89,7 @@ class ReadVarselRepository(private val database: Database) {
             produsent = it.json("produsent", objectMapper),
             innhold = it.json("innhold", objectMapper),
             sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
-            eksternVarsling = it.json("eksternVarslingStatus", objectMapper),
+            eksternVarsling = it.optionalJson("eksternVarslingStatus", objectMapper),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTimeOrNull("inaktivert"),
