@@ -151,6 +151,29 @@ class BrukerVarselApiTest {
         }
     }
 
+    @Test
+    fun `godttar varsler uten ekstern varsling`() = testVarselApi(userIdent = ident) { client ->
+        val beskjed = dbVarsel(type = Beskjed, ident = ident, eksternVarslingBestilling = null, eksternVarslingStatus = null)
+
+        insertVarsel(beskjed)
+
+        val varsler = client.getVarsler("/varsel/sammendrag/alle")
+
+        varsler.size shouldBe 1
+
+        varsler.shouldFind { it.varselId == beskjed.varselId }.let {
+            it.innhold shouldBe beskjed.innhold
+            it.type shouldBe beskjed.type
+            it.varselId shouldBe beskjed.varselId
+            it.aktiv shouldBe beskjed.aktiv
+            it.eksternVarslingSendt shouldBe false
+            it.eksternVarslingKanaler shouldBe emptyList()
+            it.opprettet shouldBe beskjed.opprettet
+            it.aktivFremTil shouldBe beskjed.aktivFremTil
+            it.inaktivert shouldBe beskjed.inaktivert
+        }
+    }
+
     private suspend fun HttpClient.getVarsler(path: String): List<Varselsammendrag> = get(path).body()
 
     private fun List<Varselsammendrag>.shouldFind(predicate: (Varselsammendrag) -> Boolean): Varselsammendrag {

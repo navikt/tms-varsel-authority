@@ -120,6 +120,31 @@ class SaksbehandlerVarselApiTest {
         inaktiveBeskjeder.shouldFind { it.varselId == inaktivBeskjed.varselId } shouldMatch inaktivBeskjed
     }
 
+    @Test
+    fun `godtar varsler der ekstern varsling er null`() = testVarselApi{  client ->
+
+        val beskjed = dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
+
+        insertVarsel(beskjed)
+
+        val varsler = client.getVarsler("/varsel/detaljert/alle", ident)
+
+        varsler.size shouldBe 1
+        varsler.shouldFind { it.varselId == beskjed.varselId }.let {
+            it.type shouldBe beskjed.type
+            it.varselId shouldBe beskjed.varselId
+            it.aktiv shouldBe beskjed.aktiv
+            it.produsent shouldBe beskjed.produsent
+            it.sensitivitet shouldBe beskjed.sensitivitet
+            it.innhold shouldBe beskjed.innhold
+            it.eksternVarsling shouldBe null
+            it.opprettet shouldBe beskjed.opprettet
+            it.aktivFremTil shouldBe beskjed.aktivFremTil
+            it.inaktivert shouldBe beskjed.inaktivert
+            it.inaktivertAv shouldBe beskjed.inaktivertAv
+        }
+    }
+
     private suspend fun HttpClient.getVarsler(path: String, ident: String): List<DetaljertVarsel> = get(path){
         headers.append("ident", ident)
     }.body()
