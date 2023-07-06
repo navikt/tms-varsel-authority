@@ -12,6 +12,8 @@ import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
 import no.nav.tms.varsel.authority.Sensitivitet
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
+import no.nav.tms.varsel.authority.config.Source.BRUKER
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 
 fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
 
@@ -26,7 +28,7 @@ fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
         } else {
             readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
         }
-
+        VarselMetricsReporter.registerVarselHentet(type,BRUKER,user.levelOfAssurance)
         call.respond(varsler)
     }
 
