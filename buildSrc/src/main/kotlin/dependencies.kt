@@ -1,3 +1,3 @@
 object TmsTokenSupportLoa: default.TmsKtorTokenSupportDefaults {
-    override val version = "levelOfAssurance-SNAPSHOT"
+    override val version = "2.2.0-beta"
 }
