@@ -10,6 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.VarselType.*
+import no.nav.tms.varsel.authority.config.Source
+import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 
 fun Route.saksbehandlerVarselApi(readRepository: ReadVarselRepository) {
 
@@ -18,6 +20,7 @@ fun Route.saksbehandlerVarselApi(readRepository: ReadVarselRepository) {
         type: VarselType? = null,
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
+        VarselMetricsReporter.registerVarselHentet(type,Source.SAKSBEHANDLER)
         call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv))
     }
 
