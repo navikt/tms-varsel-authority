@@ -185,30 +185,8 @@ interface KotliQueryDefaults: DependencyGroup {
     val kotliquery get() = dependency("kotliquery")
 }
 
-interface KtorDefaults: DependencyGroup {
-    override val version get() = "1.6.7"
-    override val groupId get() = "io.ktor"
-
-    val auth get() = dependency("ktor-auth")
-    val authJwt get() = dependency("ktor-auth-jwt")
-    val htmlBuilder get() = dependency("ktor-html-builder")
-    val jackson get() = dependency("ktor-jackson")
-    val serverNetty get() = dependency("ktor-server-netty")
-    val clientApache get() = dependency("ktor-client-apache")
-    val clientJson get() = dependency("ktor-client-json")
-    val clientSerializationJvm get() = dependency("ktor-client-serialization-jvm")
-    val clientJackson get() = dependency("ktor-client-jackson")
-    val clientLogging get() = dependency("ktor-client-logging")
-    val clientLoggingJvm get() = dependency("ktor-client-logging-jvm")
-    val clientMock get() = dependency("ktor-client-mock")
-    val clientMockJvm get() = dependency("ktor-client-mock-jvm")
-    val metricsMicrometer get() = dependency("ktor-metrics-micrometer")
-    val serverTestHost get() = dependency("ktor-server-test-host")
-    val serialization get() = dependency("ktor-serialization")
-}
-
 object Ktor2Defaults {
-    val version get() = "2.3.0"
+    val version get() = "2.3.2"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
