@@ -9,7 +9,7 @@ import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
 object ZonedDateTimeHelper {
-    fun nowAtUtc(): ZonedDateTime = ZonedDateTime.now(ZoneId.of("UTC")).truncatedTo(ChronoUnit.MILLIS)
+    fun nowAtUtc(): ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MILLIS)
 
     fun JsonNode.asZonedDateTime(): ZonedDateTime {
         return parseZonedDateTimeDefaultUtc(asText())
