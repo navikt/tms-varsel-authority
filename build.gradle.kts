@@ -43,7 +43,7 @@ dependencies {
     implementation(Ktor.Server.netty)
     implementation(Ktor.Server.statusPages)
     implementation(Ktor.Serialization.jackson)
-    implementation(RapidsAndRivers.rapidsAndRivers)
+    implementation(RapidsAndRiversLatest.rapidsAndRivers)
     implementation(TmsKtorTokenSupport.azureValidation)
     implementation(TmsKtorTokenSupport.tokenXValidation)
     implementation(TmsKtorTokenSupport.authenticationInstaller)
