@@ -202,7 +202,7 @@ interface PrometheusDefaults: DependencyGroup {
 
 interface RapidsAndRiversDefaults: DependencyGroup {
     override val groupId get() = "com.github.navikt"
-    override val version get() = "2022100711511665136276.49acbaae4ed4"
+    override val version get() = "2023080113411690890096.310ed8e5ed93"
 
     val rapidsAndRivers get() = dependency("rapids-and-rivers")
 }
