@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.databind.JsonNode
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -70,9 +70,9 @@ internal class AktiverVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
-            log.info("Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}")
+            log.info { "Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}" }
         } catch (e: PSQLException) {
-            log.warn("Feil ved aktivering av varsel med id [${dbVarsel.varselId}].", e)
+            log.warn(e) { "Feil ved aktivering av varsel med id [${dbVarsel.varselId}]." }
         }
     }
 
@@ -112,6 +112,6 @@ internal class AktiverVarselSink(
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error(problems.toString())
+        log.error { problems.toString() }
     }
 }

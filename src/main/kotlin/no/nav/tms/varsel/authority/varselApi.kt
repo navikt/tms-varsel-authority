@@ -12,7 +12,9 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import nav.no.tms.common.metrics.installTmsApiMetrics
+import nav.no.tms.common.metrics.installTmsMicrometerMetrics
 import no.nav.tms.token.support.authentication.installer.installAuthenticators
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
@@ -30,6 +32,10 @@ fun Application.varselApi(
     val log = KotlinLogging.logger {}
 
     installAuthenticatorsFunction()
+
+    installTmsApiMetrics {
+        setupMetricsRoute = false
+    }
 
     install(ContentNegotiation) {
         jackson {
@@ -63,12 +69,12 @@ fun Application.varselApi(
                         text = cause.message ?: "Feil i parametre"
                     )
 
-                    log.warn(cause.message, cause.stackTrace)
+                    log.warn { cause.message }
                 }
 
                 else -> {
                     call.respond(HttpStatusCode.InternalServerError)
-                    log.warn("Ukjent feil", cause)
+                    log.warn(cause) { "Ukjent feil" }
                 }
             }
 

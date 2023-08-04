@@ -1,6 +1,6 @@
 package no.nav.tms.varsel.authority.write.expiry
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.PeriodicJob
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
@@ -41,12 +41,12 @@ class PeriodicExpiredVarselProcessor(
 
             if (expiredVarselList.isNotEmpty()) {
                 varselInaktivert(expiredVarselList)
-                log.info("Prosesserte ${expiredVarselList.size} utgåtte varsler.")
+                log.info { "Prosesserte ${expiredVarselList.size} utgåtte varsler." }
             } else {
-                log.info("Ingen varsler har utgått siden forrige sjekk.")
+                log.info { "Ingen varsler har utgått siden forrige sjekk." }
             }
         } catch (e: Exception) {
-            log.error("Uventet feil ved prosessering av utgåtte varsler", e)
+            log.error(e) { "Uventet feil ved prosessering av utgåtte varsler" }
         }
     }
 

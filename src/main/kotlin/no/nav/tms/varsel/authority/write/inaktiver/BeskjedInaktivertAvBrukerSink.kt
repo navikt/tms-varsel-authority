@@ -1,6 +1,6 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -30,7 +30,7 @@ class BeskjedInaktivertAvBrukerSink(
         val varsel = varselRepository.getVarsel(varselId)
 
         if (varsel != null && varsel.aktiv) {
-            log.info("Speiler bruker-initiert inaktivering av beskjed hos aggregator med varselId $varselId")
+            log.info { "Speiler bruker-initiert inaktivering av beskjed hos aggregator med varselId $varselId" }
 
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Bruker)
 
@@ -51,6 +51,6 @@ class BeskjedInaktivertAvBrukerSink(
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error(problems.toString())
+        log.error { problems.toString() }
     }
 }

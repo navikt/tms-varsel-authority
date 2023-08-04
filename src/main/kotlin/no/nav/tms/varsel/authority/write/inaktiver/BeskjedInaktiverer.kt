@@ -2,7 +2,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.VarselType.Beskjed
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
@@ -24,7 +24,7 @@ class BeskjedInaktiverer(
         } else if (varsel.type != Beskjed) {
             throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
         } else {
-            log.info("Inaktiverer beskjed med varselId $varselId på vegne av bruker.")
+            log.info { "Inaktiverer beskjed med varselId $varselId på vegne av bruker." }
 
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
