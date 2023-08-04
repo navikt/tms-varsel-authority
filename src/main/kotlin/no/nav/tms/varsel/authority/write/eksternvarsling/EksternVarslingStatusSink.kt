@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import com.fasterxml.jackson.databind.JsonNode
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 
@@ -41,11 +41,11 @@ internal class EksternVarslingStatusSink(
         )
 
         eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
-        log.info("Behandlet eksternVarslingStatus fra rapid med varselId ${eksternVarslingStatus.eventId}")
+        log.info { "Behandlet eksternVarslingStatus fra rapid med varselId ${eksternVarslingStatus.eventId}" }
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error(problems.toString())
+        log.error { problems.toString() }
     }
 
     private fun JsonNode.asLongOrNull() = if (isNull) null else asLong()

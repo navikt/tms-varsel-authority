@@ -49,7 +49,7 @@ class LocalPostgresDatabase private constructor() : Database {
             .dataSource(dataSource)
             .load()
             .migrate()
-            .let { assert(it == expectedMigrations) }
+            .let { assert(it.migrationsExecuted == expectedMigrations) }
     }
 }
 

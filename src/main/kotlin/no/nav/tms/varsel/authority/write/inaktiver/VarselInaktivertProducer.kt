@@ -2,7 +2,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
@@ -26,9 +26,9 @@ class VarselInaktivertProducer(
         try {
             kafkaProducer.flush()
             kafkaProducer.close()
-            log.info("Produsent for kafka-eventer er flushet og lukket.")
+            log.info { "Produsent for kafka-eventer er flushet og lukket." }
         } catch (e: Exception) {
-            log.warn("Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert.")
+            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
         }
     }
 }

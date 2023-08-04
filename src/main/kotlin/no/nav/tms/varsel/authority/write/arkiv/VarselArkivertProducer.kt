@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.write.arkiv
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.VarselType
@@ -34,9 +34,9 @@ class VarselArkivertProducer(
         try {
             kafkaProducer.flush()
             kafkaProducer.close()
-            log.info("Produsent for kafka-eventer er flushet og lukket.")
+            log.info { "Produsent for kafka-eventer er flushet og lukket." }
         } catch (e: Exception) {
-            log.warn("Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert.")
+            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
         }
     }
 }

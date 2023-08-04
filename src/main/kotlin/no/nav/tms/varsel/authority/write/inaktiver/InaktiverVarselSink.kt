@@ -1,6 +1,6 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -41,12 +41,12 @@ internal class InaktiverVarselSink(
             )
         }
 
-        log.info("Inaktiverte varsel etter event fra rapid med varselId $varselId")
+        log.info { "Inaktiverte varsel etter event fra rapid med varselId $varselId" }
     }
 
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error(problems.toString())
+        log.error { problems.toString() }
     }
 }
