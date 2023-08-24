@@ -224,7 +224,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "com.github.navikt"
-    override val version get() = "1.5.0"
+    override val version get() = "1.6.0"
 
     val commonLib get() = dependency("tms-common-lib")
 }
