@@ -7,6 +7,11 @@ on:
     paths:
       - buildSrc/src/main/kotlin/default/dependencies.kt
       - buildSrc/src/main/kotlin/groups.kt
+
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   check-validity-and-merge:
     runs-on: ubuntu-latest
