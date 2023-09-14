@@ -6,6 +6,10 @@ on:
       - master
       - main
       - tms-dependency-admin_*
+    paths-ignore:
+      - .github/workflows/**
+      - README.md
+      - howto.md
 
 jobs:
   build-branch:

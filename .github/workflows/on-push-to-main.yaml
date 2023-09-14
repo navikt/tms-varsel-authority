@@ -7,6 +7,8 @@ on:
       - main
     paths-ignore:
       - .github/workflows/**
+      - README.md
+      - howto.md
 
 permissions:
   contents: write
