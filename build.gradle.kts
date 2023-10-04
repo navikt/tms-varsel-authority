@@ -46,7 +46,6 @@ dependencies {
     implementation(RapidsAndRiversLatest.rapidsAndRivers)
     implementation(TmsKtorTokenSupport.azureValidation)
     implementation(TmsKtorTokenSupport.tokenXValidation)
-    implementation(TmsKtorTokenSupport.authenticationInstaller)
     implementation(TmsKtorTokenSupport.azureExchange)
     implementation(KotliQuery.kotliquery)
     implementation(JacksonDatatype.moduleKotlin)
@@ -60,7 +59,6 @@ dependencies {
     testImplementation(Kotest.runnerJunit5)
     testImplementation(Kotest.assertionsCore)
     testImplementation(Ktor.Test.serverTestHost)
-    testImplementation(TmsKtorTokenSupport.authenticationInstallerMock)
     testImplementation(TmsKtorTokenSupport.tokenXValidationMock)
     testImplementation(TmsKtorTokenSupport.azureValidationMock)
 }

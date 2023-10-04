@@ -8,10 +8,12 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
+import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.util.*
-import no.nav.tms.token.support.authentication.installer.mock.installMockedAuthenticators
+import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
+import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.VarselType
@@ -118,14 +120,14 @@ class InaktiverBeskjedApiTest {
                 readRepository,
                 beskjedInaktiverer,
                 installAuthenticatorsFunction = {
-                    installMockedAuthenticators {
-                        installTokenXAuthMock {
+                    authentication {
+                        tokenXMock {
                             setAsDefault = true
                             alwaysAuthenticated = true
                             staticUserPid = userIdent
                             staticLevelOfAssurance = HIGH
                         }
-                        installAzureAuthMock {
+                        azureMock {
                             setAsDefault = false
                         }
                     }
