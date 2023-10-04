@@ -6,17 +6,17 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.auth.*
 import nav.no.tms.common.metrics.installTmsApiMetrics
-import nav.no.tms.common.metrics.installTmsMicrometerMetrics
-import no.nav.tms.token.support.authentication.installer.installAuthenticators
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
+import no.nav.tms.token.support.azure.validation.azure
+import no.nav.tms.token.support.tokenx.validation.tokenX
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.saksbehandlerVarselApi
 import no.nav.tms.varsel.authority.read.brukerVarselApi
@@ -94,11 +94,11 @@ fun Application.varselApi(
 }
 
 private fun installAuth(): Application.() -> Unit = {
-    installAuthenticators {
-        installTokenXAuth {
+    authentication {
+        tokenX {
             setAsDefault = true
         }
-        installAzureAuth {
+        azure {
             setAsDefault = false
         }
     }

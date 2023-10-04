@@ -231,13 +231,11 @@ interface TmsCommonLibDefaults: DependencyGroup {
 
 interface TmsKtorTokenSupportDefaults: DependencyGroup {
     override val groupId get() = "com.github.navikt.tms-ktor-token-support"
-    override val version get() = "2.2.0"
+    override val version get() = "3.0.0"
 
-    val authenticationInstaller get() = dependency("token-support-authentication-installer")
     val azureExchange get() = dependency("token-support-azure-exchange")
     val azureValidation get() = dependency("token-support-azure-validation")
     val tokenXValidation get() = dependency("token-support-tokenx-validation")
-    val authenticationInstallerMock get() = dependency("token-support-authentication-installer-mock")
     val tokenXValidationMock get() = dependency("token-support-tokenx-validation-mock")
     val azureValidationMock get() = dependency("token-support-azure-validation-mock")
     val tokendingsExchange get() = dependency("token-support-tokendings-exchange")

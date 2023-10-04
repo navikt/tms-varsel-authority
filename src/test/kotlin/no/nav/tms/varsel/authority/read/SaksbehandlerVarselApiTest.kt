@@ -4,20 +4,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
+import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.util.*
-import no.nav.tms.token.support.authentication.installer.mock.installMockedAuthenticators
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
+import no.nav.tms.token.support.azure.validation.mock.azureMock
+import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.Sensitivitet.High
-import no.nav.tms.varsel.authority.Sensitivitet.Substantial
 import no.nav.tms.varsel.authority.VarselType.*
 import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.varselApi
@@ -187,11 +185,11 @@ class SaksbehandlerVarselApiTest {
                 readRepository,
                 beskjedInaktiverer,
                 installAuthenticatorsFunction = {
-                    installMockedAuthenticators {
-                        installTokenXAuthMock {
+                    authentication {
+                        tokenXMock {
                             setAsDefault = true
                         }
-                        installAzureAuthMock {
+                        azureMock {
                             setAsDefault = false
                             alwaysAuthenticated = true
                         }
