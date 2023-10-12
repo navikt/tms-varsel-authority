@@ -10,6 +10,28 @@ private const val BASE_32_ULID = "[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwx
 private val UUID_PATTERN = "^$BASE_16{8}-$BASE_16{4}-$BASE_16{4}-$BASE_16{4}-$BASE_16{12}$".toRegex()
 private val ULID_PATTERN = "^[0-7]$BASE_32_ULID{25}$".toRegex()
 
+fun VarselBuilder.OpprettVarselInstance.performNullCheck() {
+
+    requireNotNull(varselId) { "varselId kan ikke være null" }
+    requireNotNull(ident) { "ident kan ikke være null" }
+    requireNotNull(sensitivitet) { "sensitivitet kan ikke være null" }
+    require(tekster.isNotEmpty()) { "Må ha satt minst 1 tekst" }
+    requireNotNull(metadata) { "metadata kan ikke være null" }
+
+    when (type) {
+        VarselType.Beskjed -> {
+            // Ingen egne for beskjed
+        }
+        VarselType.Innboks -> {
+            require(aktivFremTil == null) { "aktivFremTil støttes ikke for innboks." }
+            requireNotNull(lenke) { "lenke kan ikke være null for innboks" }
+        }
+        VarselType.Oppgave -> {
+            requireNotNull(lenke) { "lenke kan ikke være null for oppgave" }
+        }
+    }
+}
+
 class VarselValidation(opprettopprettVarsel: OpprettVarsel) {
 
 
