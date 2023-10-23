@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
+import no.nav.tms.varsel.action.*
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime
@@ -48,12 +49,12 @@ class VarselAktivertProducer(
 }
 
 private data class VarselAktivert(
-    val type: VarselType,
+    val type: Varseltype,
     val varselId: String,
     val ident: String,
     val sensitivitet: Sensitivitet,
     val innhold: Innhold,
-    val produsent: Produsent,
+    val produsent: DatabaseProdusent,
     val eksternVarslingBestilling: EksternVarslingBestilling?,
     val opprettet: ZonedDateTime,
     val aktivFremTil: ZonedDateTime?

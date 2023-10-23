@@ -1,5 +1,11 @@
 package no.nav.tms.varsel.authority.database
 
+import no.nav.tms.varsel.action.EksternKanal
+import no.nav.tms.varsel.action.EksternKanal.EPOST
+import no.nav.tms.varsel.action.EksternKanal.SMS
+import no.nav.tms.varsel.action.EksternVarslingBestilling
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
@@ -7,13 +13,13 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 fun dbVarsel(
-    type: VarselType = VarselType.Beskjed,
+    type: Varseltype = Varseltype.Beskjed,
     varselId: String = UUID.randomUUID().toString(),
     ident: String = "01234567890",
     aktiv: Boolean = true,
     sensitivitet: Sensitivitet = Sensitivitet.High,
     innhold: Innhold = dbInnhold(),
-    produsent: Produsent = dbProdusent(),
+    produsent: DatabaseProdusent = dbProdusent(),
     eksternVarslingBestilling: EksternVarslingBestilling? = dbEksternVarslingBestilling(),
     eksternVarslingStatus: EksternVarslingStatus? = dbEksternVarslingStatus(),
     opprettet: ZonedDateTime = nowAtUtc(),
@@ -45,15 +51,17 @@ fun dbInnhold(
 )
 
 fun dbProdusent(
+    cluster: String? = "cluster",
     namespace: String = "namespace",
     appnavn: String = "appnavn"
-) = Produsent(
+) = DatabaseProdusent(
+    cluster = cluster,
     namespace = namespace,
     appnavn = appnavn
 )
 
 fun dbEksternVarslingBestilling(
-    prefererteKanaler: List<String> = listOf("SMS", "EPOST"),
+    prefererteKanaler: List<EksternKanal> = listOf(SMS, EPOST),
     smsVarslingstekst: String? = "Sms-tekst",
     epostVarslingstekst: String? = "Epost-tekst",
     epostVarslingstittel: String? = "Epost-tittel"

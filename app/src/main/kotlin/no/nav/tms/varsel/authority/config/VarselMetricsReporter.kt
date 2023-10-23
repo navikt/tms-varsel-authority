@@ -2,9 +2,9 @@ package no.nav.tms.varsel.authority.config
 
 import io.prometheus.client.Counter
 import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
-import no.nav.tms.varsel.authority.Produsent
-import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
+import no.nav.tms.varsel.action.Varseltype
 
 object VarselMetricsReporter {
 
@@ -45,25 +45,25 @@ object VarselMetricsReporter {
         .labelNames("type", "produsent_namespace", "produsent_app", "kanal")
         .register()
 
-    fun registerVarselAktivert(varselType: VarselType, produsent: Produsent) {
+    fun registerVarselAktivert(varselType: Varseltype, produsent: DatabaseProdusent) {
         VARSEL_AKTIVERT
             .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
             .inc()
     }
 
-    fun registerVarselInaktivert(varselType: VarselType, produsent: Produsent, kilde: VarselInaktivertKilde) {
+    fun registerVarselInaktivert(varselType: Varseltype, produsent: DatabaseProdusent, kilde: VarselInaktivertKilde) {
         VARSEL_INAKTIVERT
             .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kilde.lowercaseName)
             .inc()
     }
 
-    fun registerVarselArkivert(varselType: VarselType, produsent: Produsent) {
+    fun registerVarselArkivert(varselType: Varseltype, produsent: DatabaseProdusent) {
         VARSEL_ARKIVERT
             .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
             .inc()
     }
 
-    fun registerEksternVarslingSendt(varselType: VarselType, produsent: Produsent, kanal: String) {
+    fun registerEksternVarslingSendt(varselType: Varseltype, produsent: DatabaseProdusent, kanal: String) {
         EKSTERN_VARSLING_SENDT
             .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kanal)
             .inc()
@@ -76,7 +76,7 @@ object VarselMetricsReporter {
         .labelNames("type", "source", "assurance_level")
         .register()
 
-    fun registerVarselHentet(varselType: VarselType?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
+    fun registerVarselHentet(varselType: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
         VARSEL_HENTET
             .labels(
                 varselType?.lowercaseName ?: "all",

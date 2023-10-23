@@ -9,7 +9,7 @@ import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.LocalDateTimeHelper
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.toJson
 import no.nav.tms.varsel.authority.write.aktiver.*
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
@@ -146,7 +146,7 @@ class BeskjedInaktivertAvBrukerSinkTest {
 
 private fun inaktivertEvent(varselId: String, kilde: VarselInaktivertKilde) = InaktivertAvAggregatorEvent(
     eventId = varselId,
-    varselType = VarselType.Beskjed,
+    varselType = Varseltype.Beskjed,
     namespace = "namespace",
     appnavn = "appnavn",
     kilde = kilde,
@@ -155,7 +155,7 @@ private fun inaktivertEvent(varselId: String, kilde: VarselInaktivertKilde) = In
 
 private data class InaktivertAvAggregatorEvent(
     val eventId: String,
-    val varselType: VarselType,
+    val varselType: Varseltype,
     val namespace: String,
     val appnavn: String,
     val kilde: VarselInaktivertKilde,

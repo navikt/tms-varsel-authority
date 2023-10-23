@@ -8,13 +8,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotliquery.queryOf
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.*
-import no.nav.tms.varsel.authority.VarselType.Beskjed
+import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
@@ -172,7 +174,7 @@ internal class PeriodicVarselArchiverTest {
 
     private fun varsel(
         varselId: String,
-        type: VarselType,
+        type: Varseltype,
         opprettet: ZonedDateTime,
     ) = DatabaseVarsel(
         type = type,
@@ -184,7 +186,7 @@ internal class PeriodicVarselArchiverTest {
             tekst = "Bla.",
             link = "http://link",
         ),
-        produsent = Produsent(namespace = "namespace", appnavn = "app"),
+        produsent = DatabaseProdusent(namespace = "namespace", appnavn = "app", cluster = null),
         eksternVarslingStatus = EksternVarslingStatus(
             sendt = true,
             renotifikasjonSendt = true,

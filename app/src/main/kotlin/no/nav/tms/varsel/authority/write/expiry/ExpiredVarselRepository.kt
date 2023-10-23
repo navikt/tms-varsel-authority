@@ -2,11 +2,12 @@ package no.nav.tms.varsel.authority.write.expiry
 
 import kotliquery.Row
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.Produsent
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
-import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.authority.DatabaseProdusent
+import no.nav.tms.varsel.authority.common.parseVarseltype
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -32,6 +33,7 @@ class ExpiredVarselRepository(private val database: Database) {
                     returning
                         varselId,
                         type as varselType,
+                        produsent->>'cluster' as cluster,
                         produsent->>'namespace' as namespace,
                         produsent->>'appnavn' as appnavn
                 """,
@@ -49,7 +51,8 @@ class ExpiredVarselRepository(private val database: Database) {
     private fun toExpiredVasel(): (Row) -> ExpiredVarsel = { row ->
         ExpiredVarsel(
             varselId = row.string("varselId"),
-            varselType = row.string("varselType").let { VarselType.parse(it) },
+            varselType = row.string("varselType").let(::parseVarseltype),
+            cluster = row.stringOrNull("cluster"),
             namespace = row.string("namespace"),
             appnavn = row.string("appnavn"),
         )
@@ -58,9 +61,14 @@ class ExpiredVarselRepository(private val database: Database) {
 
 data class ExpiredVarsel(
     val varselId: String,
-    val varselType: VarselType,
+    val varselType: Varseltype,
+    val cluster: String?,
     val namespace: String,
     val appnavn: String
 ) {
-    val produsent get() = Produsent(namespace, appnavn)
+    val produsent get() = DatabaseProdusent(
+        cluster,
+        namespace,
+        appnavn
+    )
 }

@@ -7,8 +7,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotliquery.queryOf
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.*
-import no.nav.tms.varsel.authority.VarselType.Beskjed
+import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.PodLeaderElection
@@ -113,7 +115,7 @@ internal class PeriodicExpiredVarselProcessorTest {
 
 private fun varsel(
     varselId: String,
-    type: VarselType,
+    type: Varseltype,
     aktiv: Boolean = true,
     aktivFremTil: ZonedDateTime,
 ) = DatabaseVarsel(
@@ -121,7 +123,7 @@ private fun varsel(
     varselId = varselId,
     sensitivitet = Sensitivitet.Substantial,
     aktiv = aktiv,
-    produsent = Produsent("namespace", "appname"),
+    produsent = DatabaseProdusent("cluster", "namespace", "appname"),
     ident = "123",
     innhold = Innhold(
         tekst = "Bla.",

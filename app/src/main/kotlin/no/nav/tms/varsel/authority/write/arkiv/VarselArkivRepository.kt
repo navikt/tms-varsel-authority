@@ -2,12 +2,10 @@ package no.nav.tms.varsel.authority.write.arkiv
 
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
+import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.Database
-import no.nav.tms.varsel.authority.common.json
-import no.nav.tms.varsel.authority.common.optionalJson
-import no.nav.tms.varsel.authority.common.toJsonb
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.ZonedDateTime
@@ -70,11 +68,11 @@ class VarselArkivRepository(private val database: Database) {
 
     private fun toArchiveVarsel(): (Row) -> ArkivVarsel = { row ->
         ArkivVarsel(
-            type = row.string("type").let(VarselType::parse),
+            type = row.string("type").let(::parseVarseltype),
             varselId = row.string("varselId"),
             ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
+            sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
             innhold = row.json("innhold"),
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
@@ -87,13 +85,13 @@ class VarselArkivRepository(private val database: Database) {
 }
 
 data class ArkivVarsel(
-    val type: VarselType,
+    val type: Varseltype,
     val varselId: String,
     val ident: String,
     val aktiv: Boolean,
     val sensitivitet: Sensitivitet,
     val innhold: Innhold,
-    val produsent: Produsent,
+    val produsent: DatabaseProdusent,
     val eksternVarslingBestilling: EksternVarslingBestilling? = null,
     val eksternVarslingStatus: EksternVarslingStatus? = null,
     val opprettet: ZonedDateTime,

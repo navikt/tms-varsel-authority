@@ -2,10 +2,12 @@ package no.nav.tms.varsel.authority.read
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import no.nav.tms.varsel.authority.*
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Varseltype
 import java.time.ZonedDateTime
 
 data class Varselsammendrag(
-    val type: VarselType,
+    val type: Varseltype,
     val varselId: String,
     val aktiv: Boolean,
     val innhold: Innhold?,
@@ -18,10 +20,10 @@ data class Varselsammendrag(
 )
 
 data class DetaljertVarsel(
-    val type: VarselType,
+    val type: Varseltype,
     val varselId: String,
     val aktiv: Boolean,
-    val produsent: Produsent,
+    val produsent: DatabaseProdusent,
     val sensitivitet: Sensitivitet,
     val innhold: Innhold,
     val eksternVarsling: EksternVarslingStatus?,

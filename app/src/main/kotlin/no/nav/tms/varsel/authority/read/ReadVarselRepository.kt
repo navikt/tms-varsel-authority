@@ -2,17 +2,14 @@ package no.nav.tms.varsel.authority.read
 
 import kotliquery.Row
 import kotliquery.queryOf
-import no.nav.tms.varsel.authority.Sensitivitet
-import no.nav.tms.varsel.authority.VarselType
-import no.nav.tms.varsel.authority.common.Database
-import no.nav.tms.varsel.authority.common.json
-import no.nav.tms.varsel.authority.common.optionalJson
+import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
+import no.nav.tms.varsel.action.Varseltype
 
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
 
-    fun getVarselSammendragForUser(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
+    fun getVarselSammendragForUser(ident: String, type: Varseltype? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
         return database.list {
             queryOf("""
                 select
@@ -38,7 +35,7 @@ class ReadVarselRepository(private val database: Database) {
         }
     }
 
-    fun getDetaljertVarselForUser(ident: String, type: VarselType? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
+    fun getDetaljertVarselForUser(ident: String, type: Varseltype? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
         return database.list {
             queryOf("""
                 select
@@ -66,11 +63,11 @@ class ReadVarselRepository(private val database: Database) {
 
     private fun toVarselsammendrag(): (Row) -> Varselsammendrag = {
         Varselsammendrag(
-            type = it.string("type").let(VarselType::parse),
+            type = it.string("type").let(::parseVarseltype),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             innhold = it.json("innhold", objectMapper),
-            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
+            sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
             eksternVarslingKanaler = it.optionalJson("eksternVarslingKanaler", objectMapper) ?: emptyList(),
             opprettet = it.zonedDateTime("opprettet"),
@@ -81,12 +78,12 @@ class ReadVarselRepository(private val database: Database) {
 
     private fun toDetaljertVarsel(): (Row) -> DetaljertVarsel = {
         DetaljertVarsel(
-            type = it.string("type").let(VarselType::parse),
+            type = it.string("type").let(::parseVarseltype),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             produsent = it.json("produsent", objectMapper),
             innhold = it.json("innhold", objectMapper),
-            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
+            sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
             eksternVarsling = it.optionalJson("eksternVarslingStatus", objectMapper),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),

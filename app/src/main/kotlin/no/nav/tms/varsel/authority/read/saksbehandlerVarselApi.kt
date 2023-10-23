@@ -8,8 +8,8 @@ import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.tms.varsel.authority.VarselType
-import no.nav.tms.varsel.authority.VarselType.*
+import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 
@@ -17,7 +17,7 @@ fun Route.saksbehandlerVarselApi(readRepository: ReadVarselRepository) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
         ident: String,
-        type: VarselType? = null,
+        type: Varseltype? = null,
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
         VarselMetricsReporter.registerVarselHentet(type,Source.SAKSBEHANDLER)

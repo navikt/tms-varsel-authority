@@ -9,17 +9,17 @@ import kotlinx.coroutines.withContext
 import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.user.TokenXUser
 import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
-import no.nav.tms.varsel.authority.Sensitivitet
-import no.nav.tms.varsel.authority.VarselType
-import no.nav.tms.varsel.authority.VarselType.*
+import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source.BRUKER
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.action.Sensitivitet
 
 fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
         user: TokenXUser,
-        type: VarselType? = null,
+        type: Varseltype? = null,
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
 

@@ -1,14 +1,14 @@
 package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.LocalDateTimeHelper
-import no.nav.tms.varsel.authority.Produsent
 import java.time.LocalDateTime
 
 fun aktiverVarselEvent(
     type: String,
     varselId: String,
-    produsent: Produsent = Produsent("namespace", "appnavn"),
+    produsent: DatabaseProdusent = DatabaseProdusent(null, "namespace", "appnavn"),
     fodselsnummer: String = "01234567890",
     tekst: String = "tekst",
     link: String = "http://link",

@@ -2,76 +2,37 @@ package no.nav.tms.varsel.authority
 
 import com.fasterxml.jackson.annotation.JsonValue
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
+import no.nav.tms.varsel.action.*
 import java.time.ZonedDateTime
 
 data class DatabaseVarsel(
-    val type: VarselType,
+    val type: Varseltype,
     val varselId: String,
     val ident: String,
     val aktiv: Boolean,
     val sensitivitet: Sensitivitet,
     val innhold: Innhold,
-    val produsent: Produsent,
+    val produsent: DatabaseProdusent,
     val eksternVarslingBestilling: EksternVarslingBestilling? = null,
     val eksternVarslingStatus: EksternVarslingStatus? = null,
     val opprettet: ZonedDateTime,
     val aktivFremTil: ZonedDateTime? = null,
     val inaktivert: ZonedDateTime? = null,
-    val inaktivertAv: VarselInaktivertKilde? = null
+    val inaktivertAv: VarselInaktivertKilde? = null,
+    val metadata: Metadata? = null
 )
 
 data class Innhold(
     val tekst: String,
-    val link: String?
+    val link: String?,
+    val tekster: List<Tekst> = emptyList()
 )
 
-enum class VarselType {
-    Beskjed, Oppgave, Innboks;
-
-    val lowercaseName = name.lowercase()
-
-    @JsonValue
-    fun toJson() = lowercaseName
-
-    companion object {
-        fun parse(string: String): VarselType {
-            return values()
-                .filter { it.lowercaseName == string.lowercase() }
-                .firstOrNull() ?: throw IllegalArgumentException("Could not parse varselType $string")
-        }
-    }
-}
-
-enum class Sensitivitet {
-    Substantial,
-    High;
-
-    val lowercaseName = name.lowercase()
-
-    @JsonValue
-    fun toJson() = lowercaseName
-
-    companion object {
-        fun parse(string: String): Sensitivitet {
-            return Sensitivitet.values()
-                .filter { it.lowercaseName == string.lowercase() }
-                .firstOrNull() ?: throw IllegalArgumentException("Could not parse sensitivitet $string")
-        }
-    }
-}
-
-data class Produsent(
+data class DatabaseProdusent(
+    val cluster: String?,
     val namespace: String,
     val appnavn: String
 )
-
-data class EksternVarslingBestilling(
-    val prefererteKanaler: List<String>,
-    val smsVarslingstekst: String?,
-    val epostVarslingstekst: String?,
-    val epostVarslingstittel: String?,
-)
-
 data class EksternVarslingStatus(
     val sendt: Boolean,
     val renotifikasjonSendt: Boolean,

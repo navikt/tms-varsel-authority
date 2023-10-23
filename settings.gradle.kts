@@ -8,4 +8,4 @@
  */
 
 rootProject.name = "tms-varsel-authority"
-include("app", "lib")
+include("app", "varsel-action", "kotlin-builder")

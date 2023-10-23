@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.VarselType
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
+import no.nav.tms.varsel.action.Varseltype
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -35,7 +35,7 @@ class VarselInaktivertProducer(
 
 data class VarselInaktivertHendelse(
     val varselId: String,
-    val varselType: VarselType,
+    val varselType: Varseltype,
     val namespace: String,
     val appnavn: String,
     @JsonIgnore val kilde: VarselInaktivertKilde

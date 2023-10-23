@@ -51,6 +51,7 @@ dependencies {
     implementation(KotliQuery.kotliquery)
     implementation(JacksonDatatype.moduleKotlin)
     implementation(TmsCommonLib.commonLib)
+    implementation(project(":varsel-action"))
 
     testImplementation(Junit.api)
     testImplementation(Junit.engine)

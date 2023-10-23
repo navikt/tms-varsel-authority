@@ -10,7 +10,11 @@ import no.nav.helse.rapids_rivers.River
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asOptionalZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
+import no.nav.tms.varsel.authority.common.parseVarseltype
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.action.EksternKanal
+import no.nav.tms.varsel.action.EksternVarslingBestilling
+import no.nav.tms.varsel.action.Sensitivitet
 import org.postgresql.util.PSQLException
 
 internal class AktiverVarselSink(
@@ -51,7 +55,7 @@ internal class AktiverVarselSink(
 
         val dbVarsel = DatabaseVarsel(
             varselId = packet["eventId"].textValue(),
-            type = packet["@event_name"].textValue().let { VarselType.parse(it) },
+            type = packet["@event_name"].textValue().let(::parseVarseltype),
             ident = packet["fodselsnummer"].textValue(),
             sensitivitet = packet["sikkerhetsnivaa"].asSensitivitet(),
             innhold = unpackVarsel(packet),
@@ -76,12 +80,12 @@ internal class AktiverVarselSink(
         }
     }
 
-    private fun unpackProdusent(packet: JsonMessage): Produsent {
-        return Produsent(
-            namespace = packet["namespace"].textValue(),
-            appnavn = packet["appnavn"].textValue()
-        )
-    }
+    private fun unpackProdusent(packet: JsonMessage) = DatabaseProdusent(
+        cluster = null,
+        namespace = packet["namespace"].textValue(),
+        appnavn = packet["appnavn"].textValue()
+    )
+
 
     private fun unpackVarsel(packet: JsonMessage): Innhold {
         return Innhold(
@@ -93,7 +97,7 @@ internal class AktiverVarselSink(
     private fun unpackEksternVarslingBestilling(packet: JsonMessage): EksternVarslingBestilling? {
         return if (packet["eksternVarsling"].booleanValue()) {
             EksternVarslingBestilling(
-                prefererteKanaler = packet["prefererteKanaler"].map { it.textValue() },
+                prefererteKanaler = packet["prefererteKanaler"].map { it.textValue() }.map { EksternKanal.valueOf(it) } ,
                 smsVarslingstekst = packet["smsVarslingstekst"].textValue(),
                 epostVarslingstekst = packet["epostVarslingstekst"].textValue(),
                 epostVarslingstittel = packet["epostVarslingstittel"].textValue()

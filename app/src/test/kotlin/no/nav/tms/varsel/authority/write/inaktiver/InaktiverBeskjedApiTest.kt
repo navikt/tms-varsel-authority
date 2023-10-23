@@ -16,7 +16,7 @@ import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.VarselType
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
@@ -53,8 +53,8 @@ class InaktiverBeskjedApiTest {
 
     @Test
     fun `inaktiverer varsel for bruker`() = testVarselApi(userIdent = ident) {client ->
-        val beskjed1 = dbVarsel(type = VarselType.Beskjed, ident = ident, aktiv = true)
-        val beskjed2 = dbVarsel(type = VarselType.Beskjed, ident = ident, aktiv = true)
+        val beskjed1 = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
+        val beskjed2 = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
 
         insertVarsel(beskjed1, beskjed2)
 
@@ -66,7 +66,7 @@ class InaktiverBeskjedApiTest {
 
     @Test
     fun `svarer med feilkode hvis varsel ikke finnes`() = testVarselApi(userIdent = ident) { client ->
-        val beskjed = dbVarsel(type = VarselType.Beskjed, ident = ident, aktiv = true)
+        val beskjed = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
 
         insertVarsel(beskjed)
 
@@ -77,7 +77,7 @@ class InaktiverBeskjedApiTest {
 
     @Test
     fun `svarer med feilkode hvis varsel ikke er beskjed`() = testVarselApi(userIdent = ident) { client ->
-        val oppgave = dbVarsel(type = VarselType.Oppgave, ident = ident, aktiv = true)
+        val oppgave = dbVarsel(type = Varseltype.Oppgave, ident = ident, aktiv = true)
 
         insertVarsel(oppgave)
 
@@ -88,7 +88,7 @@ class InaktiverBeskjedApiTest {
 
     @Test
     fun `svarer med feilkode hvis varsel eies av annen bruker`() = testVarselApi(userIdent = ident) {client ->
-        val beskjed = dbVarsel(type = VarselType.Beskjed, ident = "annenIdent", aktiv = true)
+        val beskjed = dbVarsel(type = Varseltype.Beskjed, ident = "annenIdent", aktiv = true)
 
         insertVarsel(beskjed)
 

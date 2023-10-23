@@ -4,13 +4,8 @@ import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
-import no.nav.tms.varsel.authority.Sensitivitet
-import no.nav.tms.varsel.authority.VarselType
-import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.json
-import no.nav.tms.varsel.authority.common.optionalJson
-import no.nav.tms.varsel.authority.common.toJsonb
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
@@ -100,11 +95,11 @@ class WriteVarselRepository(val database: Database) {
         val varselInnhold: Innhold = row.json("innhold", objectMapper)
 
         DatabaseVarsel(
-            type = row.string("type").let(VarselType::parse),
+            type = row.string("type").let(::parseVarseltype),
             varselId = row.string("varselId"),
             ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
+            sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
             innhold = varselInnhold,
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
