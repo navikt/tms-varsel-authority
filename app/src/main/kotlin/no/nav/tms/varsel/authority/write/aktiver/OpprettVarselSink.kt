@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.micrometer.core.instrument.config.validate.ValidationException
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -16,16 +17,17 @@ import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.action.OpprettVarselValidation
+import no.nav.tms.varsel.action.VarselValidationException
 import org.postgresql.util.PSQLException
 
 internal class OpprettVarselSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
     private val varselAktivertProducer: VarselAktivertProducer
-) :
-    River.PacketListener {
+) : River.PacketListener {
 
     private val log = KotlinLogging.logger { }
+    private val securelog = KotlinLogging.logger("secureLog")
     private val objectMapper = defaultObjectMapper()
 
     init {
@@ -36,12 +38,14 @@ internal class OpprettVarselSink(
                 "varselId",
                 "ident",
                 "sensitivitet",
-                "innhold",
-                "metadata"
+                "tekster",
+                "produsent"
             ) }
             validate { it.interestedIn(
                 "eksternVarsling",
                 "aktivFremTil",
+                "link",
+                "metadata"
             ) }
         }.register(this)
     }
@@ -49,7 +53,7 @@ internal class OpprettVarselSink(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
 
         objectMapper.treeToValue<OpprettVarsel>(packet.rawJson)
-            .also { OpprettVarselValidation.validate(it) }
+            .also { validate(it) }
             .let {
                 DatabaseVarsel(
                     aktiv = true,
@@ -62,7 +66,7 @@ internal class OpprettVarselSink(
                     eksternVarslingBestilling = it.eksternVarsling,
                     opprettet = nowAtUtc(),
                     aktivFremTil = it.aktivFremTil,
-                    metadata = it.metadata
+                    metadata = mapMetadata(it)
                 )
             }.let {
                 aktiverVarsel(it)
@@ -103,8 +107,29 @@ internal class OpprettVarselSink(
             appnavn = opprettVarsel.produsent.appnavn,
         )
 
+    private fun mapMetadata(opprettVarsel: OpprettVarsel): Map<String, Any> {
+        val opprettEvent = mutableMapOf<String, Any>(
+            "source_topic" to "external"
+        )
+
+        if (opprettVarsel.metadata != null) {
+            opprettEvent += opprettVarsel.metadata!!
+        }
+
+        return mapOf("opprett_event" to opprettEvent)
+    }
+
+    private fun validate(opprettVarsel: OpprettVarsel) = try {
+        OpprettVarselValidation.validate(opprettVarsel)
+    } catch (e: VarselValidationException) {
+        log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
+        securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${ e.explanation.joinToString() }" }
+
+        throw MessageProblems.MessageException(MessageProblems("OpprettVarsel event did not pass validation"))
+    }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error { problems.toString() }
+        log.error { "Feil ved lesing av opprett-event fra kafka" }
+        securelog.error { "Problem ved lesing av opprett-event fra kafka: $problems" }
     }
 }

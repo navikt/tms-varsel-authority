@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority
+package no.nav.tms.varsel.authority.database
 
 import com.zaxxer.hikari.HikariDataSource
 import kotliquery.queryOf
@@ -14,7 +14,7 @@ class LocalPostgresDatabase private constructor() : Database {
     companion object {
         private val instance by lazy {
             LocalPostgresDatabase().also {
-                it.migrate(expectedMigrations = 2)
+                it.migrate(expectedMigrations = 3)
             }
         }
 

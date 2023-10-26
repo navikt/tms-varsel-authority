@@ -7,7 +7,6 @@ import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.toJson
 import no.nav.tms.varsel.authority.write.aktiver.*
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
@@ -16,10 +15,8 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.UUID
-import java.util.UUID.randomUUID
 
-internal class InaktiverVarselSinkTest {
+internal class InaktiverVarselSinkLegacyTest {
     private val mockProducer = MockProducer(
         false,
         StringSerializer(),
@@ -39,8 +36,8 @@ internal class InaktiverVarselSinkTest {
 
     @BeforeEach
     fun setup() {
-        OpprettVarselSink(testRapid, repository, aktivertProducer)
-        InaktiverVarselSink(testRapid, repository, inaktivertProducer)
+        AktiverVarselSink(testRapid, repository, aktivertProducer)
+        DoneEventSink(testRapid, repository, inaktivertProducer)
     }
 
     @AfterEach
@@ -53,16 +50,14 @@ internal class InaktiverVarselSinkTest {
 
     @Test
     fun `inaktiverer varsel`() {
-        val varselId = randomUUID().toString()
+        val beskjedEvent = aktiverVarselEvent("beskjed", "123")
 
-        val beskjedEvent = opprettVarselEvent("beskjed", varselId)
+        val inaktiverEvent = inaktiverVarselEvent("123")
 
-        val inaktiverEvent = inaktiverVarsel(varselId)
+        testRapid.sendTestMessage(beskjedEvent.toJson())
+        testRapid.sendTestMessage(inaktiverEvent.toJson())
 
-        testRapid.sendTestMessage(beskjedEvent)
-        testRapid.sendTestMessage(inaktiverEvent)
-
-        val dbVarsel = repository.getVarsel(varselId)
+        val dbVarsel = repository.getVarsel(beskjedEvent.eventId)
 
         dbVarsel.shouldNotBeNull()
 
@@ -75,48 +70,28 @@ internal class InaktiverVarselSinkTest {
             .filter { it["@event_name"].asText() == "inaktivert" }
             .first()
 
-        outputJson["varselId"].asText() shouldBe varselId
+        outputJson["varselId"].asText() shouldBe beskjedEvent.eventId
         outputJson["varselType"].asText() shouldBe "beskjed"
     }
 
     @Test
     fun `ignorer inaktiver-event hvis varsler allerede er inaktivt`() {
-        val varselId = randomUUID().toString()
+        val beskjedEvent = aktiverVarselEvent("beskjed", "123")
 
-        val beskjedEvent = opprettVarselEvent("beskjed", varselId)
+        val inaktiverEvent = inaktiverVarselEvent("123")
 
-        val inaktiverEvent = inaktiverVarsel(varselId)
+        testRapid.sendTestMessage(beskjedEvent.toJson())
+        testRapid.sendTestMessage(inaktiverEvent.toJson())
 
-        testRapid.sendTestMessage(beskjedEvent)
-        testRapid.sendTestMessage(inaktiverEvent)
+        val inaktivertTid = repository.getVarsel(beskjedEvent.eventId)!!.inaktivert
 
-        val inaktivertTid = repository.getVarsel(varselId)!!.inaktivert
+        testRapid.sendTestMessage(inaktiverEvent.toJson())
 
-        testRapid.sendTestMessage(inaktiverEvent)
+        repository.getVarsel(beskjedEvent.eventId)!!.inaktivert shouldBe inaktivertTid
 
-        repository.getVarsel(varselId)!!.inaktivert shouldBe inaktivertTid
-
-        mockProducer.history()
-            .map { it.value() }
+        mockProducer.history()            .map { it.value() }
             .map { objectMapper.readTree(it) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 1
     }
-
-    private fun inaktiverVarsel(varselId: String) = """
-{
-    "@event_name": "inaktiver",
-    "varselId": "$varselId",
-    "produsent": {
-        "cluster": "cluster",
-        "namespace": "namespace",
-        "appnavn": "appnavn"
-    },
-    "metadata": {
-        "built_at": "${nowAtUtc()}",
-        "version": "test"
-    }
-}
-       
-    """.trimIndent()
 }

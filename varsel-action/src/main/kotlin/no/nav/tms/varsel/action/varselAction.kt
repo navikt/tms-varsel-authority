@@ -23,7 +23,7 @@ data class OpprettVarsel(
     val eksternVarsling: EksternVarslingBestilling? = null,
     val aktivFremTil: ZonedDateTime? = null,
     val produsent: Produsent,
-    val metadata: Metadata
+    val metadata: Map<String, Any>?
 ) {
     @JsonProperty("@event_name") val eventName = EventType.Opprett
 }
@@ -31,7 +31,7 @@ data class OpprettVarsel(
 data class InaktiverVarsel(
     val varselId: String,
     val produsent: Produsent,
-    val metadata: Metadata
+    val metadata: Map<String, Any>?
 ) {
     @JsonProperty("@event_name") val eventName = EventType.Inaktiver
 }
@@ -61,11 +61,6 @@ enum class Sensitivitet {
     fun toJson() = lowercaseName
 }
 
-data class Metadata(
-    val versjon: String?,
-    val byggetid: ZonedDateTime?
-)
-
 data class Produsent(
     val cluster: String,
     val namespace: String,
@@ -77,24 +72,24 @@ enum class EksternKanal {
 }
 
 data class EksternVarslingBestilling(
-    val prefererteKanaler: List<EksternKanal>,
-    val smsVarslingstekst: String?,
-    val epostVarslingstekst: String?,
-    val epostVarslingstittel: String?,
+    val prefererteKanaler: List<EksternKanal> = emptyList(),
+    val smsVarslingstekst: String? = null,
+    val epostVarslingstekst: String? = null,
+    val epostVarslingstittel: String? = null,
 )
 
 internal data class EndreVarsel(
     val varselId: String,
     val link: String?,
     val tekst: String,
-    val metadata: Metadata
+    val metadata: Map<String, Any>?
 ) {
     @JsonProperty("@event_name") val eventName = EventType.Endre
 }
 
 internal data class SlettVarsel(
     val varselId: String,
-    val metadata: Metadata
+    val metadata: Map<String, Any>?
 ) {
     @JsonProperty("@event_name") val eventName = EventType.Slett
 }

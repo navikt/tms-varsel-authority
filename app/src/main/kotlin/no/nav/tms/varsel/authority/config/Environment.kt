@@ -13,10 +13,12 @@ data class Environment(
     val kafkaKeystorePath: String = getEnvVar("KAFKA_KEYSTORE_PATH"),
     val kafkaCredstorePassword: String = getEnvVar("KAFKA_CREDSTORE_PASSWORD"),
     val kafkaConsumerGroupId: String = getEnvVar("KAFKA_GROUP_ID"),
-    val internalVarselTopic: String = "min-side.brukervarsel-v1"
+    val internalVarselTopic: String = "min-side.brukervarsel-v1",
+    val publicVarselTopic: String = "min-side.aapen-brukervarsel-v1"
 ) {
     val rapidConfig = mapOf(
-        "KAFKA_RAPID_TOPIC" to internalVarselTopic,
+        "KAFKA_RAPID_TOPIC" to publicVarselTopic,
+        "KAFKA_EXTRA_TOPIC" to internalVarselTopic,
         "KAFKA_BROKERS" to kafkaBrokers,
         "KAFKA_CONSUMER_GROUP_ID" to kafkaConsumerGroupId,
         "KAFKA_KEYSTORE_PATH" to kafkaKeystorePath,

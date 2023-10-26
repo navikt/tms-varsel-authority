@@ -13,7 +13,7 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.action.Varseltype.Beskjed

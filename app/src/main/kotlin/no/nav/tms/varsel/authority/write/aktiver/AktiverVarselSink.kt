@@ -26,6 +26,8 @@ internal class AktiverVarselSink(
 
     private val log = KotlinLogging.logger { }
 
+    private val staticMetadata = mapOf<String, Any>("opprett_event" to mapOf("source_topic" to "internal"))
+
     init {
         River(rapidsConnection).apply {
             validate { it.demandAny("@event_name", listOf("beskjed", "oppgave", "innboks")) }
@@ -63,7 +65,8 @@ internal class AktiverVarselSink(
             eksternVarslingBestilling = unpackEksternVarslingBestilling(packet),
             aktiv = true,
             opprettet = packet["forstBehandlet"].asZonedDateTime(),
-            aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime()
+            aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime(),
+            metadata = staticMetadata
         )
 
         aktiverVarsel(dbVarsel)
