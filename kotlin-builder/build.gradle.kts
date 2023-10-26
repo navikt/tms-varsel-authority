@@ -43,7 +43,7 @@ publishing {
     repositories{
         mavenLocal()
         maven {
-            url = uri("https://maven.pkg.github.com/navikt/tms-utkast")
+            url = uri("https://maven.pkg.github.com/navikt/tms-varsel-authority")
             credentials {
                 username = "x-access-token"
                 password = System.getenv("GITHUB_TOKEN")
@@ -54,7 +54,7 @@ publishing {
     publications {
         create<MavenPublication>("gpr") {
             groupId = "no.nav.tms.varsel"
-            artifactId = "builder"
+            artifactId = "kotlin-builder"
             version = libraryVersion
             from(components["java"])
         }

@@ -15,7 +15,7 @@ import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
-import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.read.ReadVarselRepository

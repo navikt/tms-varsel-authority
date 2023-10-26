@@ -19,7 +19,7 @@ data class DatabaseVarsel(
     val aktivFremTil: ZonedDateTime? = null,
     val inaktivert: ZonedDateTime? = null,
     val inaktivertAv: VarselInaktivertKilde? = null,
-    val metadata: Metadata? = null
+    val metadata: Map<String, Any>? = null
 )
 
 data class Innhold(

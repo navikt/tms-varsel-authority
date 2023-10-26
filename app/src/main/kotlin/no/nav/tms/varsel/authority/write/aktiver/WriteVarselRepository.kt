@@ -31,7 +31,8 @@ class WriteVarselRepository(val database: Database) {
                         opprettet,
                         aktivFremTil,
                         inaktivert,
-                        inaktivertAv
+                        inaktivertAv,
+                        metadata
                     ) values (
                         :type,
                         :varselId,
@@ -45,7 +46,8 @@ class WriteVarselRepository(val database: Database) {
                         :opprettet,
                         :aktivFremTil,
                         :inaktivert,
-                        :inaktivertAv
+                        :inaktivertAv,
+                        :metadata
                     )
                 """,
                 mapOf(
@@ -53,15 +55,16 @@ class WriteVarselRepository(val database: Database) {
                     "varselId" to dbVarsel.varselId,
                     "ident" to dbVarsel.ident,
                     "sensitivitet" to dbVarsel.sensitivitet.lowercaseName,
-                    "innhold" to dbVarsel.innhold.toJsonb(),
-                    "produsent" to dbVarsel.produsent.toJsonb(),
+                    "innhold" to dbVarsel.innhold.toJsonb(objectMapper),
+                    "produsent" to dbVarsel.produsent.toJsonb(objectMapper),
                     "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(objectMapper),
                     "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(objectMapper),
                     "aktiv" to dbVarsel.aktiv,
                     "opprettet" to dbVarsel.opprettet,
                     "aktivFremTil" to dbVarsel.aktivFremTil,
                     "inaktivert" to dbVarsel.inaktivert,
-                    "inaktivertAv" to dbVarsel.inaktivertAv
+                    "inaktivertAv" to dbVarsel.inaktivertAv,
+                    "metadata" to dbVarsel.metadata.toJsonb(objectMapper)
                 )
             )
         }
@@ -78,14 +81,22 @@ class WriteVarselRepository(val database: Database) {
         }
     }
 
-    fun inaktiverVarsel(varselId: String, kilde: VarselInaktivertKilde) {
+    fun inaktiverVarsel(varselId: String, kilde: VarselInaktivertKilde, metadata: Map<String, Any>? = null) {
         database.update {
             queryOf(
-                "update varsel set aktiv = false, inaktivertAv = :kilde, inaktivert = :tidspunkt where varselId = :varselId",
+                """
+                    update varsel set 
+                      aktiv = false,
+                      inaktivertAv = :kilde,
+                      inaktivert = :tidspunkt,
+                      metadata = coalesce(metadata::jsonb, '{}'::jsonb) || coalesce(:metadata, '{}'::jsonb)
+                    where varselId = :varselId
+                """,
                 mapOf(
                     "varselId" to varselId,
                     "kilde" to kilde.lowercaseName,
-                    "tidspunkt" to nowAtUtc()
+                    "tidspunkt" to nowAtUtc(),
+                    "metadata" to metadata.toJsonb(objectMapper)
                 )
             )
         }
@@ -107,7 +118,8 @@ class WriteVarselRepository(val database: Database) {
             opprettet = row.zonedDateTime("opprettet"),
             inaktivert = row.zonedDateTimeOrNull("inaktivert"),
             inaktivertAv = row.stringOrNull("inaktivertAv")?.let { VarselInaktivertKilde.from(it) },
-            aktivFremTil = row.zonedDateTimeOrNull("aktivFremTil")
+            aktivFremTil = row.zonedDateTimeOrNull("aktivFremTil"),
+            metadata = row.optionalJson("metadata")
         )
     }
 }

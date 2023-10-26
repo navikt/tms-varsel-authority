@@ -12,10 +12,10 @@ import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
-import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
+import no.nav.tms.varsel.authority.write.aktiver.OpprettVarselSink
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
@@ -23,9 +23,8 @@ import no.nav.tms.varsel.authority.write.aktiver.VarselAktivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusRepository
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSink
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
-import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
-import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktivertAvBrukerSink
-import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
+import no.nav.tms.varsel.authority.write.inaktiver.*
+import no.nav.tms.varsel.authority.write.inaktiver.DoneEventSink
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -92,12 +91,17 @@ private fun startRapid(environment: Environment, database: Database) {
             varselRepository = varselRepository,
             varselAktivertProducer = varselAktivertProducer
         )
-        InaktiverVarselSink(
+        OpprettVarselSink(
+            rapidsConnection = this,
+            varselRepository = varselRepository,
+            varselAktivertProducer = varselAktivertProducer
+        )
+        DoneEventSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
             varselInaktivertProducer = varselInaktivertProducer
         )
-        BeskjedInaktivertAvBrukerSink(
+        InaktiverVarselSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
             varselInaktivertProducer = varselInaktivertProducer

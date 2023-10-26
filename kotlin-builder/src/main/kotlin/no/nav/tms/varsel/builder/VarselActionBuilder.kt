@@ -5,17 +5,20 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import no.nav.tms.varsel.action.*
+import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 
-object VarselJsonBuilder {
+object VarselActionBuilder {
     private val objectMapper = jacksonMapperBuilder()
         .addModule(JavaTimeModule())
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         .build()
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
 
-    fun opprett(type: Varseltype, builderFunction: OpprettVarselInstance.() -> Unit): String {
-        val builder = OpprettVarselInstance(type)
+    fun opprett(builderFunction: OpprettVarselInstance.() -> Unit): String {
+        val builder = OpprettVarselInstance()
             .also { it.builderFunction() }
             .also { it.performNullCheck() }
 
@@ -30,12 +33,11 @@ object VarselJsonBuilder {
             .also { it.performNullCheck() }
 
         return builder.build()
-            .also { InaktiverVarselValidation.validate(it) }
             .let { objectMapper.writeValueAsString(it) }
     }
 
     class OpprettVarselInstance internal constructor(
-        val type: Varseltype,
+        var type: Varseltype? = null,
         var varselId: String? = null,
         var ident: String? = null,
         var sensitivitet: Sensitivitet? = null,
@@ -43,16 +45,22 @@ object VarselJsonBuilder {
         val tekster: MutableList<Tekst> = mutableListOf(),
         var eksternVarsling: EksternVarslingBestilling? = null,
         var aktivFremTil: ZonedDateTime? = null,
-        var produsent: Produsent? = produsent(),
-        var metadata: Metadata = metadata()
+        var produsent: Produsent? = produsent()
     ) {
+        val metadata: Map<String, Any> = metadata()
 
-        fun setTekst(tekst: String, spraakKode: String, default: Boolean = false) {
-            tekster += Tekst(spraakKode, tekst, default)
-        }
+        var tekst: Tekst? = null
+            set(value) {
+                if (value != null && tekst == null) {
+                    tekster += value
+                } else if(value == null && tekst != null) {
+                    tekster.remove(tekst)
+                }
+                field = value
+            }
 
         internal fun build() = OpprettVarsel(
-            type = type,
+            type = type!!,
             varselId = varselId!!,
             ident = ident!!,
             sensitivitet = sensitivitet!!,
@@ -64,28 +72,36 @@ object VarselJsonBuilder {
             metadata = metadata
         )
 
-        internal fun performNullCheck() {
+        internal fun performNullCheck() = try {
 
+            requireNotNull(type) { "type kan ikke være null" }
             requireNotNull(varselId) { "varselId kan ikke være null" }
             requireNotNull(ident) { "ident kan ikke være null" }
             requireNotNull(sensitivitet) { "sensitivitet kan ikke være null" }
+            requireNotNull(produsent) { "produsent kan ikke være null" }
             require(tekster.isNotEmpty()) { "Må ha satt minst 1 tekst" }
+        } catch (e: IllegalArgumentException) {
+            throw VarselValidationException(e.message!!)
         }
     }
 
     class InaktiverVarselInstance internal constructor(
         var varselId: String? = null,
         var produsent: Produsent? = produsent(),
-        var metadata: Metadata = metadata()
     ) {
+        val metadata: Map<String, Any> = metadata()
+
         internal fun build() = InaktiverVarsel(
             varselId = varselId!!,
             produsent = produsent!!,
             metadata = metadata
         )
 
-        internal fun performNullCheck() {
+        internal fun performNullCheck() = try {
             requireNotNull(varselId) { "varselId kan ikke være null" }
+            requireNotNull(produsent) { "produsent kan ikke være null" }
+        } catch (e: IllegalArgumentException) {
+            throw VarselValidationException(e.message!!)
         }
     }
 
@@ -105,8 +121,8 @@ object VarselJsonBuilder {
         }
     }
 
-    private fun metadata() = Metadata(
-            versjon = VarselActionVersion,
-            byggetid = ZonedDateTime.now()
+    private fun metadata() = mapOf(
+            "version" to VarselActionVersion,
+            "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS)
         )
 }

@@ -18,7 +18,7 @@ import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
-import no.nav.tms.varsel.authority.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.action.Sensitivitet.High
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
 import no.nav.tms.varsel.action.Varseltype.*

@@ -30,27 +30,25 @@ object OpprettVarselValidation {
     fun validate(opprettVarsel: OpprettVarsel) = validators.validate(opprettVarsel)
 }
 
-object InaktiverVarselValidation {
-    private val validators: List<InaktiverVarselValidator> = listOf()
-
-    fun validate(inaktiverVarsel: InaktiverVarsel) = validators.validate(inaktiverVarsel)
-}
-
-
 private fun <T> List<Validator<T>>.validate(action: T) {
         val errors = map {
             it.validate(action)
         }.filterNot { it.isValid }
 
-        if (errors.isNotEmpty()) {
+        if (errors.size > 1) {
             throw VarselValidationException(
-                message = "Feil ved validering av varsel-action",
+                message = "Fant ${errors.size} feil ved validering av varsel-action",
+                explanation = errors.mapNotNull { it.explanation }
+            )
+        } else if (errors.size == 1) {
+            throw VarselValidationException(
+                message = "Feil ved validering av varsel-action: ${errors.first().explanation}",
                 explanation = errors.mapNotNull { it.explanation }
             )
         }
     }
 
-class VarselValidationException(message: String, val explanation: List<String>): Exception(message)
+class VarselValidationException(message: String, val explanation: List<String> = emptyList()): Exception(message)
 
 private interface Validator<T> {
     val description: String
@@ -65,8 +63,6 @@ private interface Validator<T> {
 }
 
 private interface OpprettVarselValidator: Validator<OpprettVarsel>
-
-private interface InaktiverVarselValidator: Validator<InaktiverVarsel>
 
 private data class ValidatorResult(
     val isValid: Boolean,
