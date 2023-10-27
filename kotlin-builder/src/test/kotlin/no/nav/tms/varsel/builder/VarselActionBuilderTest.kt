@@ -40,12 +40,12 @@ class VarselActionBuilderTest {
             json["sensitivitet"].asText() shouldBe "high"
             json["link"].asText() shouldBe "https://link"
             json["tekster"][0].let {
-                it["spraakKode"].asText() shouldBe "no"
+                it["spraakkode"].asText() shouldBe "no"
                 it["tekst"].asText() shouldBe "tekst"
                 it["default"].asBoolean() shouldBe true
             }
             json["tekster"][1].let {
-                it["spraakKode"].asText() shouldBe "en"
+                it["spraakkode"].asText() shouldBe "en"
                 it["tekst"].asText() shouldBe "text"
                 it["default"].asBoolean() shouldBe false
             }

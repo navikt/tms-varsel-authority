@@ -101,7 +101,7 @@ fun opprettVarselEvent(
 private fun tekster(tekster: List<Tekst>): String = tekster.joinToString(prefix = "[", postfix = "]") {
     """
 {
-    "spraakKode": "${it.spraakKode}",
+    "spraakkode": "${it.spraakkode}",
     "tekst": "${it.tekst}",
     "default": ${it.default}
 } 

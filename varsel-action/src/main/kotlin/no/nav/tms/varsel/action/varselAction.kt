@@ -37,7 +37,7 @@ data class InaktiverVarsel(
 }
 
 data class Tekst(
-    val spraakKode: String,
+    val spraakkode: String,
     val tekst: String,
     val default: Boolean
 )
