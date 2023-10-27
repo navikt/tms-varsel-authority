@@ -17,9 +17,9 @@ jobs:
           java-version: '17.x'
 
       - name: Bygg bibliotek
-        run:  ./gradlew build
+        run:  ./gradlew build -x :app:build
 
       - name: Publish packages
-        run: gradle -Plib_version="${{ github.event.release.name }}" publish
+        run: ./gradlew -Plib_version="${{ github.event.release.name }}" publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
