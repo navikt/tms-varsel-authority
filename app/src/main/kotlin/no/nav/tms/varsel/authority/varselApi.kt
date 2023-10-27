@@ -14,7 +14,6 @@ import io.ktor.server.routing.routing
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.*
 import nav.no.tms.common.metrics.installTmsApiMetrics
-import no.nav.tms.token.support.authentication.installer.installAuthenticators
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.token.support.azure.validation.azure
 import no.nav.tms.token.support.tokenx.validation.tokenX
