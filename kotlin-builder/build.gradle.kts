@@ -8,8 +8,13 @@ plugins {
     `maven-publish`
 }
 
+tasks.withType<JavaCompile> {
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+}
+
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    kotlinOptions.jvmTarget = "1.8"
 }
 
 repositories {
@@ -45,7 +50,7 @@ publishing {
         maven {
             url = uri("https://maven.pkg.github.com/navikt/tms-varsel-authority")
             credentials {
-                username = "x-access-token"
+                username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
