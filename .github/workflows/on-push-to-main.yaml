@@ -50,14 +50,6 @@ jobs:
           TAG_LATEST: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tag release i git-repo-et
-        run: |
-          TAG="$(git log -1 --pretty='%ad' --date=format:'%Y%m%d%H%M%S')-$(git log -1 --pretty='%h')"
-          git config user.name "Team Personbruker CI"
-          git config user.email "personbruker@nav.no"
-          git tag $TAG
-          git push origin $TAG
-
   deploy:
     runs-on: ubuntu-latest
     needs: build
