@@ -4,8 +4,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm").version(Kotlin.version)
     kotlin("plugin.serialization") version Kotlin.version
-    `java-library`
-    `maven-publish`
 }
 
 tasks.withType<KotlinCompile> {
@@ -35,5 +33,3 @@ tasks {
         }
     }
 }
-
-val libraryVersion: String = properties["lib_version"]?.toString() ?: "latest-local"
