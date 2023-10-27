@@ -50,7 +50,7 @@ publishing {
         maven {
             url = uri("https://maven.pkg.github.com/navikt/tms-varsel-authority")
             credentials {
-                username = "x-access-token"
+                username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
