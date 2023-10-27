@@ -16,8 +16,9 @@ object OpprettVarselValidation {
     private val validators: List<OpprettVarselValidator> = listOf(
         IdentValidator,
         VarselIdValidator,
+        OpprettVarselLanguageCodeValidator,
         OpprettVarselTekstLengthValidator,
-        OpprettVarselDefaultValidator,
+        OpprettVarselDefaultTekstValidator,
         OpprettVarselTekstI18nValidator,
         OpprettVarselLinkContentValidator,
         OpprettVarselLinkRequiredValidator,
@@ -97,6 +98,26 @@ private object OpprettVarselTekstLengthValidator: OpprettVarselValidator {
     }
 }
 
+private object OpprettVarselLanguageCodeValidator: OpprettVarselValidator {
+    override val description = LanguageCodeValidator.description
+
+    override fun validate(varselAction: OpprettVarsel) = assertTrue {
+        varselAction.tekster.all {
+            LanguageCodeValidator.validate(it)
+        }
+    }
+}
+
+private object LanguageCodeValidator {
+    const val description = "Tekst må ha gyldig ISO 639 språkkode"
+
+    private val validPattern = "^[a-zA-z]{2,8}$".toRegex()
+
+    fun validate(tekst: Tekst): Boolean {
+        return validPattern.matches(tekst.spraakkode)
+    }
+}
+
 private object TekstLengthValidator {
     private const val maxTextLengthBeskjed = 300
     private const val maxTextLengthOppgaveAndInnboks = 500
@@ -124,13 +145,13 @@ private object TekstI18nValidator {
     const val description = "Kan kun ha opp til 1 tekst per språkkode"
 
     fun validate(tekster: List<Tekst>): Boolean {
-        return tekster.groupingBy { it.spraakKode }
+        return tekster.groupingBy { it.spraakkode }
             .eachCount()
             .all { it.value == 1 }
     }
 }
 
-private object OpprettVarselDefaultValidator: OpprettVarselValidator {
+private object OpprettVarselDefaultTekstValidator: OpprettVarselValidator {
     override val description = TekstDefaultValidator.description
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -138,7 +159,7 @@ private object OpprettVarselDefaultValidator: OpprettVarselValidator {
     }
 }
 
-object TekstDefaultValidator {
+private object TekstDefaultValidator {
     const val description: String = "Presist 1 tekst må være satt som default hvis det finnes flere tekster"
 
     fun validate(tekster: List<Tekst>): Boolean {
