@@ -8,4 +8,13 @@
  */
 
 rootProject.name = "tms-varsel-authority"
-include("app", "varsel-action", "kotlin-builder")
+
+val libraryOnly = System.getenv("BUILD_LIB_ONLY")
+    ?.toBoolean()
+    ?: false
+
+if (libraryOnly) {
+    include("varsel-action", "kotlin-builder")
+} else {
+    include("app", "varsel-action", "kotlin-builder")
+}
