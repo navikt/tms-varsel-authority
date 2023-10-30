@@ -122,7 +122,8 @@ object VarselActionBuilder {
     }
 
     private fun metadata() = mapOf(
-            "version" to VarselActionVersion,
-            "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS)
-        )
+        "version" to VarselActionVersion,
+        "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS),
+        "builder_lang" to "kotlin"
+    )
 }

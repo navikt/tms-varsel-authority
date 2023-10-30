@@ -49,7 +49,7 @@ private fun <T> List<Validator<T>>.validate(action: T) {
         }
     }
 
-class VarselValidationException(message: String, val explanation: List<String> = emptyList()): Exception(message)
+class VarselValidationException(message: String, val explanation: List<String> = emptyList()): IllegalArgumentException(message)
 
 private interface Validator<T> {
     val description: String

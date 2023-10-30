@@ -14,7 +14,7 @@ val libraryOnly = System.getenv("BUILD_LIB_ONLY")
     ?: false
 
 if (libraryOnly) {
-    include("varsel-action", "kotlin-builder")
+    include("varsel-action", "kotlin-builder", "java-builder")
 } else {
-    include("app", "varsel-action", "kotlin-builder")
+    include("app", "varsel-action", "kotlin-builder", "java-builder")
 }
