@@ -53,8 +53,8 @@ class VarselActionBuilderTest {
                 it.isNull shouldBe false
                 it["prefererteKanaler"].size() shouldBe 0
                 it["smsVarslingstekst"].shouldBeNull()
-                it["epostVarslingstekst"].shouldBeNull()
                 it["epostVarslingstittel"].shouldBeNull()
+                it["epostVarslingstekst"].shouldBeNull()
             }
             json["aktivFremTil"].asText() shouldBe "2023-10-10T10:00:00Z"
             json["produsent"].let {

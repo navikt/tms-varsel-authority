@@ -63,13 +63,13 @@ fun dbProdusent(
 fun dbEksternVarslingBestilling(
     prefererteKanaler: List<EksternKanal> = listOf(SMS, EPOST),
     smsVarslingstekst: String? = "Sms-tekst",
-    epostVarslingstekst: String? = "Epost-tekst",
-    epostVarslingstittel: String? = "Epost-tittel"
+    epostVarslingstittel: String? = "Epost-tittel",
+    epostVarslingstekst: String? = "Epost-tekst"
 ) = EksternVarslingBestilling(
     prefererteKanaler = prefererteKanaler,
     smsVarslingstekst = smsVarslingstekst,
-    epostVarslingstekst = epostVarslingstekst,
-    epostVarslingstittel = epostVarslingstittel
+    epostVarslingstittel = epostVarslingstittel,
+    epostVarslingstekst = epostVarslingstekst
 )
 
 fun dbEksternVarslingStatus(

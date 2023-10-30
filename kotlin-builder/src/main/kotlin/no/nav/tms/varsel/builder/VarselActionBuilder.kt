@@ -8,7 +8,6 @@ import no.nav.tms.varsel.action.*
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 
 object VarselActionBuilder {
     private val objectMapper = jacksonMapperBuilder()
@@ -122,7 +121,8 @@ object VarselActionBuilder {
     }
 
     private fun metadata() = mapOf(
-            "version" to VarselActionVersion,
-            "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS)
-        )
+        "version" to VarselActionVersion,
+        "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS),
+        "builder_lang" to "kotlin"
+    )
 }

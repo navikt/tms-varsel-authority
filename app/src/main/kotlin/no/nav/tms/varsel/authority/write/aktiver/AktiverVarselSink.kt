@@ -47,8 +47,8 @@ internal class AktiverVarselSink(
                 "synligFremTil",
                 "prefererteKanaler",
                 "smsVarslingstekst",
-                "epostVarslingstekst",
-                "epostVarslingstittel"
+                "epostVarslingstittel",
+                "epostVarslingstekst"
             ) }
         }.register(this)
     }
@@ -102,8 +102,8 @@ internal class AktiverVarselSink(
             EksternVarslingBestilling(
                 prefererteKanaler = packet["prefererteKanaler"].map { it.textValue() }.map { EksternKanal.valueOf(it) } ,
                 smsVarslingstekst = packet["smsVarslingstekst"].textValue(),
-                epostVarslingstekst = packet["epostVarslingstekst"].textValue(),
-                epostVarslingstittel = packet["epostVarslingstittel"].textValue()
+                epostVarslingstittel = packet["epostVarslingstittel"].textValue(),
+                epostVarslingstekst = packet["epostVarslingstekst"].textValue()
             )
         } else {
             null

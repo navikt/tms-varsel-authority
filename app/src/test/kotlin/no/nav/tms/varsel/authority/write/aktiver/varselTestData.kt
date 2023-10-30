@@ -72,8 +72,8 @@ fun opprettVarselEvent(
     eksternVarsling: EksternVarslingBestilling? = EksternVarslingBestilling(
         prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
         smsVarslingstekst = "smsTekst",
-        epostVarslingstekst = null,
-        epostVarslingstittel = null
+        epostVarslingstittel = null,
+        epostVarslingstekst = null
     )
 ) = """
 {
@@ -88,7 +88,7 @@ fun opprettVarselEvent(
     "ident": "$ident",
     "tekster": ${tekster(tekster)},
     "link": ${link.asJson()},
-    "sensitivitet": "${sensitivitet.lowercaseName}",
+    "sensitivitet": "${sensitivitet.name.lowercase()}",
     "aktivFremTil": "$aktivFremTil",
     "eksternVarsling": ${eksternVarsling(eksternVarsling)},
     "metadata": {
@@ -114,8 +114,8 @@ private fun eksternVarsling(eksternVarsling: EksternVarslingBestilling?): String
 {
     "prefererteKanaler": [${eksternVarsling.prefererteKanaler.joinToString(",") { "\"${it.name}\"" }}],
     "smsVarslingstekst": ${ eksternVarsling.smsVarslingstekst.asJson() },
-    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() },
-    "epostVarslingstittel": ${ eksternVarsling.epostVarslingstittel.asJson() }
+    "epostVarslingstittel": ${ eksternVarsling.epostVarslingstittel.asJson() },
+    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() }
 } 
     """
     } else {

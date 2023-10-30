@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm").version(Kotlin.version)
     kotlin("plugin.serialization") version Kotlin.version
+    `java-library`
+    `maven-publish`
 }
 
 tasks.withType<JavaCompile> {
@@ -21,8 +23,7 @@ repositories {
 }
 
 dependencies {
-    implementation(JacksonDatatype.moduleKotlin)
-    implementation(JacksonDatatype.datatypeJsr310)
+    implementation(JacksonEx.annotations)
     testImplementation(Junit.api)
     testImplementation(Junit.engine)
     testImplementation(Kotest.runnerJunit5)
@@ -35,6 +36,30 @@ tasks {
         testLogging {
             exceptionFormat = TestExceptionFormat.FULL
             events("passed", "skipped", "failed")
+        }
+    }
+}
+
+val libraryVersion: String = properties["lib_version"]?.toString() ?: "latest-local"
+
+publishing {
+    repositories{
+        mavenLocal()
+        maven {
+            url = uri("https://maven.pkg.github.com/navikt/tms-varsel-authority")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+
+    publications {
+        create<MavenPublication>("gpr") {
+            groupId = "no.nav.tms.varsel"
+            artifactId = "varsel-action"
+            version = libraryVersion
+            from(components["java"])
         }
     }
 }

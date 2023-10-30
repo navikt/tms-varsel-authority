@@ -47,25 +47,25 @@ object VarselMetricsReporter {
 
     fun registerVarselAktivert(varselType: Varseltype, produsent: DatabaseProdusent) {
         VARSEL_AKTIVERT
-            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
+            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn)
             .inc()
     }
 
     fun registerVarselInaktivert(varselType: Varseltype, produsent: DatabaseProdusent, kilde: VarselInaktivertKilde) {
         VARSEL_INAKTIVERT
-            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kilde.lowercaseName)
+            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, kilde.lowercaseName)
             .inc()
     }
 
     fun registerVarselArkivert(varselType: Varseltype, produsent: DatabaseProdusent) {
         VARSEL_ARKIVERT
-            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn)
+            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn)
             .inc()
     }
 
     fun registerEksternVarslingSendt(varselType: Varseltype, produsent: DatabaseProdusent, kanal: String) {
         EKSTERN_VARSLING_SENDT
-            .labels(varselType.lowercaseName, produsent.namespace, produsent.appnavn, kanal)
+            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, kanal)
             .inc()
     }
 
@@ -79,7 +79,7 @@ object VarselMetricsReporter {
     fun registerVarselHentet(varselType: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
         VARSEL_HENTET
             .labels(
-                varselType?.lowercaseName ?: "all",
+                varselType?.name?.lowercase() ?: "all",
                 source.lowercaseName,
                 levelOfAssurance?.name?.lowercase() ?: "na"
             )

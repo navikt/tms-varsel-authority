@@ -7,10 +7,8 @@ import java.time.ZonedDateTime
 enum class EventType {
     Opprett, Endre, Inaktiver, Slett;
 
-    private val lowercaseName = name.lowercase()
-
     @JsonValue
-    fun toJson() = lowercaseName
+    fun toJson() = name.lowercase()
 }
 
 data class OpprettVarsel(
@@ -45,20 +43,16 @@ data class Tekst(
 enum class Varseltype {
     Beskjed, Oppgave, Innboks;
 
-    val lowercaseName = name.lowercase()
-
     @JsonValue
-    fun toJson() = lowercaseName
+    fun toJson() = name.lowercase()
 }
 
 enum class Sensitivitet {
     Substantial,
     High;
 
-    val lowercaseName = name.lowercase()
-
     @JsonValue
-    fun toJson() = lowercaseName
+    fun toJson() = name.lowercase()
 }
 
 data class Produsent(
@@ -74,8 +68,8 @@ enum class EksternKanal {
 data class EksternVarslingBestilling(
     val prefererteKanaler: List<EksternKanal> = emptyList(),
     val smsVarslingstekst: String? = null,
-    val epostVarslingstekst: String? = null,
     val epostVarslingstittel: String? = null,
+    val epostVarslingstekst: String? = null,
 )
 
 internal data class EndreVarsel(

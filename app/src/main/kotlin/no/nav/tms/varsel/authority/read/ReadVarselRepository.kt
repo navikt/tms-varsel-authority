@@ -28,7 +28,7 @@ class ReadVarselRepository(private val database: Database) {
                     ${ if (type != null) " and type = :type " else "" }
                     ${ if (aktiv != null) " and aktiv = :aktiv " else "" }
             """,
-                mapOf("ident" to ident, "type" to type?.lowercaseName, "aktiv" to aktiv)
+                mapOf("ident" to ident, "type" to type?.name?.lowercase(), "aktiv" to aktiv)
             )
                 .map(toVarselsammendrag())
                 .asList
@@ -54,7 +54,7 @@ class ReadVarselRepository(private val database: Database) {
                     ${ if (type != null) " and type = :type " else "" }
                     ${ if (aktiv != null) " and aktiv = :aktiv " else "" }
             """,
-                mapOf("ident" to ident, "type" to type?.lowercaseName, "aktiv" to aktiv)
+                mapOf("ident" to ident, "type" to type?.name?.lowercase(), "aktiv" to aktiv)
             )
                 .map(toDetaljertVarsel())
                 .asList
