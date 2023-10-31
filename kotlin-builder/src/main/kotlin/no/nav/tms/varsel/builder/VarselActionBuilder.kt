@@ -8,7 +8,6 @@ import no.nav.tms.varsel.action.*
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 
 object VarselActionBuilder {
     private val objectMapper = jacksonMapperBuilder()
