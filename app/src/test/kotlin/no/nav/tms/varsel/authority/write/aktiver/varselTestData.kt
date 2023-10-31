@@ -114,8 +114,8 @@ private fun eksternVarsling(eksternVarsling: EksternVarslingBestilling?): String
 {
     "prefererteKanaler": [${eksternVarsling.prefererteKanaler.joinToString(",") { "\"${it.name}\"" }}],
     "smsVarslingstekst": ${ eksternVarsling.smsVarslingstekst.asJson() },
-    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() },
-    "epostVarslingstittel": ${ eksternVarsling.epostVarslingstittel.asJson() }
+    "epostVarslingstittel": ${ eksternVarsling.epostVarslingstittel.asJson() },
+    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() }
 } 
     """
     } else {

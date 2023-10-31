@@ -256,8 +256,8 @@ class OpprettVarselValidationTest {
         eksternVarsling = EksternVarslingBestilling(
             prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
             smsVarslingstekst = "sms tekst",
-            epostVarslingstekst = "epost tekst",
-            epostVarslingstittel = "epost tittel"
+            epostVarslingstittel = "epost tittel",
+            epostVarslingstekst = "epost tekst"
         ),
         aktivFremTil = if (type == Varseltype.Innboks) {
             null

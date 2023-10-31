@@ -62,8 +62,8 @@ class OpprettVarselBuilderTest {
         assertFalse(eksternVarsling.isNull());
         assertEquals(eksternVarsling.get("prefererteKanaler").size(), 0);
         assertNull(eksternVarsling.get("smsVarslingstekst"));
-        assertNull(eksternVarsling.get("epostVarslingstekst"));
         assertNull(eksternVarsling.get("epostVarslingstittel"));
+        assertNull(eksternVarsling.get("epostVarslingstekst"));
 
         assertEquals(json.get("aktivFremTil").asText(), "2023-10-10T10:00:00Z");
 
