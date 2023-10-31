@@ -102,14 +102,14 @@ public class OpprettVarselBuilder {
     public OpprettVarselBuilder withEksternVarsling(
         List<EksternKanal> prefererteKanaler,
         String smsVarslingstekst,
-        String epostVarslingstekst,
-        String epostVarslingstittel
-    ) {
+        String epostVarslingstittel,
+        String epostVarslingstekst
+        ) {
         this.eksternVarsling = new EksternVarslingBestilling(
             prefererteKanaler,
             smsVarslingstekst,
-            epostVarslingstekst,
-            epostVarslingstittel
+            epostVarslingstittel,
+            epostVarslingstekst
         );
         return this;
     }

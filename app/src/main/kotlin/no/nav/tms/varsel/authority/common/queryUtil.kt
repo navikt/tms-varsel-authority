@@ -34,12 +34,12 @@ fun Any?.toJsonb(objectMapper: ObjectMapper = defaultObjectMapper()): PGobject? 
 
 fun parseSensitivitet(string: String): Sensitivitet {
     return Sensitivitet.values()
-        .filter { it.lowercaseName == string.lowercase() }
+        .filter { it.name.lowercase() == string.lowercase() }
         .firstOrNull() ?: throw IllegalArgumentException("Could not parse sensitivitet $string")
 }
 
 fun parseVarseltype(string: String): Varseltype {
     return Varseltype.values()
-        .filter { it.lowercaseName == string.lowercase() }
+        .filter { it.name.lowercase() == string.lowercase() }
         .firstOrNull() ?: throw IllegalArgumentException("Could not parse varseltype $string")
 }

@@ -68,8 +68,8 @@ enum class EksternKanal {
 data class EksternVarslingBestilling(
     val prefererteKanaler: List<EksternKanal> = emptyList(),
     val smsVarslingstekst: String? = null,
-    val epostVarslingstekst: String? = null,
     val epostVarslingstittel: String? = null,
+    val epostVarslingstekst: String? = null,
 )
 
 internal data class EndreVarsel(

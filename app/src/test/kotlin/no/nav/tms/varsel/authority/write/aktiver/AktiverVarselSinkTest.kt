@@ -56,7 +56,7 @@ internal class AktiverVarselSinkTest {
 
         dbVarsel.shouldNotBeNull()
 
-        dbVarsel.type.lowercaseName shouldBe beskjedEvent.eventName
+        dbVarsel.type.name.lowercase() shouldBe beskjedEvent.eventName
         dbVarsel.innhold.tekst shouldBe beskjedEvent.tekst
         dbVarsel.innhold.link shouldBe beskjedEvent.link
         dbVarsel.aktiv shouldBe true

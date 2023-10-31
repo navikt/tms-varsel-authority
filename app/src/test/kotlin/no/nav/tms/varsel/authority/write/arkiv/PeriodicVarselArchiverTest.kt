@@ -89,7 +89,7 @@ internal class PeriodicVarselArchiverTest {
             .first()
             .let {
                 it["varselId"].asText() shouldBe gammelBeskjed.varselId
-                it["varselType"].asText() shouldBe gammelBeskjed.type.lowercaseName
+                it["varselType"].asText() shouldBe gammelBeskjed.type.name.lowercase()
                 it["namespace"].asText() shouldBe gammelBeskjed.produsent.namespace
                 it["appnavn"].asText() shouldBe gammelBeskjed.produsent.appnavn
                 it["opprettet"].asZonedDateTime().toEpochSecond() shouldBe gammelBeskjed.opprettet.toEpochSecond()

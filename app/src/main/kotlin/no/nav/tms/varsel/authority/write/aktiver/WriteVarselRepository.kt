@@ -51,10 +51,10 @@ class WriteVarselRepository(val database: Database) {
                     )
                 """,
                 mapOf(
-                    "type" to dbVarsel.type.lowercaseName,
+                    "type" to dbVarsel.type.name.lowercase(),
                     "varselId" to dbVarsel.varselId,
                     "ident" to dbVarsel.ident,
-                    "sensitivitet" to dbVarsel.sensitivitet.lowercaseName,
+                    "sensitivitet" to dbVarsel.sensitivitet.name.lowercase(),
                     "innhold" to dbVarsel.innhold.toJsonb(objectMapper),
                     "produsent" to dbVarsel.produsent.toJsonb(objectMapper),
                     "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(objectMapper),

@@ -72,8 +72,8 @@ fun opprettVarselEvent(
     eksternVarsling: EksternVarslingBestilling? = EksternVarslingBestilling(
         prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
         smsVarslingstekst = "smsTekst",
-        epostVarslingstekst = null,
-        epostVarslingstittel = null
+        epostVarslingstittel = null,
+        epostVarslingstekst = null
     )
 ) = """
 {
@@ -88,7 +88,7 @@ fun opprettVarselEvent(
     "ident": "$ident",
     "tekster": ${tekster(tekster)},
     "link": ${link.asJson()},
-    "sensitivitet": "${sensitivitet.lowercaseName}",
+    "sensitivitet": "${sensitivitet.name.lowercase()}",
     "aktivFremTil": "$aktivFremTil",
     "eksternVarsling": ${eksternVarsling(eksternVarsling)},
     "metadata": {

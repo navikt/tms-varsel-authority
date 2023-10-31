@@ -61,7 +61,7 @@ class OpprettVarselSinkTest {
 
         dbVarsel.shouldNotBeNull()
 
-        dbVarsel.type.lowercaseName shouldBe "beskjed"
+        dbVarsel.type.name.lowercase() shouldBe "beskjed"
         dbVarsel.innhold.tekst shouldBe opprettJson["tekster"].first()["tekst"].asText()
         dbVarsel.innhold.link shouldBe opprettJson["link"].asText()
         dbVarsel.aktiv shouldBe true
