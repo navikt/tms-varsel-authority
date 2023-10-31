@@ -16,8 +16,8 @@ repositories {
 }
 
 dependencies {
+    api(project(":varsel-action"))
     implementation(JacksonDatatype.datatypeJsr310)
-    implementation(project(":varsel-action"))
     testImplementation(Junit.api)
     testImplementation(Junit.engine)
 }

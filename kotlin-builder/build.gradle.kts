@@ -23,9 +23,9 @@ repositories {
 }
 
 dependencies {
+    api(project(":varsel-action"))
     implementation(JacksonDatatype.moduleKotlin)
     implementation(JacksonDatatype.datatypeJsr310)
-    implementation(project(":varsel-action"))
     testImplementation(Junit.api)
     testImplementation(Junit.engine)
     testImplementation(Kotest.runnerJunit5)
