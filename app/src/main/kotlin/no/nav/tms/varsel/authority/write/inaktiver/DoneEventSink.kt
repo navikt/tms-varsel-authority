@@ -13,6 +13,9 @@ internal class DoneEventSink(
     River.PacketListener {
 
     private val log = KotlinLogging.logger {}
+    private val securelog = KotlinLogging.logger("secureLog")
+
+    private val sourceTopic = "internal"
 
     init {
         River(rapidsConnection).apply {
@@ -21,7 +24,7 @@ internal class DoneEventSink(
         }.register(this)
     }
 
-    private val staticMetadata = mapOf<String, Any>("inaktiver_event" to mapOf("source_topic" to "internal"))
+    private val staticMetadata = mapOf<String, Any>("inaktiver_event" to mapOf("source_topic" to sourceTopic))
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val varselId = getVarselId(packet)
@@ -31,7 +34,7 @@ internal class DoneEventSink(
         if (varsel != null && varsel.aktiv) {
             varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent, staticMetadata)
 
-            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent)
+            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent, sourceTopic)
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselType = varsel.type,
@@ -49,6 +52,7 @@ internal class DoneEventSink(
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error { problems.toString() }
+        log.error { "Feil ved lesing av done-event" }
+        securelog.error { "Feil ved lesing av done-event: ${problems.toExtendedReport()}" }
     }
 }

@@ -4,9 +4,6 @@ import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.action.InaktiverVarsel
-import no.nav.tms.varsel.action.OpprettVarsel
-import no.nav.tms.varsel.action.OpprettVarselValidation
-import no.nav.tms.varsel.action.VarselValidationException
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.config.rawJson
@@ -22,6 +19,8 @@ internal class InaktiverVarselSink(
     private val log = KotlinLogging.logger {}
     private val securelog = KotlinLogging.logger("secureLog")
     private val objectMapper = defaultObjectMapper()
+
+    private val sourceTopic = "external"
 
     init {
         River(rapidsConnection).apply {
@@ -44,9 +43,10 @@ internal class InaktiverVarselSink(
             )
 
             VarselMetricsReporter.registerVarselInaktivert(
-                varsel.type,
-                varsel.produsent,
-                VarselInaktivertKilde.Produsent
+                varseltype = varsel.type,
+                produsent = varsel.produsent,
+                kilde = VarselInaktivertKilde.Produsent,
+                sourceTopic = sourceTopic
             )
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
@@ -62,7 +62,7 @@ internal class InaktiverVarselSink(
 
     fun mapMetadata(inaktiverVarsel: InaktiverVarsel): Map<String, Any> {
         val inaktiverEvent = mutableMapOf(
-            "source_topic" to "external",
+            "source_topic" to sourceTopic,
             "produsent" to inaktiverVarsel.produsent
         )
 

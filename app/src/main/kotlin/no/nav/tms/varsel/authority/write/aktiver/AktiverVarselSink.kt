@@ -26,7 +26,9 @@ internal class AktiverVarselSink(
 
     private val log = KotlinLogging.logger { }
 
-    private val staticMetadata = mapOf<String, Any>("opprett_event" to mapOf("source_topic" to "internal"))
+    private val sourceTopic = "internal"
+
+    private val staticMetadata = mapOf<String, Any>("opprett_event" to mapOf("source_topic" to sourceTopic))
 
     init {
         River(rapidsConnection).apply {
@@ -76,7 +78,7 @@ internal class AktiverVarselSink(
         try {
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
-            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
+            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
             log.info { "Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel med id [${dbVarsel.varselId}]." }

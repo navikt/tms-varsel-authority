@@ -91,15 +91,15 @@ private fun startRapid(environment: Environment, database: Database) {
             varselRepository = varselRepository,
             varselAktivertProducer = varselAktivertProducer
         )
-        OpprettVarselSink(
-            rapidsConnection = this,
-            varselRepository = varselRepository,
-            varselAktivertProducer = varselAktivertProducer
-        )
         DoneEventSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
             varselInaktivertProducer = varselInaktivertProducer
+        )
+        OpprettVarselSink(
+            rapidsConnection = this,
+            varselRepository = varselRepository,
+            varselAktivertProducer = varselAktivertProducer
         )
         InaktiverVarselSink(
             rapidsConnection = this,

@@ -30,6 +30,8 @@ internal class OpprettVarselSink(
     private val securelog = KotlinLogging.logger("secureLog")
     private val objectMapper = defaultObjectMapper()
 
+    private val sourceTopic = "external"
+
     init {
         River(rapidsConnection).apply {
             validate { it.demandValue("@event_name", "opprett") }
@@ -77,7 +79,7 @@ internal class OpprettVarselSink(
         try {
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
-            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
+            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
             log.info { "Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel med id [${dbVarsel.varselId}]." }
@@ -109,7 +111,7 @@ internal class OpprettVarselSink(
 
     private fun mapMetadata(opprettVarsel: OpprettVarsel): Map<String, Any> {
         val opprettEvent = mutableMapOf<String, Any>(
-            "source_topic" to "external"
+            "source_topic" to sourceTopic
         )
 
         if (opprettVarsel.metadata != null) {

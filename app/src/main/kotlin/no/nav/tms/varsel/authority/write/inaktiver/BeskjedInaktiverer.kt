@@ -14,8 +14,6 @@ class BeskjedInaktiverer(
 ) {
     private val log = KotlinLogging.logger {}
 
-    private val staticMetadata = emptyMap<String, Any>()
-
     suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         val varsel = varselRepository.getVarsel(varselId)
 
@@ -30,7 +28,7 @@ class BeskjedInaktiverer(
 
             varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
-            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)
+            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker, "N/A")
 
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(

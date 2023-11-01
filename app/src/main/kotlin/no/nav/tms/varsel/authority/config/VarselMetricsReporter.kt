@@ -21,14 +21,14 @@ object VarselMetricsReporter {
         .name(VARSEL_AKTIVERT_NAME)
         .namespace(NAMESPACE)
         .help("Varsler aktivert")
-        .labelNames("type", "produsent_namespace", "produsent_app")
+        .labelNames("type", "produsent_namespace", "produsent_app", "source_topic")
         .register()
 
     private val VARSEL_INAKTIVERT: Counter = Counter.build()
         .name(VARSEL_INAKTIVERT_NAME)
         .namespace(NAMESPACE)
         .help("Varsler inaktivert")
-        .labelNames("type", "produsent_namespace", "produsent_app", "kilde")
+        .labelNames("type", "produsent_namespace", "produsent_app", "kilde", "source_topic")
         .register()
 
     private val VARSEL_ARKIVERT: Counter = Counter.build()
@@ -45,15 +45,15 @@ object VarselMetricsReporter {
         .labelNames("type", "produsent_namespace", "produsent_app", "kanal")
         .register()
 
-    fun registerVarselAktivert(varselType: Varseltype, produsent: DatabaseProdusent) {
+    fun registerVarselAktivert(varselType: Varseltype, produsent: DatabaseProdusent, sourceTopic: String) {
         VARSEL_AKTIVERT
-            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn)
+            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, sourceTopic)
             .inc()
     }
 
-    fun registerVarselInaktivert(varselType: Varseltype, produsent: DatabaseProdusent, kilde: VarselInaktivertKilde) {
+    fun registerVarselInaktivert(varseltype: Varseltype, produsent: DatabaseProdusent, kilde: VarselInaktivertKilde, sourceTopic: String) {
         VARSEL_INAKTIVERT
-            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, kilde.lowercaseName)
+            .labels(varseltype.name.lowercase(), produsent.namespace, produsent.appnavn, kilde.lowercaseName, sourceTopic)
             .inc()
     }
 
