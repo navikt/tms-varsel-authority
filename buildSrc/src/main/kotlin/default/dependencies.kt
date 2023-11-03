@@ -116,7 +116,7 @@ interface KotliQueryDefaults: DependencyGroup {
 }
 
 object KtorDefaults {
-    val version get() = "2.3.2"
+    val version get() = "2.3.5"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
@@ -224,7 +224,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "com.github.navikt"
-    override val version get() = "1.6.0"
+    override val version get() = "1.7.1"
 
     val commonLib get() = dependency("tms-common-lib")
 }
