@@ -3,7 +3,7 @@
 _For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk
 med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)._
 
-1. Kafka tilgang: Opprette en pull-request
+1. Kafka tilgang: Opprett en pull-request
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).
 2. Koble på topicene.
 3. Send event!
@@ -26,6 +26,9 @@ Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og ep
 og hvorvidt standardtekst skal overskrives. 
 
 Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
+
+Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på
+epost og sms.
 
 ### Revarsling 
 
