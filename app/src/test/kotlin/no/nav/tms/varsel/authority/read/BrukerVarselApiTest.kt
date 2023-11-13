@@ -176,9 +176,9 @@ class BrukerVarselApiTest {
         }
     }
 
-    private suspend fun HttpClient.getVarsler(path: String): List<Varselsammendrag> = get(path).body()
+    private suspend fun HttpClient.getVarsler(path: String): List<DatabaseVarselsammendrag> = get(path).body()
 
-    private fun List<Varselsammendrag>.shouldFind(predicate: (Varselsammendrag) -> Boolean): Varselsammendrag {
+    private fun List<DatabaseVarselsammendrag>.shouldFind(predicate: (DatabaseVarselsammendrag) -> Boolean): DatabaseVarselsammendrag {
         val varsel = find(predicate)
 
         varsel.shouldNotBeNull()
@@ -186,7 +186,7 @@ class BrukerVarselApiTest {
         return varsel
     }
 
-    private infix fun Varselsammendrag.shouldMatch(dbVarsel: DatabaseVarsel) {
+    private infix fun DatabaseVarselsammendrag.shouldMatch(dbVarsel: DatabaseVarsel) {
         type shouldBe dbVarsel.type
         varselId shouldBe dbVarsel.varselId
         aktiv shouldBe dbVarsel.aktiv

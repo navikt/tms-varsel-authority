@@ -20,14 +20,14 @@ fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
         user: TokenXUser,
         type: Varseltype? = null,
-        aktiv: Boolean? = null
+        aktiv: Boolean? = null,
+        spraakkode: String? = null
     ) = withContext(Dispatchers.IO) {
 
-        val varsler = if (loaIsLowerThanHigh(user)) {
-            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv).maskInnhold()
-        } else {
-            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
-        }
+        val varsler = readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
+            .toSammendrag()
+
+
         VarselMetricsReporter.registerVarselHentet(type,BRUKER,user.levelOfAssurance)
         call.respond(varsler)
     }
@@ -79,13 +79,45 @@ fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
     get("/innboks/sammendrag/inaktive") {
         fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = false)
     }
+
+    get("/innboks/sammendrag") {
+        fetchVarslerAndRespond(
+            user = call.user,
+            type = Innboks,
+            aktiv = false
+        )
+    }
 }
 
 private val ApplicationCall.user get() = TokenXUserFactory.createTokenXUser(this)
 
 private fun loaIsLowerThanHigh(user: TokenXUser) = user.levelOfAssurance != LevelOfAssurance.HIGH
 
-private fun List<Varselsammendrag>.maskInnhold() = map { varsel ->
+private fun List<DatabaseVarselsammendrag>.toSammendrag(
+    maskerSensitive: Boolean,
+    spraakkode: String? = null
+) = map {
+
+    val innhold = if (maskerSensitive && it.sensitivitet == Sensitivitet.High) {
+        null
+    } else if (spraakkode == null) {
+
+    }
+
+    Varselsammendrag(
+        type = it.type,
+        varselId = it.varselId,
+        aktiv = it.aktiv,
+        innhold = it.innhold,
+        eksternVarslingSendt = it.eksternVarslingSendt,
+        eksternVarslingKanaler = it.eksternVarslingKanaler,
+        opprettet = it.opprettet,
+        aktivFremTil = it.aktivFremTil,
+        inaktivert = it.inaktivert,
+    )
+}
+
+private fun List<DatabaseVarselsammendrag>.maskInnhold() = map { varsel ->
     if (varsel.sensitivitet == Sensitivitet.High) {
         varsel.copy(innhold = null)
     } else {

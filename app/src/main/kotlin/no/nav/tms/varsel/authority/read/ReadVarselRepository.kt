@@ -9,7 +9,7 @@ import no.nav.tms.varsel.action.Varseltype
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
 
-    fun getVarselSammendragForUser(ident: String, type: Varseltype? = null, aktiv: Boolean? = null): List<Varselsammendrag> {
+    fun getVarselSammendragForUser(ident: String, type: Varseltype? = null, aktiv: Boolean? = null, spraakkode: String? = null): List<DatabaseVarselsammendrag> {
         return database.list {
             queryOf("""
                 select
@@ -61,8 +61,8 @@ class ReadVarselRepository(private val database: Database) {
         }
     }
 
-    private fun toVarselsammendrag(): (Row) -> Varselsammendrag = {
-        Varselsammendrag(
+    private fun toVarselsammendrag(): (Row) -> DatabaseVarselsammendrag = {
+        DatabaseVarselsammendrag(
             type = it.string("type").let(::parseVarseltype),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
