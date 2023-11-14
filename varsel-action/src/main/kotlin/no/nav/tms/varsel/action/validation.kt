@@ -111,7 +111,7 @@ private object OpprettVarselLanguageCodeValidator: OpprettVarselValidator {
 private object LanguageCodeValidator {
     const val description = "Tekst må ha gyldig ISO 639 språkkode"
 
-    private val validPattern = "^[a-zA-z]{2,8}$".toRegex()
+    private val validPattern = "^[a-zA-Z]{2,8}$".toRegex()
 
     fun validate(tekst: Tekst): Boolean {
         return validPattern.matches(tekst.spraakkode)

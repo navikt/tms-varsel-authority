@@ -30,8 +30,10 @@ data class DatabaseVarselsammendrag(
             )
         } else if (innhold.tekster.size == 1) {
             innhold.tekster.first()
+        } else if (spraakkode == null) {
+            innhold.tekster.first { it.default }
         } else {
-            innhold.tekster.find { it.spraakkode == spraakkode }
+            innhold.tekster.find { it.spraakkode.lowercase() == spraakkode.lowercase() }
                 ?: innhold.tekster.first { it.default }
         }
     }

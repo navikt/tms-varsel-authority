@@ -52,13 +52,13 @@ Builderne finnes i følgende bibliotek:
 
 ### Github Maven repository
 
-- kotlin: no.nav.tms.varsel:kotlin-builder:1.0.0-beta
-- java: no.nav.tms.varsel:java-builder:1.0.0-beta
+- kotlin: no.nav.tms.varsel:kotlin-builder:1.0.0
+- java: no.nav.tms.varsel:java-builder:1.0.0
 
 ### Jitpack
 
-- kotlin: com.github.navikt.tms-varsel-authority:kotlin-builder:1.0.0-beta
-- java: com.github.navikt.tms-varsel-authority:java-builder:1.0.0-beta
+- kotlin: com.github.navikt.tms-varsel-authority:kotlin-builder:1.0.0
+- java: com.github.navikt.tms-varsel-authority:java-builder:1.0.0
 
 ## Oppretting av varsel
 

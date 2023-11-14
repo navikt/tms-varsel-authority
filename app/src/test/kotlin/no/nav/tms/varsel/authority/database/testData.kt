@@ -1,11 +1,8 @@
 package no.nav.tms.varsel.authority.database
 
-import no.nav.tms.varsel.action.EksternKanal
+import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.action.EksternKanal.EPOST
 import no.nav.tms.varsel.action.EksternKanal.SMS
-import no.nav.tms.varsel.action.EksternVarslingBestilling
-import no.nav.tms.varsel.action.Sensitivitet
-import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
@@ -44,10 +41,12 @@ fun dbVarsel(
 
 fun dbInnhold(
     tekst: String = "varseltekst",
-    link: String? = "http://link"
+    link: String? = "http://link",
+    tekster: List<Tekst> = listOf(Tekst("nb", "varseltekst", false))
 ) = Innhold(
     tekst = tekst,
-    link = link
+    link = link,
+    tekster = tekster
 )
 
 fun dbProdusent(

@@ -18,8 +18,8 @@ import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.token.support.azure.validation.azure
 import no.nav.tms.token.support.tokenx.validation.tokenX
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
-import no.nav.tms.varsel.authority.read.saksbehandlerVarselApi
-import no.nav.tms.varsel.authority.read.brukerVarselApi
+import no.nav.tms.varsel.authority.read.detaljertVarselApi
+import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
 import java.text.DateFormat
 
@@ -85,10 +85,10 @@ fun Application.varselApi(
     routing {
         authenticate {
             inaktiverBeskjedApi(beskjedInaktiverer)
-            brukerVarselApi(readVarselRepository)
+            varselSammendragApi(readVarselRepository)
         }
         authenticate(AzureAuthenticator.name) {
-            saksbehandlerVarselApi(readVarselRepository)
+            detaljertVarselApi(readVarselRepository)
         }
     }
 }
