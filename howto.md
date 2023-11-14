@@ -55,6 +55,8 @@ Builderne finnes i følgende bibliotek:
 - kotlin: no.nav.tms.varsel:kotlin-builder:1.0.0
 - java: no.nav.tms.varsel:java-builder:1.0.0
 
+Husk å legge til autentisert repository `https://maven.pkg.github.com/navikt/tms-varsel-authority`
+
 ### Jitpack
 
 - kotlin: com.github.navikt.tms-varsel-authority:kotlin-builder:1.0.0
