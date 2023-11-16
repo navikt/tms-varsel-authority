@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.read
 
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
@@ -14,8 +15,9 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source.BRUKER
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.authority.common.parseVarseltype
 
-fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
+fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
         user: TokenXUser,
@@ -23,11 +25,12 @@ fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
 
-        val varsler = if (loaIsLowerThanHigh(user)) {
-            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv).maskInnhold()
-        } else {
-            readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
-        }
+        val varsler = readRepository.getVarselSammendragForUser(user.ident, type = type, aktiv = aktiv)
+            .toSammendrag(
+                maskerSensitive = loaIsLowerThanHigh(user),
+                spraakkode = call.request.preferertSpraak
+            )
+
         VarselMetricsReporter.registerVarselHentet(type,BRUKER,user.levelOfAssurance)
         call.respond(varsler)
     }
@@ -79,16 +82,51 @@ fun Route.brukerVarselApi(readRepository: ReadVarselRepository) {
     get("/innboks/sammendrag/inaktive") {
         fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = false)
     }
+
+    get("/varsel/sammendrag") {
+        fetchVarslerAndRespond(
+            user = call.user,
+            type = call.request.type,
+            aktiv = call.request.aktiv
+        )
+    }
 }
+
+private val ApplicationRequest.type get() = queryParameters["type"]?.let { parseVarseltype(it) }
+private val ApplicationRequest.aktiv get() = queryParameters["aktiv"]?.lowercase()?.toBooleanStrict()
+private val ApplicationRequest.preferertSpraak get() = queryParameters["preferert_spraak"]?.lowercase()
+
 
 private val ApplicationCall.user get() = TokenXUserFactory.createTokenXUser(this)
 
 private fun loaIsLowerThanHigh(user: TokenXUser) = user.levelOfAssurance != LevelOfAssurance.HIGH
 
-private fun List<Varselsammendrag>.maskInnhold() = map { varsel ->
-    if (varsel.sensitivitet == Sensitivitet.High) {
-        varsel.copy(innhold = null)
+private fun List<DatabaseVarselsammendrag>.toSammendrag(
+    maskerSensitive: Boolean,
+    spraakkode: String? = null
+) = map {
+
+    val innholdsammendrag = if (maskerSensitive && it.sensitivitet == Sensitivitet.High) {
+        null
     } else {
-        varsel.copy()
+        val tekst = it.tekstOrDefault(spraakkode)
+
+        Innholdsammendrag(
+            spraakkode = tekst.spraakkode,
+            tekst = tekst.tekst,
+            link = it.innhold.link
+        )
     }
+
+    Varselsammendrag(
+        type = it.type,
+        varselId = it.varselId,
+        aktiv = it.aktiv,
+        innhold = innholdsammendrag,
+        eksternVarslingSendt = it.eksternVarslingSendt,
+        eksternVarslingKanaler = it.eksternVarslingKanaler,
+        opprettet = it.opprettet,
+        aktivFremTil = it.aktivFremTil,
+        inaktivert = it.inaktivert,
+    )
 }

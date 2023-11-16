@@ -13,7 +13,7 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 
-fun Route.saksbehandlerVarselApi(readRepository: ReadVarselRepository) {
+fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 
     suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
         ident: String,
