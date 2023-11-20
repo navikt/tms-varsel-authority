@@ -2,7 +2,6 @@ import default.*
 
 // Managed by tms-dependency-admin. Overrides and additions should be placed in separate file
 
-object DittNAVCommonLib: DittNAVCommonLibDefaults
 object Flyway: FlywayDefaults
 object Hikari: HikariDefaults
 object JacksonDatatype: JacksonDatatypeDefaults
