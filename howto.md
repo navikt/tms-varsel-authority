@@ -3,7 +3,7 @@
 _For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk
 med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)._
 
-1. Kafka tilgang: Opprett en pull-request
+1. Kafka tilgang: Opprett en pull-request mot topic `aapen-brukervarsel-v1`
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).
 2. Koble på topicene.
 3. Send event!
@@ -40,6 +40,15 @@ bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir rev
 Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster, selv om
 kun 1 kanal er preferert. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
 
+## Overvåking av varsler
+
+Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler.
+
+Per i dag er det kun mulig å lytte på når varsler aktiveres/inaktiveres. Det vil etter hvert bli mulig å lytte på
+status for eksern varslign og andre typer hendelser.
+
+Produsenter som ønsker å lytte på status for ekstern varsling har også mulighet til å lytte direkte
+på topic [aapen-dok-notifikasjon-status](https://github.com/navikt/dokumenthandtering-iac/tree/master) tilørende team dokumenthåndtering.
 
 ## Kafka, schemas og buildere
 
@@ -57,11 +66,6 @@ Builderne finnes i følgende bibliotek:
 
 Husk å legge til autentisert repository `https://maven.pkg.github.com/navikt/tms-varsel-authority`
 
-### Jitpack
-
-- kotlin: com.github.navikt.tms-varsel-authority:kotlin-builder:1.0.0
-- java: com.github.navikt.tms-varsel-authority:java-builder:1.0.0
-
 ## Oppretting av varsel
 
 For å gi varsel til bruker sender en et opprett-varsel event.
@@ -72,7 +76,7 @@ For å gi varsel til bruker sender en et opprett-varsel event.
 |-----------------|------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | type            | ja               | Type på varsel (beskjed, oppgave, innboks)                                                 | Må være én av `beskjed`, `oppgave`, `innboks`                                 |                                                                                                                                                                                                                             |
 | varselId        | ja               | Id til varselet. Produsenten bruker samme Id til å inaktivere varsel                       | Må være UUID eller ULID                                                       |                                                                                                                                                                                                                             |
-| ident           | ja               | Personident til mottaker av varsel                                                         | Må ha 11 siffer                                                               |                                                                                                                                                                                                                             |
+| ident           | ja               | Fodselsnummer (evt. d-nummer eller tilsvarende) til mottaker av varsel                     | Må ha 11 siffer                                                               |                                                                                                                                                                                                                             |
 | tekster         | ja, minst 1      | Teksten som faktisk vises i varselet med språkkode.                                        | Dersom flere tekster på ulike språk er gitt må én tekst være satt som default | Språkkode må følge ISO-639 (typen `no`, `nb`, `en`...)                                                                                                                                                                      |
 | link            | ikke for beskjed | Lenke som blir aktivert når en person trykker på varselet i varselbjella eller på min side | Komplett URL, inkludert `https` protokoll.                                    |                                                                                                                                                                                                                             |
 | sensitivitet    | ja               | påkrevd level-of-assurance for å kunne se innhold i varsel                                 | Én av `high`, `substantial`                                                   | `high` og `substantial` tilsvarer det som tidligere var henholdvis nivå `4` og `3`. Hvis personen har varsler med sensitivitet `high`, men er logget inn med LoA `substantial`, vil hen se type varsel, men ikke innholdet. |
