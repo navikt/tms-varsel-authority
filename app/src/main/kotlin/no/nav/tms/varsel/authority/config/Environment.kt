@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.config
 
-import no.nav.personbruker.dittnav.common.util.config.IntEnvVar.getEnvVarAsInt
-import no.nav.personbruker.dittnav.common.util.config.StringEnvVar.getEnvVar
+import no.nav.tms.common.util.config.IntEnvVar.getEnvVarAsInt
+import no.nav.tms.common.util.config.StringEnvVar.getEnvVar
 
 data class Environment(
     val dbUser: String = getEnvVar("DB_USERNAME"),
