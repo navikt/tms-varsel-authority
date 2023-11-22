@@ -20,13 +20,16 @@ tasks.withType<KotlinCompile> {
 repositories {
     mavenCentral()
     maven("https://packages.confluent.io/maven")
-    maven ( "https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven" )
+    maven("https://maven.pkg.github.com/navikt/*") {
+        credentials {
+            username = System.getenv("GITHUB_ACTOR")?: "x-access-token"
+            password = System.getenv("GITHUB_TOKEN")?: project.findProperty("githubPassword") as String
+        }
+    }
     mavenLocal()
-    maven("https://jitpack.io")
 }
 
 dependencies {
-    implementation(DittNAVCommonLib.utils)
     implementation(Flyway.core)
     implementation(Hikari.cp)
     implementation(Kafka.clients)
@@ -49,7 +52,8 @@ dependencies {
     implementation(TmsKtorTokenSupport.azureExchange)
     implementation(KotliQuery.kotliquery)
     implementation(JacksonDatatype.moduleKotlin)
-    implementation(TmsCommonLib.commonLib)
+    implementation(TmsCommonLib.utils)
+    implementation(TmsCommonLib.metrics)
     implementation(project(":varsel-action"))
 
     testImplementation(Junit.api)

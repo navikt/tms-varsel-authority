@@ -9,7 +9,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
-import no.nav.personbruker.dittnav.common.util.config.StringEnvVar.getEnvVar
+import no.nav.tms.common.util.config.StringEnvVar.getEnvVar
 import java.net.InetAddress
 import java.text.DateFormat
 import java.time.Instant
