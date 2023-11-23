@@ -8,6 +8,7 @@ on:
       - .github/workflows/**
       - README.md
       - howto.md
+      - migrering.md
 
 permissions:
   contents: write
