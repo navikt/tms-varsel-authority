@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
+import observability.traceVarsel
+import org.slf4j.MDC
 
 internal class DoneEventSink(
     rapidsConnection: RapidsConnection,
@@ -27,26 +29,35 @@ internal class DoneEventSink(
     private val staticMetadata = mapOf<String, Any>("inaktiver_event" to mapOf("source_topic" to sourceTopic))
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
+
         val varselId = getVarselId(packet)
 
-        val varsel = varselRepository.getVarsel(varselId)
+        traceVarsel(id = varselId, mapOf("action" to "done")) {
+            val varsel = varselRepository.getVarsel(varselId)
 
-        if (varsel != null && varsel.aktiv) {
-            varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent, staticMetadata)
+            varsel?.let {
+                MDC.put("initiated_by", varsel.produsent.namespace)
 
-            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent, sourceTopic)
-            varselInaktivertProducer.varselInaktivert(
-                VarselInaktivertHendelse(
-                    varselType = varsel.type,
-                    varselId = varsel.varselId,
-                    namespace = varsel.produsent.namespace,
-                    appnavn = varsel.produsent.appnavn,
-                    kilde = VarselInaktivertKilde.Produsent
-                )
-            )
+                if (varsel.aktiv) {
+
+                    varselRepository.inaktiverVarsel(varselId, VarselInaktivertKilde.Produsent, staticMetadata)
+
+                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, VarselInaktivertKilde.Produsent, sourceTopic)
+                    varselInaktivertProducer.varselInaktivert(
+                        VarselInaktivertHendelse(
+                            varselType = varsel.type,
+                            varselId = varsel.varselId,
+                            namespace = varsel.produsent.namespace,
+                            appnavn = varsel.produsent.appnavn,
+                            kilde = VarselInaktivertKilde.Produsent
+                        )
+                    )
+                    log.info { "Inaktiverte varsel etter event fra rapid" }
+                } else {
+                    log.info { "Behandlet done-event for allerede inaktivt varsel" }
+                }
+            }?: log.info { "Fant ikke varsel" }
         }
-
-        log.info { "Inaktiverte varsel etter event fra rapid med varselId $varselId" }
     }
 
     private fun getVarselId(packet: JsonMessage) = packet["eventId"].asText()

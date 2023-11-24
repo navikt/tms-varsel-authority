@@ -9,6 +9,7 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
 import no.nav.tms.varsel.authority.write.aktiver.*
+import org.slf4j.MDC
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
@@ -24,6 +25,8 @@ class EksternVarslingStatusUpdater(
         if (varsel == null || statusIsDuplicate(varsel, statusEvent)) {
             return
         }
+
+        MDC.put("type", varsel.type.name.lowercase())
 
         val currentStatus = varsel.eksternVarslingStatus ?: emptyEksternVarsling()
 

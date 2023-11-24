@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
+import observability.traceVarsel
 
 internal class EksternVarslingStatusSink(
     rapidsConnection: RapidsConnection,
@@ -30,18 +31,20 @@ internal class EksternVarslingStatusSink(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val eksternVarslingStatus = DoknotifikasjonStatusEvent(
-            eventId = packet["eventId"].asText(),
-            bestillerAppnavn = packet["bestillerAppnavn"].asText(),
-            status = packet["status"].asText(),
-            melding = packet["melding"].asText(),
-            distribusjonsId = packet["distribusjonsId"].asLongOrNull(),
-            kanal = packet["kanal"].asTextOrNull(),
-            tidspunkt = packet["tidspunkt"].asZonedDateTime()
-        )
+        traceVarsel(id = packet["eventId"].asText(), mapOf("action" to "eksternVarsling")) {
+            val eksternVarslingStatus = DoknotifikasjonStatusEvent(
+                eventId = packet["eventId"].asText(),
+                bestillerAppnavn = packet["bestillerAppnavn"].asText(),
+                status = packet["status"].asText(),
+                melding = packet["melding"].asText(),
+                distribusjonsId = packet["distribusjonsId"].asLongOrNull(),
+                kanal = packet["kanal"].asTextOrNull(),
+                tidspunkt = packet["tidspunkt"].asZonedDateTime()
+            )
 
-        eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
-        log.info { "Behandlet eksternVarslingStatus fra rapid med varselId ${eksternVarslingStatus.eventId}" }
+            eksternVarslingStatusUpdater.updateEksternVarslingStatus(eksternVarslingStatus)
+            log.info { "Behandlet eksternVarslingStatus" }
+        }
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {

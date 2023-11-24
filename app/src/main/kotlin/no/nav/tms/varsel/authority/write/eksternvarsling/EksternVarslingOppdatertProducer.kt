@@ -20,6 +20,8 @@ class EksternVarslingOppdatertProducer(private val kafkaProducer: Producer<Strin
         val producerRecord = ProducerRecord(topicName, oppdatering.varselId, objectMapper.writeValueAsString(oppdatering))
 
         kafkaProducer.send(producerRecord)
+
+        log.info { "eksternStatusOppdatert-event produsert til kafka" }
     }
 
     fun flushAndClose() {

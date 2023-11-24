@@ -20,6 +20,8 @@ class VarselInaktivertProducer(
     fun varselInaktivert(hendelse: VarselInaktivertHendelse) {
 
         kafkaProducer.send(ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse)))
+
+        log.info { "inaktivert-event produsert til kafka" }
     }
 
     fun flushAndClose() {

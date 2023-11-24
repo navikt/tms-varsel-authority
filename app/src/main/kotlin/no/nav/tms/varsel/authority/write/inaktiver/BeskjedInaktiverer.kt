@@ -7,6 +7,8 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
 import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.action.Varseltype.Beskjed
+import observability.traceVarsel
 
 class BeskjedInaktiverer(
     private val varselRepository: WriteVarselRepository,
@@ -15,30 +17,31 @@ class BeskjedInaktiverer(
     private val log = KotlinLogging.logger {}
 
     suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
-        val varsel = varselRepository.getVarsel(varselId)
+        traceVarsel(id = varselId, mapOf("action" to "inaktiver", "initiated_by" to "bruker")) {
+            val varsel = varselRepository.getVarsel(varselId)
 
-        if (varsel == null) {
-            throw VarselNotFoundException("Fant ikke varsel med id $varselId")
-        } else if (varsel.ident != ident) {
-            throw UnprivilegedAccessException("Kan ikke inaktivere beskjed med id $varselId. Tilhører annen bruker.")
-        } else if (varsel.type != Varseltype.Beskjed) {
-            throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
-        } else {
-            log.info { "Inaktiverer beskjed med varselId $varselId på vegne av bruker." }
+            when {
+                varsel == null -> throw VarselNotFoundException("Fant ikke varsel")
+                varsel.ident != ident -> throw UnprivilegedAccessException("Kan ikke inaktivere annen brukers beskjed.")
+                varsel.type != Beskjed -> throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
+                else -> {
+                    log.info { "Inaktiverer beskjed." }
 
-            varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
+                    varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
-            VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker, "N/A")
+                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker, "N/A")
 
-            varselInaktivertProducer.varselInaktivert(
-                VarselInaktivertHendelse(
-                    varselId = varsel.varselId,
-                    varselType = varsel.type,
-                    namespace = varsel.produsent.namespace,
-                    appnavn = varsel.produsent.appnavn,
-                    kilde = Bruker
-                )
-            )
+                    varselInaktivertProducer.varselInaktivert(
+                        VarselInaktivertHendelse(
+                            varselId = varsel.varselId,
+                            varselType = varsel.type,
+                            namespace = varsel.produsent.namespace,
+                            appnavn = varsel.produsent.appnavn,
+                            kilde = Bruker
+                        )
+                    )
+                }
+            }
         }
     }
 }

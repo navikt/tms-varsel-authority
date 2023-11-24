@@ -54,6 +54,7 @@ dependencies {
     implementation(JacksonDatatype.moduleKotlin)
     implementation(TmsCommonLib.utils)
     implementation(TmsCommonLib.metrics)
+    implementation(TmsCommonLib.observability)
     implementation(project(":varsel-action"))
 
     testImplementation(Junit.api)

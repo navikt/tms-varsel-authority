@@ -21,6 +21,7 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
+import observability.ApiMdc
 import java.text.DateFormat
 
 fun Application.varselApi(
@@ -32,6 +33,8 @@ fun Application.varselApi(
     val log = KotlinLogging.logger {}
 
     installAuthenticatorsFunction()
+
+    install(ApiMdc)
 
     installTmsApiMetrics {
         setupMetricsRoute = false
