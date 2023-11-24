@@ -33,6 +33,7 @@ internal class DoneEventSink(
         val varselId = getVarselId(packet)
 
         traceVarsel(id = varselId, mapOf("action" to "done")) {
+            log.info { "Done-event motatt" }
             val varsel = varselRepository.getVarsel(varselId)
 
             varsel?.let {

@@ -63,12 +63,13 @@ internal class AktiverVarselSink(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val eventId = packet["eventId"].textValue()
         val produsent = unpackProdusent(packet)
+        val eventName =  packet["@event_name"].asText()
         traceOpprettVarsel(
             id = eventId, initiatedBy = produsent.namespace,
             action = "aktiver",
             varseltype = packet["@event_name"].asText()
         ) {
-            log.info { "Event motatt" }
+            log.info { "Aktivert-event mottatt" }
             val dbVarsel = DatabaseVarsel(
                 varselId = packet["eventId"].textValue(),
                 type = packet["@event_name"].textValue().let(::parseVarseltype),
@@ -92,7 +93,7 @@ internal class AktiverVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Behandlet varsel fra rapid" }
+            log.info { "Aktivert-event behandlet" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel" }
         }
