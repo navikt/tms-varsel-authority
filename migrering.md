@@ -9,7 +9,7 @@ En del felter er fjernet, se [produsere varsler](https://tms-dokumentasjon.inter
 
 #### meldingstyper
 Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til 
-2 objekter; aktiver og inaktiver. Varseltypen skal spesifiseres i meldingen.
+2 objekter; opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
 
 #### feltnavn
 * eventId -> varselId

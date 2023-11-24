@@ -8,6 +8,8 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
+import observability.traceVarsel
+import org.slf4j.MDC
 
 internal class InaktiverVarselSink(
     rapidsConnection: RapidsConnection,
@@ -31,32 +33,41 @@ internal class InaktiverVarselSink(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(packet.rawJson)
+        traceVarsel(id = packet["varselId"].asText(), mapOf("action" to "inaktiver")) {
+            val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(packet.rawJson)
 
-        val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
+            val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
 
-        if (varsel != null && varsel.aktiv) {
-            varselRepository.inaktiverVarsel(
-                varselId = varsel.varselId,
-                kilde = VarselInaktivertKilde.Produsent,
-                metadata = mapMetadata(inaktiverVarsel)
-            )
+            varsel?.let {
+                MDC.put("initiated_by", varsel.produsent.namespace)
 
-            VarselMetricsReporter.registerVarselInaktivert(
-                varseltype = varsel.type,
-                produsent = varsel.produsent,
-                kilde = VarselInaktivertKilde.Produsent,
-                sourceTopic = sourceTopic
-            )
-            varselInaktivertProducer.varselInaktivert(
-                VarselInaktivertHendelse(
-                    varselType = varsel.type,
-                    varselId = varsel.varselId,
-                    namespace = varsel.produsent.namespace,
-                    appnavn = varsel.produsent.appnavn,
-                    kilde = VarselInaktivertKilde.Produsent
-                )
-            )
+                if (varsel.aktiv) {
+                    varselRepository.inaktiverVarsel(
+                        varselId = varsel.varselId,
+                        kilde = VarselInaktivertKilde.Produsent,
+                        metadata = mapMetadata(inaktiverVarsel)
+                    )
+
+                    VarselMetricsReporter.registerVarselInaktivert(
+                        varseltype = varsel.type,
+                        produsent = varsel.produsent,
+                        kilde = VarselInaktivertKilde.Produsent,
+                        sourceTopic = sourceTopic
+                    )
+                    varselInaktivertProducer.varselInaktivert(
+                        VarselInaktivertHendelse(
+                            varselType = varsel.type,
+                            varselId = varsel.varselId,
+                            namespace = varsel.produsent.namespace,
+                            appnavn = varsel.produsent.appnavn,
+                            kilde = VarselInaktivertKilde.Produsent
+                        )
+                    )
+                    log.info { "Inaktiverte varsel etter event fra rapid" }
+                } else {
+                    log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
+                }
+            }?: log.info { "Fant ikke varsel" }
         }
     }
 

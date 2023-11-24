@@ -2,7 +2,6 @@ package no.nav.tms.varsel.authority.write.aktiver
 
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.micrometer.core.instrument.config.validate.ValidationException
 import no.nav.helse.rapids_rivers.JsonMessage
 import no.nav.helse.rapids_rivers.MessageContext
 import no.nav.helse.rapids_rivers.MessageProblems
@@ -18,7 +17,7 @@ import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.action.OpprettVarselValidation
 import no.nav.tms.varsel.action.VarselValidationException
-import no.nav.tms.varsel.authority.common.traceVarselSink
+import no.nav.tms.varsel.authority.common.traceOpprettVarsel
 import org.postgresql.util.PSQLException
 
 internal class OpprettVarselSink(
@@ -58,7 +57,7 @@ internal class OpprettVarselSink(
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        traceVarselSink(
+        traceOpprettVarsel(
             id = packet["varselId"].asText(),
             initiatedBy = packet["produsent"]["namespace"].asText(),
             action = "opprett", varseltype = packet["type"].asText()

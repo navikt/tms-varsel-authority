@@ -15,8 +15,7 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.action.EksternKanal
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Sensitivitet
-import no.nav.tms.varsel.authority.common.traceVarselSink
-import observability.traceVarsel
+import no.nav.tms.varsel.authority.common.traceOpprettVarsel
 import org.postgresql.util.PSQLException
 
 internal class AktiverVarselSink(
@@ -64,7 +63,7 @@ internal class AktiverVarselSink(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val eventId = packet["eventId"].textValue()
         val produsent = unpackProdusent(packet)
-        traceVarselSink(
+        traceOpprettVarsel(
             id = eventId, initiatedBy = produsent.namespace,
             action = "aktiver",
             varseltype = packet["@event_name"].asText()
