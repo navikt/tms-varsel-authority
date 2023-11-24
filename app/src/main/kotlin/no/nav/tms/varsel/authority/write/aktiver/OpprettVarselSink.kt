@@ -18,6 +18,7 @@ import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.action.OpprettVarselValidation
 import no.nav.tms.varsel.action.VarselValidationException
+import no.nav.tms.varsel.authority.common.traceVarselSink
 import org.postgresql.util.PSQLException
 
 internal class OpprettVarselSink(
@@ -35,44 +36,54 @@ internal class OpprettVarselSink(
     init {
         River(rapidsConnection).apply {
             validate { it.demandValue("@event_name", "opprett") }
-            validate { it.requireKey(
-                "type",
-                "varselId",
-                "ident",
-                "sensitivitet",
-                "tekster",
-                "produsent"
-            ) }
-            validate { it.interestedIn(
-                "eksternVarsling",
-                "aktivFremTil",
-                "link",
-                "metadata"
-            ) }
+            validate {
+                it.requireKey(
+                    "type",
+                    "varselId",
+                    "ident",
+                    "sensitivitet",
+                    "tekster",
+                    "produsent"
+                )
+            }
+            validate {
+                it.interestedIn(
+                    "eksternVarsling",
+                    "aktivFremTil",
+                    "link",
+                    "metadata"
+                )
+            }
         }.register(this)
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
+        traceVarselSink(
+            id = packet["varselId"].asText(),
+            initiatedBy = packet["produsent"]["namespace"].asText(),
+            action = "opprett", varseltype = packet["type"].asText()
+        ) {
 
-        objectMapper.treeToValue<OpprettVarsel>(packet.rawJson)
-            .also { validate(it) }
-            .let {
-                DatabaseVarsel(
-                    aktiv = true,
-                    type = it.type,
-                    varselId = it.varselId,
-                    ident = it.ident,
-                    sensitivitet = it.sensitivitet,
-                    innhold = mapInnhold(it),
-                    produsent = mapProdusent(it),
-                    eksternVarslingBestilling = it.eksternVarsling,
-                    opprettet = nowAtUtc(),
-                    aktivFremTil = it.aktivFremTil,
-                    metadata = mapMetadata(it)
-                )
-            }.let {
-                aktiverVarsel(it)
-            }
+            objectMapper.treeToValue<OpprettVarsel>(packet.rawJson)
+                .also { validate(it) }
+                .let {
+                    DatabaseVarsel(
+                        aktiv = true,
+                        type = it.type,
+                        varselId = it.varselId,
+                        ident = it.ident,
+                        sensitivitet = it.sensitivitet,
+                        innhold = mapInnhold(it),
+                        produsent = mapProdusent(it),
+                        eksternVarslingBestilling = it.eksternVarsling,
+                        opprettet = nowAtUtc(),
+                        aktivFremTil = it.aktivFremTil,
+                        metadata = mapMetadata(it)
+                    )
+                }.let {
+                    aktiverVarsel(it)
+                }
+        }
     }
 
     private fun aktiverVarsel(dbVarsel: DatabaseVarsel) {
@@ -80,9 +91,9 @@ internal class OpprettVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}" }
+            log.info { "Behandlet varsel fra rapid}" }
         } catch (e: PSQLException) {
-            log.warn(e) { "Feil ved aktivering av varsel med id [${dbVarsel.varselId}]." }
+            log.warn(e) { "Feil ved aktivering av varsel" }
         }
     }
 
@@ -125,7 +136,7 @@ internal class OpprettVarselSink(
         OpprettVarselValidation.validate(opprettVarsel)
     } catch (e: VarselValidationException) {
         log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
-        securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${ e.explanation.joinToString() }" }
+        securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
         throw MessageProblems.MessageException(MessageProblems("OpprettVarsel event did not pass validation"))
     }

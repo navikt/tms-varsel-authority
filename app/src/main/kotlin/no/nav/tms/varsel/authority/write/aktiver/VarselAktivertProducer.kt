@@ -28,9 +28,9 @@ class VarselAktivertProducer(
     fun varselAktivert(dbVarsel: DatabaseVarsel) {
 
         val varselAktivertEvent = VarselAktivert.fromDatabaseVarsel(dbVarsel)
-
         val producerRecord = ProducerRecord(topicName, dbVarsel.varselId, varselAktivertEvent.asJson().toString())
         kafkaProducer.send(producerRecord)
+        log.info { "aktivert-event produsert til kafa" }
     }
 
     private fun Any.asJson(): ObjectNode {

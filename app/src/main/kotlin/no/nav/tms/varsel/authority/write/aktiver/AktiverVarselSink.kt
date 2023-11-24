@@ -15,6 +15,8 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.action.EksternKanal
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.authority.common.traceVarselSink
+import observability.traceVarsel
 import org.postgresql.util.PSQLException
 
 internal class AktiverVarselSink(
@@ -34,44 +36,56 @@ internal class AktiverVarselSink(
         River(rapidsConnection).apply {
             validate { it.demandAny("@event_name", listOf("beskjed", "oppgave", "innboks")) }
             validate { it.demandValue("aktiv", true) }
-            validate { it.requireKey(
-                "namespace",
-                "appnavn",
-                "eventId",
-                "forstBehandlet",
-                "fodselsnummer",
-                "tekst",
-                "link",
-                "sikkerhetsnivaa",
-                "eksternVarsling"
-            ) }
-            validate { it.interestedIn(
-                "synligFremTil",
-                "prefererteKanaler",
-                "smsVarslingstekst",
-                "epostVarslingstittel",
-                "epostVarslingstekst"
-            ) }
+            validate {
+                it.requireKey(
+                    "namespace",
+                    "appnavn",
+                    "eventId",
+                    "forstBehandlet",
+                    "fodselsnummer",
+                    "tekst",
+                    "link",
+                    "sikkerhetsnivaa",
+                    "eksternVarsling"
+                )
+            }
+            validate {
+                it.interestedIn(
+                    "synligFremTil",
+                    "prefererteKanaler",
+                    "smsVarslingstekst",
+                    "epostVarslingstittel",
+                    "epostVarslingstekst"
+                )
+            }
         }.register(this)
     }
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
+        val eventId = packet["eventId"].textValue()
+        val produsent = unpackProdusent(packet)
+        traceVarselSink(
+            id = eventId, initiatedBy = produsent.namespace,
+            action = "aktiver",
+            varseltype = packet["@event_name"].asText()
+        ) {
+            log.info { "Event motatt" }
+            val dbVarsel = DatabaseVarsel(
+                varselId = packet["eventId"].textValue(),
+                type = packet["@event_name"].textValue().let(::parseVarseltype),
+                ident = packet["fodselsnummer"].textValue(),
+                sensitivitet = packet["sikkerhetsnivaa"].asSensitivitet(),
+                innhold = unpackVarsel(packet),
+                produsent = produsent,
+                eksternVarslingBestilling = unpackEksternVarslingBestilling(packet),
+                aktiv = true,
+                opprettet = packet["forstBehandlet"].asZonedDateTime(),
+                aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime(),
+                metadata = staticMetadata
+            )
 
-        val dbVarsel = DatabaseVarsel(
-            varselId = packet["eventId"].textValue(),
-            type = packet["@event_name"].textValue().let(::parseVarseltype),
-            ident = packet["fodselsnummer"].textValue(),
-            sensitivitet = packet["sikkerhetsnivaa"].asSensitivitet(),
-            innhold = unpackVarsel(packet),
-            produsent = unpackProdusent(packet),
-            eksternVarslingBestilling = unpackEksternVarslingBestilling(packet),
-            aktiv = true,
-            opprettet = packet["forstBehandlet"].asZonedDateTime(),
-            aktivFremTil = packet["synligFremTil"].asOptionalZonedDateTime(),
-            metadata = staticMetadata
-        )
-
-        aktiverVarsel(dbVarsel)
+            aktiverVarsel(dbVarsel)
+        }
     }
 
     private fun aktiverVarsel(dbVarsel: DatabaseVarsel) {
@@ -79,9 +93,9 @@ internal class AktiverVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Behandlet ${dbVarsel.type}-varsel fra rapid med varselId ${dbVarsel.varselId}" }
+            log.info { "Behandlet varsel fra rapid" }
         } catch (e: PSQLException) {
-            log.warn(e) { "Feil ved aktivering av varsel med id [${dbVarsel.varselId}]." }
+            log.warn(e) { "Feil ved aktivering av varsel" }
         }
     }
 
@@ -102,7 +116,7 @@ internal class AktiverVarselSink(
     private fun unpackEksternVarslingBestilling(packet: JsonMessage): EksternVarslingBestilling? {
         return if (packet["eksternVarsling"].booleanValue()) {
             EksternVarslingBestilling(
-                prefererteKanaler = packet["prefererteKanaler"].map { it.textValue() }.map { EksternKanal.valueOf(it) } ,
+                prefererteKanaler = packet["prefererteKanaler"].map { it.textValue() }.map { EksternKanal.valueOf(it) },
                 smsVarslingstekst = packet["smsVarslingstekst"].textValue(),
                 epostVarslingstittel = packet["epostVarslingstittel"].textValue(),
                 epostVarslingstekst = packet["epostVarslingstekst"].textValue()
@@ -113,7 +127,7 @@ internal class AktiverVarselSink(
     }
 
     private fun JsonNode.asSensitivitet(): Sensitivitet {
-        return when(intValue()) {
+        return when (intValue()) {
             3 -> Sensitivitet.Substantial
             4 -> Sensitivitet.High
             else -> throw IllegalArgumentException("Feil verdi for 'sikkerhetsnivaa': ${textValue()}")
