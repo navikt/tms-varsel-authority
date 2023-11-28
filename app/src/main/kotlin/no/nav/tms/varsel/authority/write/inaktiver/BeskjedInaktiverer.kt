@@ -23,7 +23,11 @@ class BeskjedInaktiverer(
             when {
                 varsel == null -> throw VarselNotFoundException("Fant ikke varsel")
                 varsel.ident != ident -> throw UnprivilegedAccessException("Kan ikke inaktivere annen brukers beskjed.")
-                varsel.type != Beskjed -> throw InvalidVarselTypeException("Bruker kan ikke inaktivere varsel med type ${varsel.type}")
+                varsel.type != Beskjed -> throw InvalidVarselTypeException(
+                    "Bruker kan ikke inaktivere varsel med type ${varsel.type}",
+                    varsel.type.name
+                )
+
                 else -> {
                     log.info { "Inaktiverer beskjed." }
 
@@ -46,8 +50,8 @@ class BeskjedInaktiverer(
     }
 }
 
-class UnprivilegedAccessException(message: String): IllegalArgumentException(message)
+class UnprivilegedAccessException(message: String) : IllegalArgumentException(message)
 
-class InvalidVarselTypeException(message: String): IllegalArgumentException(message)
+class InvalidVarselTypeException(message: String, val type: String) : IllegalArgumentException(message)
 
-class VarselNotFoundException(message: String): IllegalArgumentException(message)
+class VarselNotFoundException(message: String) : IllegalArgumentException(message)
