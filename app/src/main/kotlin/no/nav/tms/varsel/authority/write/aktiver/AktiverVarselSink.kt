@@ -62,8 +62,7 @@ internal class AktiverVarselSink(
 
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         val eventId = packet["eventId"].textValue()
-        val produsent = unpacaktivekProdusent(packet)
-        val eventName =  packet["@event_name"].asText()
+        val produsent = unpackProdusent(packet)
         traceOpprettVarsel(
             id = eventId, initiatedBy = produsent.namespace,
             action = "aktiver",
