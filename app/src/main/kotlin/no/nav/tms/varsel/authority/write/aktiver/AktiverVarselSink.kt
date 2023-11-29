@@ -69,7 +69,7 @@ internal class AktiverVarselSink(
             action = "aktiver",
             varseltype = packet["@event_name"].asText()
         ) {
-            log.info { "Aktivert-event mottatt" }
+            log.info { "Aktiver-event mottatt" }
             val dbVarsel = DatabaseVarsel(
                 varselId = packet["eventId"].textValue(),
                 type = packet["@event_name"].textValue().let(::parseVarseltype),
