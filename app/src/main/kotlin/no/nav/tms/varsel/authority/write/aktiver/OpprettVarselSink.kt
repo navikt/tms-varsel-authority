@@ -62,7 +62,7 @@ internal class OpprettVarselSink(
             initiatedBy = packet["produsent"]["namespace"].asText(),
             action = "opprett", varseltype = packet["type"].asText()
         ) {
-
+            log.info { "Opprett-event motatt" }
             objectMapper.treeToValue<OpprettVarsel>(packet.rawJson)
                 .also { validate(it) }
                 .let {
@@ -90,7 +90,7 @@ internal class OpprettVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Behandlet varsel fra rapid}" }
+            log.info { "Opprett varsel fra rapid behandlet}" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel" }
         }

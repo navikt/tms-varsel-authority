@@ -68,7 +68,7 @@ internal class AktiverVarselSink(
             action = "aktiver",
             varseltype = packet["@event_name"].asText()
         ) {
-            log.info { "Event motatt" }
+            log.info { "Aktiver-event mottatt" }
             val dbVarsel = DatabaseVarsel(
                 varselId = packet["eventId"].textValue(),
                 type = packet["@event_name"].textValue().let(::parseVarseltype),
@@ -92,7 +92,7 @@ internal class AktiverVarselSink(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Behandlet varsel fra rapid" }
+            log.info { "Aktiver-event behandlet" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel" }
         }

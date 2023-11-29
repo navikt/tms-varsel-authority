@@ -35,6 +35,7 @@ internal class InaktiverVarselSink(
     override fun onPacket(packet: JsonMessage, context: MessageContext) {
         traceVarsel(id = packet["varselId"].asText(), mapOf("action" to "inaktiver")) {
             val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(packet.rawJson)
+            log.info { "Inaktiver-event motatt" }
 
             val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
 

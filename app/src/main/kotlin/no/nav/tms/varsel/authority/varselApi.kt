@@ -51,19 +51,20 @@ fun Application.varselApi(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-
                 is UnprivilegedAccessException, is VarselNotFoundException -> {
                     call.respondText(
                         status = HttpStatusCode.Forbidden,
                         text = "feilaktig varselId"
                     )
+                    log.warn(cause) { cause.message }
                 }
 
                 is InvalidVarselTypeException -> {
                     call.respondText(
                         status = HttpStatusCode.Forbidden,
-                        text = "kan kun inaktivere beskjed fra api"
+                        text = "Bruker kan ikke inaktivere ${cause.type} via api"
                     )
+                    log.warn(cause) { cause.message }
                 }
 
                 is IllegalArgumentException -> {
@@ -71,13 +72,12 @@ fun Application.varselApi(
                         status = HttpStatusCode.BadRequest,
                         text = cause.message ?: "Feil i parametre"
                     )
-
-                    log.warn { cause.message }
+                    log.warn(cause) { "Feil i parametre" }
                 }
 
                 else -> {
                     call.respond(HttpStatusCode.InternalServerError)
-                    log.warn(cause) { "Ukjent feil" }
+                    log.warn(cause) { "Apikall feiler" }
                 }
             }
 
