@@ -30,6 +30,8 @@ jobs:
       - name: 'Bygg og kjør tester for å sjekke at nye versjoner er kompatible'
         run: |
           ./gradlew clean build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 'Bygg, tag og push Docker image'
         run: |
