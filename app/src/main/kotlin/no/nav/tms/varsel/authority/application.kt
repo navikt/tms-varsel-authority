@@ -7,24 +7,24 @@ import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.config.Flyway
+import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.PostgresDatabase
+import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
-import no.nav.tms.varsel.authority.config.PodLeaderElection
-import no.nav.tms.varsel.authority.read.ReadVarselRepository
-import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
-import no.nav.tms.varsel.authority.write.aktiver.OpprettVarselSink
-import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
-import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
-import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
-import no.nav.tms.varsel.authority.write.aktiver.VarselAktivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusRepository
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSink
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
-import no.nav.tms.varsel.authority.write.inaktiver.*
-import no.nav.tms.varsel.authority.write.inaktiver.DoneEventSink
+import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
+import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
+import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
+import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
+import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
+import no.nav.tms.varsel.authority.write.opprett.VarselAktivertProducer
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -86,16 +86,6 @@ private fun startRapid(environment: Environment, database: Database) {
                 readVarselRepository, beskjedService
             )
     }.build().apply {
-        AktiverVarselSink(
-            rapidsConnection = this,
-            varselRepository = varselRepository,
-            varselAktivertProducer = varselAktivertProducer
-        )
-        DoneEventSink(
-            rapidsConnection = this,
-            varselRepository = varselRepository,
-            varselInaktivertProducer = varselInaktivertProducer
-        )
         OpprettVarselSink(
             rapidsConnection = this,
             varselRepository = varselRepository,

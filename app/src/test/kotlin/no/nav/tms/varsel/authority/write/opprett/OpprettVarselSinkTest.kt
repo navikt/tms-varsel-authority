@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.aktiver
+package no.nav.tms.varsel.authority.write.opprett
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
@@ -14,7 +14,6 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
 import java.util.UUID.randomUUID
 
 class OpprettVarselSinkTest {

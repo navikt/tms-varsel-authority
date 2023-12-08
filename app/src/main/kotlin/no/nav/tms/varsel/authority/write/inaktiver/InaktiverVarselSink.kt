@@ -7,7 +7,7 @@ import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.config.rawJson
-import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import observability.traceVarsel
 import org.slf4j.MDC
 

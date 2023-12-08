@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tms.varsel.authority.LocalDateTimeHelper.nowAtUtc
+import no.nav.tms.varsel.authority.optionalJson
 import java.time.LocalDateTime
 
 fun eksternVarslingStatus(
@@ -12,24 +12,15 @@ fun eksternVarslingStatus(
     distribusjonsId: Long? = null,
     kanal: String? = null,
     tidspunkt: LocalDateTime = nowAtUtc()
-) = EksternVarslingStatusEvent(
-    eventId = varselId,
-    bestillerAppnavn = bestillerAppnavn,
-    status = status.name,
-    melding = melding,
-    distribusjonsId = distribusjonsId,
-    kanal = kanal,
-    tidspunkt = tidspunkt,
-)
-
-data class EksternVarslingStatusEvent(
-    val eventId: String,
-    val bestillerAppnavn: String,
-    val status: String,
-    val melding: String,
-    val distribusjonsId: Long?,
-    val kanal: String?,
-    val tidspunkt: LocalDateTime
-) {
-    @JsonProperty("@event_name") val eventName = "eksternVarslingStatus"
+) = """
+{
+    "@event_name": "eksternVarslingStatus",
+    "eventId": "$varselId",
+    "bestillerAppnavn": "$bestillerAppnavn",
+    "status": "$status",
+    "melding": "$melding",
+    ${distribusjonsId.optionalJson("distribusjonsId")}
+    ${kanal.optionalJson("kanal")}
+    "tidspunkt": "$tidspunkt"
 }
+"""

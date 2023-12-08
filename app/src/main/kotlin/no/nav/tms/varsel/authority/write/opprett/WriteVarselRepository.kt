@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.aktiver
+package no.nav.tms.varsel.authority.write.opprett
 
 import kotliquery.Row
 import kotliquery.queryOf

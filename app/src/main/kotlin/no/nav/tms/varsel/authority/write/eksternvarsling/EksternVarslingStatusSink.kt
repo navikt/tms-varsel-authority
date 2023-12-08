@@ -51,7 +51,7 @@ internal class EksternVarslingStatusSink(
         log.error { problems.toString() }
     }
 
-    private fun JsonNode.asLongOrNull() = if (isNull) null else asLong()
+    private fun JsonNode.asLongOrNull() = if (isMissingOrNull()) null else asLong()
 
-    private fun JsonNode.asTextOrNull() = if (isNull) null else asText()
+    private fun JsonNode.asTextOrNull() = if (isMissingOrNull()) null else asText()
 }
