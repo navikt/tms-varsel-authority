@@ -6,17 +6,17 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
 import no.nav.helse.rapids_rivers.testsupport.TestRapid
-import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.toJson
-import no.nav.tms.varsel.authority.write.aktiver.*
-import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
+import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
+import no.nav.tms.varsel.authority.write.opprett.VarselAktivertProducer
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.UUID
 import java.util.UUID.randomUUID
 
 internal class InaktiverVarselSinkTest {

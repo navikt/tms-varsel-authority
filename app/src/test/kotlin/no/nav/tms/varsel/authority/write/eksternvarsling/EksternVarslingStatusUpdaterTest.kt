@@ -13,15 +13,15 @@ import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.LocalDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
-import no.nav.tms.varsel.authority.write.aktiver.AktiverVarselSink
-import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
-import no.nav.tms.varsel.authority.write.aktiver.aktiverVarselEvent
-import no.nav.tms.varsel.authority.toJson
+import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
+import java.util.*
 
 
 class EksternVarslingStatusSinkTest {
@@ -52,19 +52,25 @@ class EksternVarslingStatusSinkTest {
         setupEksternVarslingStatusSink(testRapid)
         setupVarselSink(testRapid)
 
-        val varselEvent = aktiverVarselEvent("beskjed", "111")
+        val melding = "Sendt via epost"
+        val distribusjonsId = 123L
+        val kanal = "EPOST"
+
+        val varselId = UUID.randomUUID().toString()
+
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
         val doknotEvent = eksternVarslingStatus(
-            varselId = "111",
+            varselId = varselId,
             status = FERDIGSTILT,
-            kanal = "EPOST",
-            distribusjonsId = 123L,
-            melding = "Sendt via epost"
+            melding = melding,
+            distribusjonsId = distribusjonsId,
+            kanal = kanal
         )
 
-        testRapid.sendMessageAsJson(varselEvent)
-        testRapid.sendMessageAsJson(doknotEvent)
+        testRapid.sendTestMessage(varselEvent)
+        testRapid.sendTestMessage(doknotEvent)
 
-        val dbVarsel = varselRepository.getVarsel("111")
+        val dbVarsel = varselRepository.getVarsel(varselId)
 
         dbVarsel?.eksternVarslingStatus shouldNotBe null
 
@@ -74,9 +80,9 @@ class EksternVarslingStatusSinkTest {
             it.sendt shouldBe true
 
             it.historikk.size shouldBe 1
-            it.historikk.first().melding shouldBe doknotEvent.melding
-            it.historikk.first().distribusjonsId shouldBe doknotEvent.distribusjonsId
-            it.kanaler shouldContain doknotEvent.kanal
+            it.historikk.first().melding shouldBe melding
+            it.historikk.first().distribusjonsId shouldBe distribusjonsId
+            it.kanaler shouldContain kanal
         }
 
 
@@ -89,17 +95,19 @@ class EksternVarslingStatusSinkTest {
         setupEksternVarslingStatusSink(testRapid)
         setupVarselSink(testRapid)
 
-        val varselEvent = aktiverVarselEvent("beskjed", "111")
-        val infoEvent = eksternVarslingStatus("111", status = INFO)
-        val epostEvent = eksternVarslingStatus("111", status = FERDIGSTILT, kanal = "EPOST")
-        val smsEvent = eksternVarslingStatus("111", status = FERDIGSTILT, kanal = "SMS")
+        val varselId = UUID.randomUUID().toString()
 
-        testRapid.sendMessageAsJson(varselEvent)
-        testRapid.sendMessageAsJson(infoEvent)
-        testRapid.sendMessageAsJson(epostEvent)
-        testRapid.sendMessageAsJson(smsEvent)
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
+        val infoEvent = eksternVarslingStatus(varselId, status = INFO)
+        val epostEvent = eksternVarslingStatus(varselId, status = FERDIGSTILT, kanal = "EPOST")
+        val smsEvent = eksternVarslingStatus(varselId, status = FERDIGSTILT, kanal = "SMS")
 
-        val status = varselRepository.getVarsel("111")?.eksternVarslingStatus
+        testRapid.sendTestMessage(varselEvent)
+        testRapid.sendTestMessage(infoEvent)
+        testRapid.sendTestMessage(epostEvent)
+        testRapid.sendTestMessage(smsEvent)
+
+        val status = varselRepository.getVarsel(varselId)?.eksternVarslingStatus
         status.shouldNotBeNull()
         status.kanaler shouldContainExactlyInAnyOrder setOf("EPOST", "SMS")
 
@@ -113,9 +121,11 @@ class EksternVarslingStatusSinkTest {
         val testRapid = TestRapid()
         setupEksternVarslingStatusSink(testRapid)
 
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111"))
+        val varselId = UUID.randomUUID().toString()
 
-        varselRepository.getVarsel("111")?.eksternVarslingStatus shouldBe null
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId))
+
+        varselRepository.getVarsel(varselId)?.eksternVarslingStatus shouldBe null
 
         mockProducer.history().size shouldBe 0
     }
@@ -126,12 +136,14 @@ class EksternVarslingStatusSinkTest {
         setupEksternVarslingStatusSink(testRapid)
         setupVarselSink(testRapid)
 
-        testRapid.sendMessageAsJson(aktiverVarselEvent("beskjed", "111", fodselsnummer = "147"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", OVERSENDT))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", INFO))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", FEILET))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", FERDIGSTILT, kanal = "SMS"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", FERDIGSTILT, kanal = null))
+        val varselId = UUID.randomUUID().toString()
+
+        testRapid.sendTestMessage(opprettVarselEvent("beskjed", varselId, ident = "12345678901"))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, OVERSENDT))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, INFO))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, FEILET))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, FERDIGSTILT, kanal = "SMS"))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, FERDIGSTILT, kanal = null))
 
         mockProducer.verifyOutput { output ->
             output.find { it["status"].textValue() == "bestilt" } shouldNotBe null
@@ -142,8 +154,8 @@ class EksternVarslingStatusSinkTest {
 
             val ferdigstilt = output.find { it["status"].textValue() == "sendt" }!!
             ferdigstilt["@event_name"].textValue() shouldBe "eksternStatusOppdatert"
-            ferdigstilt["varselId"].textValue() shouldBe "111"
-            ferdigstilt["ident"].textValue() shouldBe "147"
+            ferdigstilt["varselId"].textValue() shouldBe varselId
+            ferdigstilt["ident"].textValue() shouldBe "12345678901"
             ferdigstilt["kanal"].textValue() shouldBe "SMS"
             ferdigstilt["renotifikasjon"].booleanValue() shouldBe false
             ferdigstilt["tidspunkt"].textValue().let { ZonedDateTime.parse(it) } shouldNotBe null
@@ -156,39 +168,44 @@ class EksternVarslingStatusSinkTest {
         setupEksternVarslingStatusSink(testRapid)
         setupVarselSink(testRapid)
 
-        testRapid.sendMessageAsJson(aktiverVarselEvent("oppgave", "111"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", OVERSENDT, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("111", FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
+        val varselId1 = UUID.randomUUID().toString()
+        val varselId2 = UUID.randomUUID().toString()
+        val varselId3 = UUID.randomUUID().toString()
+        val varselId4 = UUID.randomUUID().toString()
 
-        testRapid.sendMessageAsJson(aktiverVarselEvent("oppgave", "222"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("222", OVERSENDT, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("222", FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("222", FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("222", FERDIGSTILT, kanal = "EPOST", tidspunkt = nowAtUtc().plusDays(1)))
+        testRapid.sendTestMessage(opprettVarselEvent("oppgave", varselId1))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId1, OVERSENDT, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId1, FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
 
-        testRapid.sendMessageAsJson(aktiverVarselEvent("oppgave", "333"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("333", OVERSENDT, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("333", FEILET, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("333", FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
+        testRapid.sendTestMessage(opprettVarselEvent("oppgave", varselId2))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId2, OVERSENDT, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId2, FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId2, FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId2, FERDIGSTILT, kanal = "EPOST", tidspunkt = nowAtUtc().plusDays(1)))
 
-        testRapid.sendMessageAsJson(aktiverVarselEvent("oppgave", "444"))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("444", OVERSENDT, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("444", FEILET, tidspunkt = nowAtUtc()))
-        testRapid.sendMessageAsJson(eksternVarslingStatus("444", INFO, tidspunkt = nowAtUtc().plusDays(1)))
+        testRapid.sendTestMessage(opprettVarselEvent("oppgave", varselId3))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId3, OVERSENDT, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId3, FEILET, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId3, FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
 
-        val status1 = varselRepository.getVarsel("111")?.eksternVarslingStatus
+        testRapid.sendTestMessage(opprettVarselEvent("oppgave", varselId4))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId4, OVERSENDT, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId4, FEILET, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId4, INFO, tidspunkt = nowAtUtc().plusDays(1)))
+
+        val status1 = varselRepository.getVarsel(varselId1)?.eksternVarslingStatus
         status1!!.sendt shouldBe true
         status1.renotifikasjonSendt shouldBe false
 
-        val status2 = varselRepository.getVarsel("222")?.eksternVarslingStatus
+        val status2 = varselRepository.getVarsel(varselId2)?.eksternVarslingStatus
         status2!!.sendt shouldBe true
         status2.renotifikasjonSendt shouldBe true
 
-        val status3 = varselRepository.getVarsel("333")?.eksternVarslingStatus
+        val status3 = varselRepository.getVarsel(varselId3)?.eksternVarslingStatus
         status3!!.sendt shouldBe true
         status3.renotifikasjonSendt shouldBe true
 
-        val status4 = varselRepository.getVarsel("444")?.eksternVarslingStatus
+        val status4 = varselRepository.getVarsel(varselId4)?.eksternVarslingStatus
         status4!!.sendt shouldBe false
         status4.renotifikasjonSendt shouldBe false
 
@@ -214,14 +231,12 @@ class EksternVarslingStatusSinkTest {
             eksternVarslingStatusUpdater = eksternVarslingStatusUpdater,
         )
 
-    private fun setupVarselSink(testRapid: TestRapid) = AktiverVarselSink(
+    private fun setupVarselSink(testRapid: TestRapid) = OpprettVarselSink(
         rapidsConnection = testRapid,
         varselRepository = varselRepository,
         varselAktivertProducer = mockk(relaxed = true)
     )
 }
-
-private fun TestRapid.sendMessageAsJson(message: Any) = sendTestMessage(message.toJson(includeNull = true))
 
 private fun MockProducer<String, String>.verifyOutput(verifier: (List<JsonNode>) -> Unit) {
     val objectMapper = jacksonObjectMapper()

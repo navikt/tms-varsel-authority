@@ -1,4 +1,4 @@
-package no.nav.tms.varsel.authority.write.aktiver
+package no.nav.tms.varsel.authority.write.opprett
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.action.*
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime

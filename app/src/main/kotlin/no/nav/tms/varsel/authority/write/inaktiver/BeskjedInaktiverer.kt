@@ -1,13 +1,12 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
-import no.nav.tms.varsel.authority.write.aktiver.WriteVarselRepository
-import no.nav.tms.varsel.action.Varseltype
-import no.nav.tms.varsel.action.Varseltype.Beskjed
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import observability.traceVarsel
 
 class BeskjedInaktiverer(

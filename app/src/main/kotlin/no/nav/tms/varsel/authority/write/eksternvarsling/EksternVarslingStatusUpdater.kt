@@ -8,7 +8,7 @@ import no.nav.tms.varsel.authority.EksternVarslingStatus
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.eksternvarsling.DoknotifikasjonStatusEnum.*
-import no.nav.tms.varsel.authority.write.aktiver.*
+import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.slf4j.MDC
 import java.time.Duration
 import java.time.temporal.ChronoUnit
