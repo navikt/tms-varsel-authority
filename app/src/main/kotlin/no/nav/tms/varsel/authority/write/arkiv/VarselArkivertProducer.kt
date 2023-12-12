@@ -5,6 +5,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime
@@ -21,9 +22,8 @@ class VarselArkivertProducer(
 
         val hendelse = VarselArkivertHendelse(
             varselId = arkivVarsel.varselId,
-            varselType = arkivVarsel.type,
-            namespace = arkivVarsel.produsent.namespace,
-            appnavn = arkivVarsel.produsent.appnavn,
+            varseltype = arkivVarsel.type,
+            produsent = arkivVarsel.produsent,
             opprettet = arkivVarsel.opprettet
         )
 
@@ -43,11 +43,15 @@ class VarselArkivertProducer(
 
 private data class VarselArkivertHendelse(
     val varselId: String,
-    val varselType: Varseltype,
-    val namespace: String,
-    val appnavn: String,
+    val varseltype: Varseltype,
+    val produsent: DatabaseProdusent,
     val opprettet: ZonedDateTime,
     val tidspunkt: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc()
 ) {
     @JsonProperty("@event_name") val eventName = "arkivert"
+
+    // Remove
+    val varselType = varseltype
+    val namespace get() = produsent.namespace
+    val appnavn get() = produsent.appnavn
 }

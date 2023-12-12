@@ -70,15 +70,43 @@ class OpprettVarselSinkTest {
         dbVarsel.produsent.appnavn shouldBe opprettJson["produsent"]["appnavn"].asText()
         dbVarsel.inaktivert shouldBe null
 
-        val varselAktivert = mockProducer.history()
-            .first()
-            .value()
-            .let { objectMapper.readTree(it) }
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .find { it["@event_name"].asText() == "opprettet" }
+            .let { it.shouldNotBeNull() }
+            .let { varselAktivert ->
+                varselAktivert["varselId"].asText() shouldBe varselId
+                varselAktivert["type"].asText() shouldBe "beskjed"
+                varselAktivert["innhold"]["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
+                varselAktivert["innhold"]["link"].asText() shouldBe opprettJson["link"].asText()
+                varselAktivert["innhold"]["tekster"].size() shouldBe opprettJson["tekster"].size()
+                varselAktivert["innhold"]["tekster"].first()["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
+                varselAktivert["innhold"]["tekster"].first()["spraakkode"].asText() shouldBe opprettJson["tekster"].first()["spraakkode"].asText()
+                varselAktivert["innhold"]["tekster"].first()["default"].asBoolean() shouldBe opprettJson["tekster"].first()["default"].asBoolean()
+                varselAktivert["produsent"]["cluster"].asText() shouldBe "cluster"
+                varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
+                varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
+            }
 
-        varselAktivert["varselId"].asText() shouldBe varselId
-        varselAktivert["type"].asText() shouldBe "beskjed"
-        varselAktivert["innhold"]["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
-        varselAktivert["innhold"]["link"].asText() shouldBe opprettJson["link"].asText()
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .find { it["@event_name"].asText() == "aktivert" }
+            .let { it.shouldNotBeNull() }
+            .let { varselAktivert ->
+                varselAktivert["varselId"].asText() shouldBe varselId
+                varselAktivert["type"].asText() shouldBe "beskjed"
+                varselAktivert["innhold"]["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
+                varselAktivert["innhold"]["link"].asText() shouldBe opprettJson["link"].asText()
+                varselAktivert["innhold"]["tekster"].size() shouldBe opprettJson["tekster"].size()
+                varselAktivert["innhold"]["tekster"].first()["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
+                varselAktivert["innhold"]["tekster"].first()["spraakkode"].asText() shouldBe opprettJson["tekster"].first()["spraakkode"].asText()
+                varselAktivert["innhold"]["tekster"].first()["default"].asBoolean() shouldBe opprettJson["tekster"].first()["default"].asBoolean()
+                varselAktivert["produsent"]["cluster"].asText() shouldBe "cluster"
+                varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
+                varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
+            }
     }
 
     @Test
@@ -111,7 +139,7 @@ class OpprettVarselSinkTest {
         dbVarsel.shouldNotBeNull()
         dbVarsel.type shouldBe Varseltype.Oppgave
 
-        mockProducer.history().size shouldBe 1
+        mockProducer.history().size shouldBe 2 // opprettet + aktivert
     }
 }
 

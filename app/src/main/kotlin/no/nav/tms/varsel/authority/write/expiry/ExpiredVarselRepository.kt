@@ -7,7 +7,9 @@ import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
+import no.nav.tms.varsel.authority.common.json
 import no.nav.tms.varsel.authority.common.parseVarseltype
+import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -15,6 +17,8 @@ import java.time.ZonedDateTime
 class ExpiredVarselRepository(private val database: Database) {
 
     private val epoch = ZonedDateTime.ofInstant(Instant.EPOCH, ZoneId.of("UTC"))
+
+    private val objectMapper = defaultObjectMapper()
 
     fun updateAllTimeExpired() = updateExpiredVarsel(epoch)
     fun updateExpiredPastHour() = updateExpiredVarsel(nowAtUtc().minusHours(1))
@@ -32,10 +36,8 @@ class ExpiredVarselRepository(private val database: Database) {
                         and aktivFremTil between :startDate and :now
                     returning
                         varselId,
-                        type as varselType,
-                        produsent->>'cluster' as cluster,
-                        produsent->>'namespace' as namespace,
-                        produsent->>'appnavn' as appnavn
+                        type as varseltype,
+                        produsent
                 """,
                 mapOf(
                     "startDate" to checkFromDate,
@@ -51,24 +53,14 @@ class ExpiredVarselRepository(private val database: Database) {
     private fun toExpiredVasel(): (Row) -> ExpiredVarsel = { row ->
         ExpiredVarsel(
             varselId = row.string("varselId"),
-            varselType = row.string("varselType").let(::parseVarseltype),
-            cluster = row.stringOrNull("cluster"),
-            namespace = row.string("namespace"),
-            appnavn = row.string("appnavn"),
+            varseltype = row.string("varseltype").let(::parseVarseltype),
+            produsent = row.json("produsent")
         )
     }
 }
 
 data class ExpiredVarsel(
     val varselId: String,
-    val varselType: Varseltype,
-    val cluster: String?,
-    val namespace: String,
-    val appnavn: String
-) {
-    val produsent get() = DatabaseProdusent(
-        cluster,
-        namespace,
-        appnavn
-    )
-}
+    val varseltype: Varseltype,
+    val produsent: DatabaseProdusent
+)

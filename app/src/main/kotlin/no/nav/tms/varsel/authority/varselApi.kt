@@ -59,7 +59,7 @@ fun Application.varselApi(
                     log.warn(cause) { cause.message }
                 }
 
-                is InvalidVarselTypeException -> {
+                is InvalidVarseltypeException -> {
                     call.respondText(
                         status = HttpStatusCode.Forbidden,
                         text = "Bruker kan ikke inaktivere ${cause.type} via api"

@@ -57,10 +57,9 @@ internal class InaktiverVarselSink(
                     )
                     varselInaktivertProducer.varselInaktivert(
                         VarselInaktivertHendelse(
-                            varselType = varsel.type,
+                            varseltype = varsel.type,
                             varselId = varsel.varselId,
-                            namespace = varsel.produsent.namespace,
-                            appnavn = varsel.produsent.appnavn,
+                            produsent = varsel.produsent,
                             kilde = VarselInaktivertKilde.Produsent
                         )
                     )

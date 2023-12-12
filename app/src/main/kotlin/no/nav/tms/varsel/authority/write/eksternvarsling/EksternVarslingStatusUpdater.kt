@@ -103,11 +103,10 @@ class EksternVarslingStatusUpdater(
     private fun buildOppdatering(newEntry: EksternVarslingHistorikkEntry, varsel: DatabaseVarsel) = EksternStatusOppdatering(
         status = newEntry.status,
         kanal = newEntry.kanal,
-        varselType = varsel.type,
+        varseltype = varsel.type,
         varselId = varsel.varselId,
         ident = varsel.ident,
-        namespace = varsel.produsent.namespace,
-        appnavn = varsel.produsent.appnavn,
+        produsent = varsel.produsent,
         renotifikasjon = newEntry.renotifikasjon
     )
 
