@@ -51,13 +51,12 @@ class PeriodicExpiredVarselProcessor(
             varselInaktivertProducer.varselInaktivert(
                 VarselInaktivertHendelse(
                     varselId = expired.varselId,
-                    varselType = expired.varselType,
-                    namespace = expired.namespace,
-                    appnavn = expired.appnavn,
+                    varseltype = expired.varseltype,
+                    produsent = expired.produsent,
                     kilde = Frist
                 )
             )
-            VarselMetricsReporter.registerVarselInaktivert(expired.varselType, expired.produsent, Frist, "N/A")
+            VarselMetricsReporter.registerVarselInaktivert(expired.varseltype, expired.produsent, Frist, "N/A")
         }
     }
 

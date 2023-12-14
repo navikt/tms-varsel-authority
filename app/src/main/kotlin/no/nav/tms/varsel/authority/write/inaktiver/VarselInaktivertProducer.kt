@@ -6,6 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -37,13 +38,16 @@ class VarselInaktivertProducer(
 
 data class VarselInaktivertHendelse(
     val varselId: String,
-    val varselType: Varseltype,
-    val namespace: String,
-    val appnavn: String,
+    val varseltype: Varseltype,
+    val produsent: DatabaseProdusent,
     @JsonIgnore val kilde: VarselInaktivertKilde
 ) {
     @JsonProperty("kilde") val inaktivertKilde = kilde.lowercaseName
     @JsonProperty("@event_name") val eventName = "inaktivert"
-    @JsonProperty("@source") val source = "varsel-authority"
     val tidspunkt = nowAtUtc()
+
+    // Remove
+    val varselType = varseltype
+    val namespace get() = produsent.namespace
+    val appnavn get() = produsent.appnavn
 }

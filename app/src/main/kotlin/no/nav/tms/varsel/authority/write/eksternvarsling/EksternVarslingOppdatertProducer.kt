@@ -5,6 +5,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -39,13 +40,16 @@ data class EksternStatusOppdatering(
     val status: EksternStatus,
     val varselId: String,
     val ident: String,
-    val varselType: Varseltype,
-    val namespace: String,
-    val appnavn: String,
+    val varseltype: Varseltype,
+    val produsent: DatabaseProdusent,
     val kanal: String?,
     val renotifikasjon: Boolean?
 ) {
     @JsonProperty("@event_name") val eventName = "eksternStatusOppdatert"
-    @JsonProperty("@source") val source = "varsel-authority"
     val tidspunkt = nowAtUtc()
+
+    // Remove
+    val varselType = varseltype
+    val namespace get() = produsent.namespace
+    val appnavn get() = produsent.appnavn
 }

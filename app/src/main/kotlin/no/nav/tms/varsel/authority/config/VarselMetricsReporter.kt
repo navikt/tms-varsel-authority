@@ -45,9 +45,9 @@ object VarselMetricsReporter {
         .labelNames("type", "produsent_namespace", "produsent_app", "kanal")
         .register()
 
-    fun registerVarselAktivert(varselType: Varseltype, produsent: DatabaseProdusent, sourceTopic: String) {
+    fun registerVarselAktivert(varseltype: Varseltype, produsent: DatabaseProdusent, sourceTopic: String) {
         VARSEL_AKTIVERT
-            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, sourceTopic)
+            .labels(varseltype.name.lowercase(), produsent.namespace, produsent.appnavn, sourceTopic)
             .inc()
     }
 
@@ -57,15 +57,15 @@ object VarselMetricsReporter {
             .inc()
     }
 
-    fun registerVarselArkivert(varselType: Varseltype, produsent: DatabaseProdusent) {
+    fun registerVarselArkivert(varseltype: Varseltype, produsent: DatabaseProdusent) {
         VARSEL_ARKIVERT
-            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn)
+            .labels(varseltype.name.lowercase(), produsent.namespace, produsent.appnavn)
             .inc()
     }
 
-    fun registerEksternVarslingSendt(varselType: Varseltype, produsent: DatabaseProdusent, kanal: String) {
+    fun registerEksternVarslingSendt(varseltype: Varseltype, produsent: DatabaseProdusent, kanal: String) {
         EKSTERN_VARSLING_SENDT
-            .labels(varselType.name.lowercase(), produsent.namespace, produsent.appnavn, kanal)
+            .labels(varseltype.name.lowercase(), produsent.namespace, produsent.appnavn, kanal)
             .inc()
     }
 
@@ -76,10 +76,10 @@ object VarselMetricsReporter {
         .labelNames("type", "source", "assurance_level")
         .register()
 
-    fun registerVarselHentet(varselType: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
+    fun registerVarselHentet(varseltype: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
         VARSEL_HENTET
             .labels(
-                varselType?.name?.lowercase() ?: "all",
+                varseltype?.name?.lowercase() ?: "all",
                 source.lowercaseName,
                 levelOfAssurance?.name?.lowercase() ?: "na"
             )

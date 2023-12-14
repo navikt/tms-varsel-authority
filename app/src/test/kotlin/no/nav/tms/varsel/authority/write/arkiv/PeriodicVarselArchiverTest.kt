@@ -91,9 +91,13 @@ internal class PeriodicVarselArchiverTest {
             .first()
             .let {
                 it["varselId"].asText() shouldBe gammelBeskjed.varselId
+                it["varseltype"].asText() shouldBe gammelBeskjed.type.name.lowercase()
                 it["varselType"].asText() shouldBe gammelBeskjed.type.name.lowercase()
                 it["namespace"].asText() shouldBe gammelBeskjed.produsent.namespace
                 it["appnavn"].asText() shouldBe gammelBeskjed.produsent.appnavn
+                it["produsent"]["cluster"]?.asText() shouldBe gammelBeskjed.produsent.cluster
+                it["produsent"]["namespace"].asText() shouldBe gammelBeskjed.produsent.namespace
+                it["produsent"]["appnavn"].asText() shouldBe gammelBeskjed.produsent.appnavn
                 it["opprettet"].asZonedDateTime().toEpochSecond() shouldBe gammelBeskjed.opprettet.toEpochSecond()
         }
     }

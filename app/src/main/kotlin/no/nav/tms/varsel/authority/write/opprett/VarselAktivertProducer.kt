@@ -27,10 +27,19 @@ class VarselAktivertProducer(
 
     fun varselAktivert(dbVarsel: DatabaseVarsel) {
 
-        val varselAktivertEvent = VarselAktivert.fromDatabaseVarsel(dbVarsel)
-        val producerRecord = ProducerRecord(topicName, dbVarsel.varselId, varselAktivertEvent.asJson().toString())
-        kafkaProducer.send(producerRecord)
+        val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
+        val varselAktivertEvent = varselOpprettetEvent.toAktivertEvent()
+
+        sendEvent(dbVarsel.varselId, varselOpprettetEvent)
+        sendEvent(dbVarsel.varselId, varselAktivertEvent)
+
         log.info { "Aktivert-event produsert til kafka" }
+    }
+
+    private fun sendEvent(varselId: String, body: Any) {
+        ProducerRecord(topicName, varselId, body.asJson().toString()).let {
+            kafkaProducer.send(it)
+        }
     }
 
     private fun Any.asJson(): ObjectNode {
@@ -48,7 +57,7 @@ class VarselAktivertProducer(
     }
 }
 
-private data class VarselAktivert(
+private data class VarselOpprettet(
     val type: Varseltype,
     val varselId: String,
     val ident: String,
@@ -57,14 +66,13 @@ private data class VarselAktivert(
     val produsent: DatabaseProdusent,
     val eksternVarslingBestilling: EksternVarslingBestilling?,
     val opprettet: ZonedDateTime,
-    val aktivFremTil: ZonedDateTime?
+    val aktivFremTil: ZonedDateTime?,
+    @JsonProperty("@event_name") val eventName: String = "opprettet"
 ) {
-    @JsonProperty("@event_name") val eventName = "aktivert"
-    @JsonProperty("@source") val source = "varsel-authority"
     val tidspunkt = nowAtUtc()
 
     companion object {
-        fun fromDatabaseVarsel(dbVarsel: DatabaseVarsel) = VarselAktivert(
+        fun fromDatabaseVarsel(dbVarsel: DatabaseVarsel) = VarselOpprettet(
              type = dbVarsel.type,
              varselId = dbVarsel.varselId,
              ident = dbVarsel.ident,
@@ -76,4 +84,6 @@ private data class VarselAktivert(
              aktivFremTil = dbVarsel.aktivFremTil,
         )
     }
+
+    fun toAktivertEvent() = this.copy(eventName = "aktivert")
 }

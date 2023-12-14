@@ -76,7 +76,13 @@ internal class InaktiverVarselSinkTest {
             .first()
 
         outputJson["varselId"].asText() shouldBe varselId
+        outputJson["varseltype"].asText() shouldBe "beskjed"
         outputJson["varselType"].asText() shouldBe "beskjed"
+        outputJson["namespace"].asText() shouldBe "namespace"
+        outputJson["appnavn"].asText() shouldBe "appnavn"
+        outputJson["produsent"]["cluster"].asText() shouldBe "cluster"
+        outputJson["produsent"]["namespace"].asText() shouldBe "namespace"
+        outputJson["produsent"]["appnavn"].asText() shouldBe "appnavn"
     }
 
     @Test
