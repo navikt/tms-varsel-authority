@@ -12,7 +12,6 @@ import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.util.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
@@ -28,7 +27,7 @@ import org.junit.jupiter.api.Test
 import java.text.DateFormat
 import java.util.*
 
-class InaktiverBeskjedApiTest {
+class InaktiverVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
     private val mockProducer = MockProducer(
@@ -43,7 +42,7 @@ class InaktiverBeskjedApiTest {
     private val writeRepository = WriteVarselRepository(database)
     private val varselInaktiverer = VarselInaktiverer(writeRepository, inaktivertProducer)
 
-    private val ident = "123"
+    private val grunnForInaktivering = "Inaktiveres i test"
 
 
     @AfterEach
@@ -52,55 +51,33 @@ class InaktiverBeskjedApiTest {
     }
 
     @Test
-    fun `inaktiverer varsel for bruker`() = testVarselApi(userIdent = ident) {client ->
-        val beskjed1 = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
-        val beskjed2 = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
+    fun `inaktiverer varsel for admin`() = testVarselApi {client ->
+        val oppgave1 = dbVarsel(type = Varseltype.Oppgave, aktiv = true)
+        val oppgave2 = dbVarsel(type = Varseltype.Oppgave, aktiv = true)
 
-        insertVarsel(beskjed1, beskjed2)
+        insertVarsel(oppgave1, oppgave2)
 
-        client.inaktiverBeskjed(beskjed1.varselId)
+        client.inaktiverVarsel(oppgave1.varselId, grunnForInaktivering)
 
-        getDbVarsel(beskjed1.varselId).aktiv shouldBe false
-        getDbVarsel(beskjed2.varselId).aktiv shouldBe true
+        getDbVarsel(oppgave1.varselId).aktiv shouldBe false
+        getDbVarsel(oppgave2.varselId).aktiv shouldBe true
     }
 
     @Test
-    fun `svarer med feilkode hvis varsel ikke finnes`() = testVarselApi(userIdent = ident) { client ->
-        val beskjed = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
+    fun `svarer med feilkode hvis varsel ikke finnes`() = testVarselApi { client ->
+        val beskjed = dbVarsel(type = Varseltype.Beskjed, aktiv = true)
 
         insertVarsel(beskjed)
 
-        val response = client.inaktiverBeskjed(varselId = UUID.randomUUID().toString())
+        val response = client.inaktiverVarsel(varselId = UUID.randomUUID().toString(), grunnForInaktivering)
 
         response.status shouldBe HttpStatusCode.Forbidden
     }
 
-    @Test
-    fun `svarer med feilkode hvis varsel ikke er beskjed`() = testVarselApi(userIdent = ident) { client ->
-        val oppgave = dbVarsel(type = Varseltype.Oppgave, ident = ident, aktiv = true)
-
-        insertVarsel(oppgave)
-
-        val response = client.inaktiverBeskjed(varselId = oppgave.varselId)
-
-        response.status shouldBe HttpStatusCode.Forbidden
-    }
-
-    @Test
-    fun `svarer med feilkode hvis varsel eies av annen bruker`() = testVarselApi(userIdent = ident) {client ->
-        val beskjed = dbVarsel(type = Varseltype.Beskjed, ident = "annenIdent", aktiv = true)
-
-        insertVarsel(beskjed)
-
-        val response = client.inaktiverBeskjed(varselId = beskjed.varselId)
-
-        response.status shouldBe HttpStatusCode.Forbidden
-    }
-
-    private suspend fun HttpClient.inaktiverBeskjed(varselId: String) =
-        post("/beskjed/inaktiver") {
+    private suspend fun HttpClient.inaktiverVarsel(varselId: String, grunn: String) =
+        post("/varsel/inaktiver") {
             header(HttpHeaders.ContentType, ContentType.Application.Json)
-            setBody(VarselIdBody(varselId))
+            setBody(InaktiverVarselRequest(varselId, grunn))
         }
 
     private fun insertVarsel(vararg varsler: DatabaseVarsel) {
@@ -111,7 +88,6 @@ class InaktiverBeskjedApiTest {
 
     @KtorDsl
     private fun testVarselApi(
-        userIdent: String,
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = testApplication {
 
@@ -123,12 +99,10 @@ class InaktiverBeskjedApiTest {
                     authentication {
                         tokenXMock {
                             setAsDefault = true
-                            alwaysAuthenticated = true
-                            staticUserPid = userIdent
-                            staticLevelOfAssurance = HIGH
                         }
                         azureMock {
                             setAsDefault = false
+                            alwaysAuthenticated = true
                         }
                     }
                 }

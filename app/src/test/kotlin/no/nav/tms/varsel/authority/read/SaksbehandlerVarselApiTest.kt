@@ -19,7 +19,7 @@ import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.varselApi
-import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
@@ -41,7 +41,7 @@ class SaksbehandlerVarselApiTest {
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
-    private val beskjedInaktiverer = BeskjedInaktiverer(writeRepository, inaktivertProducer)
+    private val varselInaktiverer = VarselInaktiverer(writeRepository, inaktivertProducer)
 
     private val ident = "123"
 
@@ -183,7 +183,7 @@ class SaksbehandlerVarselApiTest {
         application {
             varselApi(
                 readRepository,
-                beskjedInaktiverer,
+                varselInaktiverer,
                 installAuthenticatorsFunction = {
                     authentication {
                         tokenXMock {

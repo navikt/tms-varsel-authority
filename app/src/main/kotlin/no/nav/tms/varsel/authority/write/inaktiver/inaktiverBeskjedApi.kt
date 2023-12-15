@@ -10,10 +10,10 @@ import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
 
 
 fun Route.inaktiverBeskjedApi(
-    varselUpdater: BeskjedInaktiverer
+    varselUpdater: VarselInaktiverer
 ) {
     post("/beskjed/inaktiver") {
-        varselUpdater.inaktiverBeskjed(call.varselId(), call.tokenXUser.ident)
+        varselUpdater.inaktiverBeskjedForBruker(call.varselId(), call.tokenXUser.ident)
 
         call.respond(HttpStatusCode.OK)
     }
