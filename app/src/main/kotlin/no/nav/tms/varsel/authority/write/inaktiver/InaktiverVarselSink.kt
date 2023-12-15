@@ -85,7 +85,7 @@ internal class InaktiverVarselSink(
     }
 
     override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error { "Feil ved lesing av opprett-event fra kafka" }
-        securelog.error { "Problem ved lesing av opprett-event fra kafka: $problems" }
+        log.error { "Feil ved lesing av inaktiver-event fra kafka" }
+        securelog.error { "Problem ved lesing av inaktiver-event fra kafka: $problems" }
     }
 }
