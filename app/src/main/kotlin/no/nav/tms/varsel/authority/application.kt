@@ -78,12 +78,12 @@ private fun startRapid(environment: Environment, database: Database) {
 
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
-    val beskjedService = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
+    val varselInaktiverer = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
 
     RapidApplication.Builder(fromEnv(environment.rapidConfig))
         .withKtorModule {
             varselApi(
-                readVarselRepository, beskjedService
+                readVarselRepository, varselInaktiverer
             )
     }.build().apply {
         OpprettVarselSink(

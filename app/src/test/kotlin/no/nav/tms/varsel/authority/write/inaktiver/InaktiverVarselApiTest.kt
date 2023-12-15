@@ -40,7 +40,7 @@ class InaktiverVarselApiTest {
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
-    private val beskjedInaktiverer = VarselInaktiverer(writeRepository, inaktivertProducer)
+    private val varselInaktiverer = VarselInaktiverer(writeRepository, inaktivertProducer)
 
     private val grunnForInaktivering = "Inaktiveres i test"
 
@@ -94,7 +94,7 @@ class InaktiverVarselApiTest {
         application {
             varselApi(
                 readRepository,
-                beskjedInaktiverer,
+                varselInaktiverer,
                 installAuthenticatorsFunction = {
                     authentication {
                         tokenXMock {
