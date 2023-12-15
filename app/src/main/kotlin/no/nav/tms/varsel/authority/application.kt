@@ -19,7 +19,7 @@ import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSi
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
-import no.nav.tms.varsel.authority.write.inaktiver.BeskjedInaktiverer
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
@@ -78,7 +78,7 @@ private fun startRapid(environment: Environment, database: Database) {
 
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
-    val beskjedService = BeskjedInaktiverer(writeVarselRepository, varselInaktivertProducer)
+    val beskjedService = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
 
     RapidApplication.Builder(fromEnv(environment.rapidConfig))
         .withKtorModule {

@@ -3,7 +3,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.annotation.JsonValue
 
 enum class VarselInaktivertKilde {
-    Bruker, Produsent, Frist;
+    Bruker, Produsent, Frist, Admin;
 
     @JsonValue
     val lowercaseName = name.lowercase()

@@ -5,17 +5,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Admin
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import observability.traceVarsel
+import org.slf4j.MDC
 
-class BeskjedInaktiverer(
+class VarselInaktiverer(
     private val varselRepository: WriteVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer
 ) {
     private val log = KotlinLogging.logger {}
 
-    suspend fun inaktiverBeskjed(varselId: String, ident: String) = withContext(Dispatchers.IO) {
+    suspend fun inaktiverBeskjedForBruker(varselId: String, ident: String) = withContext(Dispatchers.IO) {
         traceVarsel(id = varselId, mapOf("action" to "inaktiver", "initiated_by" to "bruker")) {
             val varsel = varselRepository.getVarsel(varselId)
 
@@ -40,6 +42,41 @@ class BeskjedInaktiverer(
                             varseltype = varsel.type,
                             produsent = varsel.produsent,
                             kilde = Bruker
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun inaktiverVarselForAdmin(varselId: String, grunn: String) = withContext(Dispatchers.IO) {
+        traceVarsel(varselId, mapOf("action" to "inaktiver", "initiated_by" to "admin")) {
+
+            when (val varsel = varselRepository.getVarsel(varselId)) {
+                null -> throw VarselNotFoundException("Fant ikke varsel")
+                else -> {
+                    log.info { "Inaktiverer varsel." }
+
+                    varselRepository.inaktiverVarsel(
+                        varselId = varsel.varselId,
+                        kilde = Admin,
+                        metadata = mapOf(
+                            "admin_action" to mapOf(
+                                "inaktiver" to mapOf(
+                                    "grunn" to grunn
+                                )
+                            )
+                        )
+                    )
+
+                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Admin, "N/A")
+
+                    varselInaktivertProducer.varselInaktivert(
+                        VarselInaktivertHendelse(
+                            varselId = varsel.varselId,
+                            varseltype = varsel.type,
+                            produsent = varsel.produsent,
+                            kilde = Admin
                         )
                     )
                 }

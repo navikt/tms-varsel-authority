@@ -60,6 +60,7 @@ spec:
       rules:
         - application: tms-event-api
         - application: tms-varsel-api
+        - application: tms-varsel-admin
   env:
     - name: ARCHIVING_THRESHOLD
       value: "365"
