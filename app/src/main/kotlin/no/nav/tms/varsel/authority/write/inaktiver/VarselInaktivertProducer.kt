@@ -45,9 +45,4 @@ data class VarselInaktivertHendelse(
     @JsonProperty("kilde") val inaktivertKilde = kilde.lowercaseName
     @JsonProperty("@event_name") val eventName = "inaktivert"
     val tidspunkt = nowAtUtc()
-
-    // Remove
-    val varselType = varseltype
-    val namespace get() = produsent.namespace
-    val appnavn get() = produsent.appnavn
 }

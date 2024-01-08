@@ -9,7 +9,7 @@ import no.nav.helse.rapids_rivers.testsupport.TestRapid
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
-import no.nav.tms.varsel.authority.write.opprett.VarselAktivertProducer
+import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
 import org.apache.kafka.clients.producer.MockProducer
@@ -26,7 +26,7 @@ internal class InaktiverVarselSinkTest {
         StringSerializer()
     )
 
-    private val aktivertProducer = VarselAktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
+    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
 
     private val testRapid = TestRapid()
@@ -39,7 +39,7 @@ internal class InaktiverVarselSinkTest {
 
     @BeforeEach
     fun setup() {
-        OpprettVarselSink(testRapid, repository, aktivertProducer)
+        OpprettVarselSink(testRapid, repository, varselOpprettetProducer)
         InaktiverVarselSink(testRapid, repository, inaktivertProducer)
     }
 
@@ -77,9 +77,6 @@ internal class InaktiverVarselSinkTest {
 
         outputJson["varselId"].asText() shouldBe varselId
         outputJson["varseltype"].asText() shouldBe "beskjed"
-        outputJson["varselType"].asText() shouldBe "beskjed"
-        outputJson["namespace"].asText() shouldBe "namespace"
-        outputJson["appnavn"].asText() shouldBe "appnavn"
         outputJson["produsent"]["cluster"].asText() shouldBe "cluster"
         outputJson["produsent"]["namespace"].asText() shouldBe "namespace"
         outputJson["produsent"]["appnavn"].asText() shouldBe "appnavn"

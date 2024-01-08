@@ -13,7 +13,7 @@ import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime
 
-class VarselAktivertProducer(
+class VarselOpprettetProducer(
     private val kafkaProducer: Producer<String, String>,
     private val topicName: String
 ) {
@@ -28,10 +28,8 @@ class VarselAktivertProducer(
     fun varselAktivert(dbVarsel: DatabaseVarsel) {
 
         val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
-        val varselAktivertEvent = varselOpprettetEvent.toAktivertEvent()
 
         sendEvent(dbVarsel.varselId, varselOpprettetEvent)
-        sendEvent(dbVarsel.varselId, varselAktivertEvent)
 
         log.info { "Aktivert-event produsert til kafka" }
     }
@@ -84,6 +82,4 @@ private data class VarselOpprettet(
              aktivFremTil = dbVarsel.aktivFremTil,
         )
     }
-
-    fun toAktivertEvent() = this.copy(eventName = "aktivert")
 }
