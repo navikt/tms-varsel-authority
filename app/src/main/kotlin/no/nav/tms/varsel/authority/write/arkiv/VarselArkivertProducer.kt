@@ -49,9 +49,4 @@ private data class VarselArkivertHendelse(
     val tidspunkt: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc()
 ) {
     @JsonProperty("@event_name") val eventName = "arkivert"
-
-    // Remove
-    val varselType = varseltype
-    val namespace get() = produsent.namespace
-    val appnavn get() = produsent.appnavn
 }
