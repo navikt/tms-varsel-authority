@@ -24,7 +24,7 @@ class OpprettVarselSinkTest {
         StringSerializer()
     )
 
-    private val rapidProducer = VarselAktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
+    private val rapidProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
 
     private val testRapid = TestRapid()
     private val database = LocalPostgresDatabase.cleanDb()
@@ -88,25 +88,6 @@ class OpprettVarselSinkTest {
                 varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
                 varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
             }
-
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
-            .find { it["@event_name"].asText() == "aktivert" }
-            .let { it.shouldNotBeNull() }
-            .let { varselAktivert ->
-                varselAktivert["varselId"].asText() shouldBe varselId
-                varselAktivert["type"].asText() shouldBe "beskjed"
-                varselAktivert["innhold"]["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
-                varselAktivert["innhold"]["link"].asText() shouldBe opprettJson["link"].asText()
-                varselAktivert["innhold"]["tekster"].size() shouldBe opprettJson["tekster"].size()
-                varselAktivert["innhold"]["tekster"].first()["tekst"].asText() shouldBe opprettJson["tekster"].first()["tekst"].asText()
-                varselAktivert["innhold"]["tekster"].first()["spraakkode"].asText() shouldBe opprettJson["tekster"].first()["spraakkode"].asText()
-                varselAktivert["innhold"]["tekster"].first()["default"].asBoolean() shouldBe opprettJson["tekster"].first()["default"].asBoolean()
-                varselAktivert["produsent"]["cluster"].asText() shouldBe "cluster"
-                varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
-                varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
-            }
     }
 
     @Test
@@ -139,7 +120,7 @@ class OpprettVarselSinkTest {
         dbVarsel.shouldNotBeNull()
         dbVarsel.type shouldBe Varseltype.Oppgave
 
-        mockProducer.history().size shouldBe 2 // opprettet + aktivert
+        mockProducer.history().size shouldBe 1
     }
 }
 

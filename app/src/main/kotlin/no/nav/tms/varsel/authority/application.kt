@@ -23,7 +23,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
-import no.nav.tms.varsel.authority.write.opprett.VarselAktivertProducer
+import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -51,7 +51,7 @@ private fun startRapid(environment: Environment, database: Database) {
     val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer)
 
-    val varselAktivertProducer = VarselAktivertProducer(
+    val varselOpprettetProducer = VarselOpprettetProducer(
         kafkaProducer = initializeRapidKafkaProducer(environment),
         topicName = environment.internalVarselTopic,
     )
@@ -89,7 +89,7 @@ private fun startRapid(environment: Environment, database: Database) {
         OpprettVarselSink(
             rapidsConnection = this,
             varselRepository = varselRepository,
-            varselAktivertProducer = varselAktivertProducer
+            varselAktivertProducer = varselOpprettetProducer
         )
         InaktiverVarselSink(
             rapidsConnection = this,
@@ -113,7 +113,7 @@ private fun startRapid(environment: Environment, database: Database) {
                     periodicExpiredVarselProcessor.stop()
                     varselArchiver.stop()
                     varselInaktivertProducer.flushAndClose()
-                    varselAktivertProducer.flushAndClose()
+                    varselOpprettetProducer.flushAndClose()
                     varselArkivertProducer.flushAndClose()
                     eksternVarslingOppdatertProducer.flushAndClose()
                 }

@@ -19,7 +19,7 @@ import org.postgresql.util.PSQLException
 internal class OpprettVarselSink(
     rapidsConnection: RapidsConnection,
     private val varselRepository: WriteVarselRepository,
-    private val varselAktivertProducer: VarselAktivertProducer
+    private val varselAktivertProducer: VarselOpprettetProducer
 ) : River.PacketListener {
 
     private val log = KotlinLogging.logger { }
