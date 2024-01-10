@@ -160,8 +160,6 @@ class EksternVarslingStatusSinkTest {
             ferdigstilt["kanal"].textValue() shouldBe "SMS"
             ferdigstilt["renotifikasjon"].booleanValue() shouldBe false
             ferdigstilt["tidspunkt"].textValue().let { ZonedDateTime.parse(it) } shouldNotBe null
-            ferdigstilt["namespace"].asText() shouldBe "namespace"
-            ferdigstilt["appnavn"].asText() shouldBe "appnavn"
             ferdigstilt["produsent"]["cluster"].asText() shouldBe "cluster"
             ferdigstilt["produsent"]["namespace"].asText() shouldBe "namespace"
             ferdigstilt["produsent"]["appnavn"].asText() shouldBe "appnavn"

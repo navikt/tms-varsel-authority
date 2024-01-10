@@ -48,9 +48,4 @@ data class EksternStatusOppdatering(
 ) {
     @JsonProperty("@event_name") val eventName = "eksternStatusOppdatert"
     val tidspunkt = nowAtUtc()
-
-    // Remove
-    val varselType = varseltype
-    val namespace get() = produsent.namespace
-    val appnavn get() = produsent.appnavn
 }
