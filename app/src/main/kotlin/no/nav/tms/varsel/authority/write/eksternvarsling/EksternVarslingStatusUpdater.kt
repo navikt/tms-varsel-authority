@@ -107,7 +107,8 @@ class EksternVarslingStatusUpdater(
         varselId = varsel.varselId,
         ident = varsel.ident,
         produsent = varsel.produsent,
-        renotifikasjon = newEntry.renotifikasjon
+        renotifikasjon = newEntry.renotifikasjon,
+        feilmelding = if (newEntry.status == Feilet) newEntry.melding else null
     )
 
     private fun determineInternalStatus(statusEvent: DoknotifikasjonStatusEvent): EksternStatus {

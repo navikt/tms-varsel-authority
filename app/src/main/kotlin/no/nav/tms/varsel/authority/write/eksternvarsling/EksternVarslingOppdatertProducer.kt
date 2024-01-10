@@ -43,7 +43,8 @@ data class EksternStatusOppdatering(
     val varseltype: Varseltype,
     val produsent: DatabaseProdusent,
     val kanal: String?,
-    val renotifikasjon: Boolean?
+    val renotifikasjon: Boolean?,
+    val feilmelding: String?
 ) {
     @JsonProperty("@event_name") val eventName = "eksternStatusOppdatert"
     val tidspunkt = nowAtUtc()

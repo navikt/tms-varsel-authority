@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -227,6 +228,37 @@ class EksternVarslingStatusSinkTest {
             output.filter {
                 it["renotifikasjon"] == null
             }.size shouldBe 7
+        }
+    }
+
+    @Test
+    fun `sender med feilmelding for status feilet til kafka`() {
+        val testRapid = TestRapid()
+        setupEksternVarslingStatusSink(testRapid)
+        setupVarselSink(testRapid)
+
+        val varselId = UUID.randomUUID().toString()
+
+        testRapid.sendTestMessage(opprettVarselEvent("oppgave", varselId))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, OVERSENDT, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, INFO, tidspunkt = nowAtUtc()))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, FERDIGSTILT, kanal = "SMS", tidspunkt = nowAtUtc().plusDays(1)))
+        testRapid.sendTestMessage(eksternVarslingStatus(varselId, FEILET, melding = "Ugyldig kontaktinfo", tidspunkt = nowAtUtc().plusDays(1)))
+
+        mockProducer.verifyOutput { output ->
+            output.filter {
+                it["status"].textValue() != "feilet"
+            }.forEach {
+                it["feilmelding"].shouldBeNull()
+            }
+
+            output.filter {
+                it["status"].textValue() == "feilet"
+            }.also {
+                it.size shouldBe 1
+            }.first().let {
+                it["feilmelding"].textValue() shouldBe "Ugyldig kontaktinfo"
+            }
         }
     }
 
