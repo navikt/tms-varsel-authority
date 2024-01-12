@@ -1,6 +1,6 @@
 # Komme i gang med varsler
 
-_For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)._
+_For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://navikt.github.io/tms-dokumentasjon/guide/)._
 
 1. Kafka tilgang: Opprett en pull-request mot topic `aapen-brukervarsel-v1`
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).

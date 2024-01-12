@@ -9,7 +9,7 @@ opprett pr i [github-repository](https://github.com/navikt/min-side-brukervarsel
 Vi bruker ikke lenger avro for å validere schema. Varsel-eventer sendes som json-string, med varsel-id som nøkkel. 
 
 ## Endringer i meldingene
-Se [produsere varsler](https://tms-dokumentasjon.intern.nav.no/varsler/produsere) for dokumentasjon av nytt format.
+Se [produsere varsler](https://navikt.github.io/tms-dokumentasjon/varsler/produsere/) for dokumentasjon av nytt format.
 
 #### meldingstyper
 Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til to objekter: opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
