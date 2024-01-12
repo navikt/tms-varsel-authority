@@ -12,8 +12,7 @@ Vi bruker ikke lenger avro for å validere schema. Varsel-eventer sendes som jso
 Se [produsere varsler](https://tms-dokumentasjon.intern.nav.no/varsler/produsere) for dokumentasjon av nytt format.
 
 #### meldingstyper
-Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til 
-to objekter: opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
+Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til to objekter: opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
 
 #### endring av feltnavn
 - `eventId` -> `varselId`
