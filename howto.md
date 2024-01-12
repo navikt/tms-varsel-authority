@@ -203,6 +203,7 @@ String kafkaValueJson = InaktiverVarselBuilder.newInstance()
 Hendelser blir logget til kibana med custom felter for filtrering
 
 Alle varsler: `x_contenttype:"varsel"`
+Sendt fra bestemt team: `x_initiated_by: "<namespace>"`
 Spesifikt varsel: `x_minside_id :"<varselId>"`
 
 ### Kafka
@@ -229,7 +230,7 @@ Eksempel for oppgave-varsel først opprettet av `team-test:demo-app` med id `112
 }
 ```
 
-#### Ekstert status oppdatert
+#### Ekstern status oppdatert
 
 Beskriver ekstern endring i status for et varsel (sms og epost). Kommer med ulike 3 statuser.
 
