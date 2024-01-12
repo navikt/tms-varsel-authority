@@ -1,7 +1,6 @@
 # Komme i gang med varsler
 
-_For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk
-med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)._
+_For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)._
 
 1. Kafka tilgang: Opprett en pull-request mot topic `aapen-brukervarsel-v1`
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).
@@ -16,46 +15,37 @@ med [innholdsguiden vår](https://tms-dokumentasjon.intern.nav.no/innholdsguide)
 | Oppgave | For noe som må bli utført                            | Produsent når oppgaven er utført ( inaktiver-event), eller av min side hvis aktivFremTil dato er satt eller varslet har vært aktivt i mer enn ett år. |
 | Innboks | For varsler om digitale innbokser andre steder i NAV | Produsent                                                                                                                                             |
 
-**NB! Det er viktig å huske å sende inaktiver-event for oppgave-varsler. hvis ikke vil det se ut for personen som at oppgaven ikke er utført.**
+**NB! Det er viktig å huske å sende inaktiver-event for oppgave-varsler. Hvis ikke vil det se ut for personen som at oppgaven ikke er utført.**
 
 Alle varsler slettes 1 år etter mottaksdato.
 
 ## Ekstern varsling
 
-Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og epost). Produsent kan velge preferert kanal,
-og hvorvidt standardtekst skal overskrives. 
+Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og epost). Produsent kan velge preferert kanal, og hvorvidt standardtekst skal overskrives. 
 
 Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
 
-Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på
-epost og sms.
+Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
 
 ### Revarsling 
 
-Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et
-bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir revarslet etter 4 dager.
+Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir revarslet etter 4 dager.
 
 ### Overskriving av standardtekster
 
-Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster, selv om
-kun 1 kanal er preferert. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
+Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster, selv om kun 1 kanal er preferert. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
 
 ## Overvåking av varsler
 
 Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler.
 
-Per i dag er det kun mulig å lytte på når varsler aktiveres/inaktiveres. Det vil etter hvert bli mulig å lytte på
-status for eksern varslign og andre typer hendelser.
+Per i dag er det kun mulig å lytte på når varsler aktiveres/inaktiveres. Det vil etter hvert bli mulig å lytte på status for eksern varslign og andre typer hendelser.
 
-Produsenter som ønsker å lytte på status for ekstern varsling har også mulighet til å lytte direkte
-på topic [aapen-dok-notifikasjon-status](https://github.com/navikt/dokumenthandtering-iac/tree/master) tilørende team dokumenthåndtering.
+Produsenter som ønsker å lytte på status for ekstern varsling har også mulighet til å lytte direkte på topic [aapen-dok-notifikasjon-status](https://github.com/navikt/dokumenthandtering-iac/tree/master) tilørende team dokumenthåndtering.
 
 ## Kafka, schemas og buildere
 
-Min side varsler bruker ikke lenger Avro for schema-validering og serialisering. Produsenter sender eventer direkte på
-json-format. Vi tilbyr to sett med buildere for henholdsvis java- og kotlin-prosjekter. Det er ikke strengt nødvendig å 
-bruke disse, men sterkt anbefalt. Builderne sørger for at format er riktig og har gjør forhåndsvalidering av innhold. 
-Det er også anbefalt å bruke varselId som kafka-nøkkel, for å opprettholde kronologi per enkelt varsel.
+Min side varsler bruker ikke lenger Avro for schema-validering og serialisering. Produsenter sender eventer direkte på json-format. Vi tilbyr to sett med buildere for henholdsvis java- og kotlin-prosjekter. Det er ikke strengt nødvendig å bruke disse, men sterkt anbefalt. Builderne sørger for at format er riktig og har gjør forhåndsvalidering av innhold. Det er også anbefalt å bruke varselId som kafka-nøkkel, for å opprettholde kronologi per enkelt varsel.
 
 Builderne finnes i følgende bibliotek:
 
