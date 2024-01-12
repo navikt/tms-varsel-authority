@@ -33,11 +33,11 @@ Varsler med typen oppgave eller innboks får automatisk revarsling dersom varsel
 
 ### Overskriving av standardtekster
 
-Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster, selv om kun 1 kanal er preferert. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
+Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
 
 ## Kafka, schemas og buildere
 
-Min side varsler bruker ikke lenger Avro for schema-validering og serialisering. Produsenter sender eventer direkte på json-format. Vi tilbyr to sett med buildere for henholdsvis java- og kotlin-prosjekter. Det er ikke strengt nødvendig å bruke disse, men sterkt anbefalt. Builderne sørger for at format er riktig og har gjør forhåndsvalidering av innhold. Det er også anbefalt å bruke varselId som kafka-nøkkel, for å opprettholde kronologi per enkelt varsel.
+Min side varsler bruker ikke lenger Avro for schema-validering og serialisering. Produsenter sender eventer direkte på json-format. Vi tilbyr to sett med buildere for henholdsvis java- og kotlin-prosjekter. Det er ikke strengt nødvendig å bruke disse, men sterkt anbefalt. Builderne sørger for at format er riktig og gjør forhåndsvalidering av innhold. Det er også anbefalt å bruke varselId som kafka-nøkkel, for å opprettholde kronologi per enkelt varsel.
 
 Builderne finnes i følgende bibliotek:
 
