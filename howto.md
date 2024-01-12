@@ -35,14 +35,6 @@ Varsler med typen oppgave eller innboks får automatisk revarsling dersom varsel
 
 Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster, selv om kun 1 kanal er preferert. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
 
-## Overvåking av varsler
-
-Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler.
-
-Per i dag er det kun mulig å lytte på når varsler aktiveres/inaktiveres. Det vil etter hvert bli mulig å lytte på status for eksern varslign og andre typer hendelser.
-
-Produsenter som ønsker å lytte på status for ekstern varsling har også mulighet til å lytte direkte på topic [aapen-dok-notifikasjon-status](https://github.com/navikt/dokumenthandtering-iac/tree/master) tilørende team dokumenthåndtering.
-
 ## Kafka, schemas og buildere
 
 Min side varsler bruker ikke lenger Avro for schema-validering og serialisering. Produsenter sender eventer direkte på json-format. Vi tilbyr to sett med buildere for henholdsvis java- og kotlin-prosjekter. Det er ikke strengt nødvendig å bruke disse, men sterkt anbefalt. Builderne sørger for at format er riktig og har gjør forhåndsvalidering av innhold. Det er også anbefalt å bruke varselId som kafka-nøkkel, for å opprettholde kronologi per enkelt varsel.
@@ -202,4 +194,77 @@ val kafkaValueJson = VarselActionBuilder.inaktiver {
 String kafkaValueJson = InaktiverVarselBuilder.newInstance()
    .withVarselId("aabbccdd-abcd-1234-5678-abcdef123456")
    .build();
+```
+
+## Overvåking av varsler
+
+Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler. Hendelser som kan skje
+for varsler er `opprettet`, `inaktivert`, `eksternStatusOppdatert` og `slettet`.
+
+### Beskrivelse av eventer
+
+#### Opprettet, inaktivert, og slettet
+
+Beskriver intern endring i status for et varsel.
+
+- `opprettet`: Opprett-varsel event er validert og varsel er opprettet i database.
+- `inaktivert`: Varsel er inaktivert av f. eks. produsent eller bruker selv.
+- `slettet`: Varsel er slettet og ikke lenger synlig for bruker eller saksbehandler.
+
+Eksempel for oppgave-varsel først opprettet av `team-test:demo-app` med id `11223344-aaaa-bbbb-cccc-112233445566`.
+
+```json
+{
+  "@event_name": "<opprettet|inaktivert|slettet>",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
+
+#### Ekstert status oppdatert
+
+Beskriver ekstern endring i status for et varsel (sms og epost). Kommer med ulike 3 statuser.
+
+- `bestilt`: Bestilling av varsling på sms/epost er mottatt av distribusjonsystem.
+- `sendt`: Ekstern varsling er bekreftet sendt via bestemt kanal (sms eller epost), og om det er renotifikasjon.
+- `feilet`: Ekstern varsling feilet. Kommer med feilmelding.
+
+Eksempler:
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "bestilt",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "sendt",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "kanal": "SMS",
+  "renotifikasjon": false,
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "feilet",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "feilmelding": "mottaker har reservert seg mot digital kommunikasjon",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
 ```
