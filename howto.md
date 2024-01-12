@@ -198,9 +198,16 @@ String kafkaValueJson = InaktiverVarselBuilder.newInstance()
 
 ## Overvåking av varsler
 
-Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler. Hendelser som kan skje for varsler er `opprettet`, `inaktivert`, `slettet` og `eksternStatusOppdatert`.
+### Logging
 
-### Beskrivelse av eventer
+Hendelser blir logget til kibana med custom felter for filtrering
+
+Alle varsler: `x_contenttype:"varsel"`
+Spesifikt varsel: `x_minside_id :"<varselId>"`
+
+### Kafka
+
+Produsenter kan lytte på topic `aapen-varsel-hendelse-v1` for å følge med på status på varsler. Hendelser som kan skje for varsler er `opprettet`, `inaktivert`, `slettet` og `eksternStatusOppdatert`.
 
 #### Opprettet, inaktivert, og slettet
 
