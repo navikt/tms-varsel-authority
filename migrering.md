@@ -1,8 +1,7 @@
 # Migreringsguide 
 
 ## Topic
-Produsenter trenger kun å forholde seg til ett topic for å opprette og inaktivere varsler.
-opprett pr i [github-repository](https://github.com/navikt/min-side-brukervarsel-topic-iac). 
+Produsenter trenger kun å forholde seg til ett topic for å opprette og inaktivere varsler. Opprett pr i [github-repository](https://github.com/navikt/min-side-brukervarsel-topic-iac). 
 
 ## Buildere og avro
 
