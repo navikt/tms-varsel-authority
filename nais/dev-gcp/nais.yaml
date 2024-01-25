@@ -26,10 +26,10 @@ spec:
   leaderElection: true
   resources:
     limits:
-      cpu: "2"
+      cpu: "1"
       memory: 2400Mi
     requests:
-      cpu: "100m"
+      cpu: "20m"
       memory: 256Mi
   gcp:
     sqlInstances:
