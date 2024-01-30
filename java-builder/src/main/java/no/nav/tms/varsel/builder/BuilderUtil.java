@@ -23,8 +23,8 @@ class BuilderUtil {
         }
     }
 
-    static Map<String, Object> metadata() {
-        Map<String, Object> metadata = new HashMap<>();
+    static HashMap<String, Object> metadata() {
+        HashMap<String, Object> metadata = new HashMap<>();
 
         metadata.put("version", VarselActionVersion);
         metadata.put("built_at", ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS));

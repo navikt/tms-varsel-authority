@@ -46,13 +46,13 @@ object VarselActionBuilder {
         var aktivFremTil: ZonedDateTime? = null,
         var produsent: Produsent? = produsent()
     ) {
-        val metadata: Map<String, Any> = metadata()
+        val metadata = metadata()
 
         var tekst: Tekst? = null
             set(value) {
                 if (value != null && tekst == null) {
                     tekster += value
-                } else if(value == null && tekst != null) {
+                } else if (value == null && tekst != null) {
                     tekster.remove(tekst)
                 }
                 field = value
@@ -88,7 +88,7 @@ object VarselActionBuilder {
         var varselId: String? = null,
         var produsent: Produsent? = produsent(),
     ) {
-        val metadata: Map<String, Any> = metadata()
+        val metadata = metadata()
 
         internal fun build() = InaktiverVarsel(
             varselId = varselId!!,
@@ -120,7 +120,7 @@ object VarselActionBuilder {
         }
     }
 
-    private fun metadata() = mapOf(
+    private fun metadata() = mutableMapOf<String, Any>(
         "version" to VarselActionVersion,
         "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS),
         "builder_lang" to "kotlin"

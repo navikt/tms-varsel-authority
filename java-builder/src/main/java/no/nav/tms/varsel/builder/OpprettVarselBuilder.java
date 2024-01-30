@@ -30,7 +30,7 @@ public class OpprettVarselBuilder {
     private ZonedDateTime aktivFremTil;
     private Produsent produsent;
 
-    private final Map<String, Object> metadata;
+    private final HashMap<String, Object> metadata;
 
     private OpprettVarselBuilder() {
         type = null;
