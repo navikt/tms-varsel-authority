@@ -19,7 +19,8 @@ fun opprettVarselEvent(
         smsVarslingstekst = "smsTekst",
         epostVarslingstittel = null,
         epostVarslingstekst = null
-    )
+    ),
+    ekstraMetadada: String=""
 ) = """
 {
     "@event_name": "opprett",
@@ -39,6 +40,7 @@ fun opprettVarselEvent(
     "metadata": {
         "built_at": "${nowAtUtc()}",
         "version": "test"
+        $ekstraMetadada
     }
 }
 """

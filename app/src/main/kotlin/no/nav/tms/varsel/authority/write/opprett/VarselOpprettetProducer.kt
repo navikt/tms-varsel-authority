@@ -65,21 +65,23 @@ private data class VarselOpprettet(
     val eksternVarslingBestilling: EksternVarslingBestilling?,
     val opprettet: ZonedDateTime,
     val aktivFremTil: ZonedDateTime?,
+    val metadata: Map<String, Any>?,
     @JsonProperty("@event_name") val eventName: String = "opprettet"
 ) {
     val tidspunkt = nowAtUtc()
 
     companion object {
         fun fromDatabaseVarsel(dbVarsel: DatabaseVarsel) = VarselOpprettet(
-             type = dbVarsel.type,
-             varselId = dbVarsel.varselId,
-             ident = dbVarsel.ident,
-             sensitivitet = dbVarsel.sensitivitet,
-             innhold = dbVarsel.innhold,
-             produsent = dbVarsel.produsent,
-             eksternVarslingBestilling = dbVarsel.eksternVarslingBestilling,
-             opprettet = dbVarsel.opprettet,
-             aktivFremTil = dbVarsel.aktivFremTil,
+            type = dbVarsel.type,
+            varselId = dbVarsel.varselId,
+            ident = dbVarsel.ident,
+            sensitivitet = dbVarsel.sensitivitet,
+            innhold = dbVarsel.innhold,
+            produsent = dbVarsel.produsent,
+            eksternVarslingBestilling = dbVarsel.eksternVarslingBestilling,
+            opprettet = dbVarsel.opprettet,
+            aktivFremTil = dbVarsel.aktivFremTil,
+            metadata = dbVarsel.metadata?.get("opprett_event") as Map<String, Any>
         )
     }
 }

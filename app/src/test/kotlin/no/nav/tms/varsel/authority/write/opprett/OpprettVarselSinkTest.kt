@@ -51,7 +51,10 @@ class OpprettVarselSinkTest {
     fun `aktiverer varsler`() {
         val varselId = randomUUID().toString()
 
-        val opprettBeskjedEvent = opprettVarselEvent("beskjed", varselId)
+        val opprettBeskjedEvent = opprettVarselEvent("beskjed", varselId, ekstraMetadada = """
+            ,"beredskap_tittel":"something"
+            
+        """.trimIndent())
         val opprettJson = objectMapper.readTree(opprettBeskjedEvent)
 
         testRapid.sendTestMessage(opprettBeskjedEvent)
@@ -87,6 +90,7 @@ class OpprettVarselSinkTest {
                 varselAktivert["produsent"]["cluster"].asText() shouldBe "cluster"
                 varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
                 varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
+                varselAktivert["metadata"]["beredskap_tittel"].asText() shouldBe "something"
             }
     }
 
