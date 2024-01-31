@@ -89,7 +89,7 @@ interface KotlinDefaults: DependencyGroup {
 
 interface KotlinLoggingDefaults: DependencyGroup {
     override val groupId get() = "io.github.oshai"
-    override val version get() = "5.0.2"
+    override val version get() = "6.0.3"
 
     val logging get() = dependency("kotlin-logging")
 }
@@ -108,7 +108,7 @@ interface KotliQueryDefaults: DependencyGroup {
 }
 
 object KtorDefaults {
-    val version get() = "2.3.5"
+    val version get() = "2.3.7"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
