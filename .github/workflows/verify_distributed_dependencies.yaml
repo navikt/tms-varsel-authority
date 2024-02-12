@@ -16,6 +16,8 @@ permissions:
 jobs:
   check-validity-and-merge:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - name: Sjekk ut branch
         uses: 'actions/checkout@v4'
