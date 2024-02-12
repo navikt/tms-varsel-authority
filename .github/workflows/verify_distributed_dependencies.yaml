@@ -8,16 +8,13 @@ on:
       - buildSrc/src/main/kotlin/default/dependencies.kt
       - buildSrc/src/main/kotlin/groups.kt
 
-permissions:
-  contents: write
-  packages: write
-  pull-requests: write
-
 jobs:
   check-validity-and-merge:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      contents: write
+      packages: write
     steps:
       - name: Sjekk ut branch
         uses: 'actions/checkout@v4'
@@ -81,6 +78,8 @@ jobs:
     needs: check-validity-and-merge
     if: always() && needs.check-validity-and-merge.result == 'failure'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: 'Åpner PR for manuell behandling'
         uses: actions/github-script@v6
