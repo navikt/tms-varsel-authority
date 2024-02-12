@@ -17,58 +17,54 @@ jobs:
   check-validity-and-merge:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Sjekk ut branch'
-        uses: 'actions/checkout@v3'
+      - name: Sjekk ut branch
+        uses: 'actions/checkout@v4'
         with:
           fetch-depth: 2
 
-      - name: Setup java
-        uses: actions/setup-java@v1
+      - name: Sett opp java
+        uses: actions/setup-java@v4
         with:
-          java-version: '17.x'
+          java-version: 17
+          distribution: 'temurin'
 
-      - name: 'Bygg og kjør tester for å sjekke at nye versjoner er kompatible'
-        run: |
-          ./gradlew clean build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sett opp gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: 'Bygg, tag og push Docker image'
-        run: |
-          APP_NAME=$(echo $GITHUB_REPOSITORY | rev | cut -f1 -d"/" | rev )
-          TAG_NAME="$(git log -1 --pretty='%ad' --date=format:'%Y%m%d%H%M%S')-$(git log -1 --pretty='%h')"
-          IMAGE_NAME="ghcr.io/$GITHUB_REPOSITORY/$APP_NAME:$TAG_NAME"
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u $GITHUB_REPOSITORY --password-stdin
-          docker build --tag $IMAGE_NAME .
-          docker push $IMAGE_NAME
-          echo "IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
+      - name: Bygg og kjør tester for å sjekke at nye versjoner er kompatible
+        run: ./gradlew build
 
-      - name: 'Sjekk om deploy til dev-gcp er mulig'
+      - name: Build og push docker-image
+        uses: nais/docker-build-push@v0
+        id: docker-build-push
+        with:
+          team: min-side
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+
+      - name: Sjekk om deploy til dev-gcp er mulig
         run: echo "CAN_DEPLOY_DEV=$([[ -f ./nais/dev-gcp/nais.yaml ]] && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
-      - name: 'Deploy-er til dev-gcp for å sjekke viability'
+      - name: Deploy-er til dev-gcp for å sjekke viability
         if: env.CAN_DEPLOY_DEV == 'true'
-        uses: 'nais/deploy/actions/deploy@v1'
+        uses: nais/deploy/actions/deploy@v2
         env:
           REF: ${{ github.sha }}
-          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
           CLUSTER: dev-gcp
           RESOURCE: ./nais/dev-gcp/nais.yaml
-          VAR: version=${{ env.IMAGE }}
+          VAR: version=${{ steps.docker-build-push.outputs.image }}
           PRINT_PAYLOAD: true
 
-      - name: 'Sjekk om deploy til prod-gcp er mulig'
+      - name: Sjekk om deploy til prod-gcp er mulig
         run: echo "CAN_DEPLOY_PROD=$([[ -f ./nais/prod-gcp/nais.yaml ]] && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
-      - name: 'Deploy-er til prod-gcp for å sjekke viability'
+      - name: Deploy-er til prod-gcp for å sjekke viability
         if: env.CAN_DEPLOY_PROD == 'true'
-        uses: 'nais/deploy/actions/deploy@v1'
+        uses: nais/deploy/actions/deploy@v2
         env:
-          REF: ${{ github.sha }}
-          APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY }}
           CLUSTER: prod-gcp
           RESOURCE: ./nais/prod-gcp/nais.yaml
-          VAR: version=${{ env.IMAGE }}
+          VAR: version=${{ steps.docker-build-push.outputs.image }}
           PRINT_PAYLOAD: true
 
       - name: 'Merge kode fra branch og push til main'
