@@ -221,6 +221,7 @@ interface TmsCommonLibDefaults: DependencyGroup {
     val metrics get() = dependency("metrics")
     val observability get() = dependency("observability")
     val utils get() = dependency("utils")
+    val kubernetes get() = dependency("kubernetes")
 }
 
 interface TmsKtorTokenSupportDefaults: DependencyGroup {
