@@ -16,14 +16,9 @@ import java.time.ZonedDateTime
 
 class ExpiredVarselRepository(private val database: Database) {
 
-    private val epoch = ZonedDateTime.ofInstant(Instant.EPOCH, ZoneId.of("UTC"))
-
     private val objectMapper = defaultObjectMapper()
 
-    fun updateAllTimeExpired() = updateExpiredVarsel(epoch)
-    fun updateExpiredPastHour() = updateExpiredVarsel(nowAtUtc().minusHours(1))
-
-    private fun updateExpiredVarsel(checkFromDate: ZonedDateTime): List<ExpiredVarsel> {
+    fun updateExpiredVarsel(): List<ExpiredVarsel> {
         return database.list {
             queryOf(
                 """
@@ -33,14 +28,13 @@ class ExpiredVarselRepository(private val database: Database) {
                         inaktivertAv = :frist
                     where
                         aktiv = true
-                        and aktivFremTil between :startDate and :now
+                        and aktivFremTil < :now
                     returning
                         varselId,
                         type as varseltype,
                         produsent
                 """,
                 mapOf(
-                    "startDate" to checkFromDate,
                     "now" to nowAtUtc(),
                     "frist" to Frist.lowercaseName
                 )
@@ -54,7 +48,7 @@ class ExpiredVarselRepository(private val database: Database) {
         ExpiredVarsel(
             varselId = row.string("varselId"),
             varseltype = row.string("varseltype").let(::parseVarseltype),
-            produsent = row.json("produsent")
+            produsent = row.json("produsent", objectMapper)
         )
     }
 }

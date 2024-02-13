@@ -13,8 +13,7 @@ class PeriodicExpiredVarselProcessor(
     private val expiredVarselRepository: ExpiredVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer,
     private val leaderElection: PodLeaderElection,
-    interval: Duration = Duration.ofMinutes(1),
-    iterationsPerCycle: Int = 360
+    interval: Duration = Duration.ofMinutes(1)
 ) : PeriodicJob(interval) {
 
     private val log = KotlinLogging.logger { }
@@ -25,15 +24,9 @@ class PeriodicExpiredVarselProcessor(
         }
     }
 
-    private val cycle = Cycle(iterationsPerCycle)
-
     fun updateExpiredVarsel() {
         try {
-            val expiredVarselList = if (cycle.next()) {
-                expiredVarselRepository.updateAllTimeExpired()
-            } else {
-                expiredVarselRepository.updateExpiredPastHour()
-            }
+            val expiredVarselList = expiredVarselRepository.updateExpiredVarsel()
 
             if (expiredVarselList.isNotEmpty()) {
                 varselInaktivert(expiredVarselList)
@@ -57,18 +50,6 @@ class PeriodicExpiredVarselProcessor(
                 )
             )
             VarselMetricsReporter.registerVarselInaktivert(expired.varseltype, expired.produsent, Frist, "N/A")
-        }
-    }
-
-    class Cycle(
-        private val iterations: Int
-    ) {
-        private var iteration: Int = iterations - 1
-
-        fun next(): Boolean {
-            iteration = (iteration + 1) % iterations
-
-            return iteration == 0
         }
     }
 }

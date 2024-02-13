@@ -94,26 +94,6 @@ internal class PeriodicExpiredVarselProcessorTest {
 
         verify(exactly = 1) { varselInaktivertProducer.varselInaktivert(any()) }
     }
-
-    @Test
-    fun `behandler alle varsler hver n-te iterasjon`() {
-        val repository = mockk<ExpiredVarselRepository>()
-
-        every { repository.updateAllTimeExpired() } returns emptyList()
-        every { repository.updateExpiredPastHour() } returns emptyList()
-
-        val processor = PeriodicExpiredVarselProcessor(repository, mockk(relaxed = true), mockk(relaxed = true), iterationsPerCycle = 5)
-
-        processor.updateExpiredVarsel()
-        processor.updateExpiredVarsel()
-        processor.updateExpiredVarsel()
-        processor.updateExpiredVarsel()
-        processor.updateExpiredVarsel()
-        processor.updateExpiredVarsel()
-
-        verify(exactly = 2) { repository.updateAllTimeExpired() }
-        verify(exactly = 4) { repository.updateExpiredPastHour() }
-    }
 }
 
 private fun varsel(
