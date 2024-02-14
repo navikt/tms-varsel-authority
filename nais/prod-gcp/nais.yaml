@@ -26,7 +26,6 @@ spec:
   leaderElection: true
   resources:
     limits:
-      cpu: "1"
       memory: 2400Mi
     requests:
       cpu: "50m"
