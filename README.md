@@ -13,6 +13,7 @@ Prosjekt for håndtering av brukervarsler bestilt av fagsystem via kafka.
   - Brukes av [tms-ekstern-varselbestiller](https://github.com/navikt/tms-ekstern-varselbestiller) til å bestille sms/epost etter varsel er persistert
 - Tillate brukere å hente sine egne varsler via et api sikret med tokenx-autentisering
 - Tillate baksystem å hente varsler og metadata for vilkårlig bruker via et api sikret med azure-autentisering
+- Inaktivere eller slette eldre varsler etter behov
 
 ## Henvendelser
 
