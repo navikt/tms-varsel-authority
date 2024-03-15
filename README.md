@@ -2,9 +2,9 @@
 
 Prosjekt for håndtering av brukervarsler bestilt av fagsystem via kafka.
 
-## Funksjon
+## Funksjon for app
 
-`tms-varsel-authority` har følgende funksjon:
+Appen `tms-varsel-authority` har følgende funksjon:
 
 - Lese, validere, og opprette varsler basert på eksternt topic `min-side.aapen-brukervarsel-v1`
 - Lytte på oppdateringer om ekstern varsling fra internt topic `min-side.brukervarsel-v1` sendt fra [tms-doknotstatus-converter](https://github.com/navikt/tms-doknotstatus-converter)
@@ -14,6 +14,19 @@ Prosjekt for håndtering av brukervarsler bestilt av fagsystem via kafka.
 - Tillate brukere å hente sine egne varsler via et api sikret med tokenx-autentisering
 - Tillate baksystem å hente varsler og metadata for vilkårlig bruker via et api sikret med azure-autentisering
 - Inaktivere eller slette eldre varsler etter behov
+
+## Funksjon for lib
+
+Prosjektet har tre moduler som publiseres som bibliotek:
+
+- `varsel-action` definerer struktur og regler for hvordan en oppretter og forvalter varsler via kafka
+- To buildere som lar produsent enkelt opprette og forhåndsvalidere varsel-eventer: 
+  - `kafka-builder` builder skrevet i kotlin
+  - `java-builder` builder skrevet i java etter klassisk builder-pattern
+
+## Dokumentasjon
+
+Mer info om varsler finnes i [dokumentasjonen](https://navikt.github.io/tms-dokumentasjon/varsler/).
 
 ## Henvendelser
 
