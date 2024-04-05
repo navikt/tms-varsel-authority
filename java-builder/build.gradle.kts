@@ -34,18 +34,6 @@ tasks {
 
 val libraryVersion: String = properties["lib_version"]?.toString() ?: "latest-local"
 
-tasks {
-    val sourcesJar by creating(Jar::class) {
-        archiveClassifier.set("sources")
-        from(sourceSets.main.get().allSource)
-    }
-
-    artifacts {
-        archives(sourcesJar)
-        archives(jar)
-    }
-}
-
 publishing {
     repositories{
         mavenLocal()
@@ -64,6 +52,13 @@ publishing {
             artifactId = "java-builder"
             version = libraryVersion
             from(components["java"])
+
+            tasks.creating(Jar::class) {
+                archiveClassifier.set("sources")
+                from(sourceSets.main.get().allSource)
+            }.let { sourcesJar ->
+                artifact(sourcesJar)
+            }
         }
     }
 }
