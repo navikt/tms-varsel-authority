@@ -61,12 +61,12 @@ publishing {
             version = libraryVersion
             from(components["java"])
 
-            tasks.creating(Jar::class) {
+            val sourcesJar by tasks.creating(Jar::class) {
                 archiveClassifier.set("sources")
                 from(sourceSets.main.get().allSource)
-            }.let { sourcesJar ->
-                artifact(sourcesJar)
             }
+
+            artifact(sourcesJar)
         }
     }
 }
