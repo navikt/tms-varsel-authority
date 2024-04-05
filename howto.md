@@ -46,7 +46,10 @@ Builderne finnes i følgende bibliotek:
 - kotlin: no.nav.tms.varsel:kotlin-builder:1.0.0
 - java: no.nav.tms.varsel:java-builder:1.0.0
 
-Husk å legge til autentisert repository `https://maven.pkg.github.com/navikt/tms-varsel-authority`
+Vi publiserer disse artifaktene til githubs package-repository. Husk å legge til én av disse repositories i ditt prosjekt:
+
+ - `https://maven.pkg.github.com/navikt/tms-varsel-authority` (krever autentisering)
+ - `https://github-package-registry-mirror.gc.nav.no/cached/maven-release` (NAIS sin mirror. Krever ingen autentisering) 
 
 ## Oppretting av varsel
 
