@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm").version(Kotlin.version)
-    kotlin("plugin.serialization") version Kotlin.version
     `java-library`
     `maven-publish`
 }
@@ -20,11 +19,10 @@ repositories {
 }
 
 dependencies {
-    implementation(JacksonEx.annotations)
+    api(JacksonEx.annotations)
+    testRuntimeOnly(Junit.engine)
     testImplementation(Junit.api)
-    testImplementation(Junit.engine)
     testImplementation(Kotest.runnerJunit5)
-    testImplementation(Kotest.assertionsCore)
 }
 
 tasks {

@@ -76,7 +76,7 @@ class VarselActionBuilderTest {
 
     @Test
     fun `henter info om produsent automatisk for opprett-action der det er mulig`() {
-        val naisEnv = mapOf(
+        mapOf(
             "NAIS_APP_NAME" to "test-app",
             "NAIS_NAMESPACE" to "test-namespace",
             "NAIS_CLUSTER_NAME" to "dev"
