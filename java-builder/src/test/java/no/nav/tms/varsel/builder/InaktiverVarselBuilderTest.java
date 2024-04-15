@@ -1,13 +1,13 @@
 package no.nav.tms.varsel.builder;
 
 import static no.nav.tms.varsel.action.ValidationKt.VarselActionVersion;
-import static no.nav.tms.varsel.builder.TestUtil.withEnv;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.nav.tms.varsel.action.VarselValidationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -18,6 +18,11 @@ import java.util.UUID;
 class InaktiverVarselBuilderTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @AfterEach
+    void cleanUp() {
+        BuilderEnvironment.reset();
+    }
 
     @Test
     void lagerInaktiverEventPaaVentetFormat() throws JsonProcessingException {
@@ -48,11 +53,11 @@ class InaktiverVarselBuilderTest {
         naisEnv.put("NAIS_NAMESPACE", "test-namespace");
         naisEnv.put("NAIS_CLUSTER_NAME", "dev");
 
-        String inaktiverVarsel = withEnv(naisEnv, () ->
-            InaktiverVarselBuilder.newInstance()
-                .withVarselId(UUID.randomUUID().toString())
-                .build()
-        );
+        BuilderEnvironment.extend(naisEnv);
+
+        String inaktiverVarsel = InaktiverVarselBuilder.newInstance()
+            .withVarselId(UUID.randomUUID().toString())
+            .build();
 
         JsonNode produsent = objectMapper.readTree(inaktiverVarsel).get("produsent");
         assertEquals(produsent.get("cluster").asText(), "dev");

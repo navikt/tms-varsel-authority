@@ -3,18 +3,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm").version(Kotlin.version)
-    kotlin("plugin.serialization") version Kotlin.version
     `java-library`
     `maven-publish`
 }
 
-tasks.withType<JavaCompile> {
-    sourceCompatibility = "1.8"
-    targetCompatibility = "1.8"
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 repositories {
@@ -26,8 +22,9 @@ dependencies {
     api(project(":varsel-action"))
     implementation(JacksonDatatype.moduleKotlin)
     implementation(JacksonDatatype.datatypeJsr310)
+
+    testRuntimeOnly(Junit.engine)
     testImplementation(Junit.api)
-    testImplementation(Junit.engine)
     testImplementation(Kotest.runnerJunit5)
     testImplementation(Kotest.assertionsCore)
 }

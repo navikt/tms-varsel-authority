@@ -5,9 +5,10 @@ plugins {
     `maven-publish`
 }
 
-tasks.withType<JavaCompile> {
-    sourceCompatibility = "1.8"
-    targetCompatibility = "1.8"
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 repositories {
@@ -18,8 +19,9 @@ repositories {
 dependencies {
     api(project(":varsel-action"))
     implementation(JacksonDatatype.datatypeJsr310)
+
     testImplementation(Junit.api)
-    testImplementation(Junit.engine)
+    testRuntimeOnly(Junit.engine)
 }
 
 tasks {
