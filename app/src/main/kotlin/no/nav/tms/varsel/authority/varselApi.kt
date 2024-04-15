@@ -21,7 +21,7 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
-import observability.ApiMdc
+import nav.no.tms.common.observability.ApiMdc
 import java.text.DateFormat
 
 fun Application.varselApi(

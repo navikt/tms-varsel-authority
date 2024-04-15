@@ -2,11 +2,11 @@ package no.nav.tms.varsel.builder
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.extensions.system.withEnvironment
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.action.Varseltype.Beskjed
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -14,6 +14,11 @@ import java.util.UUID
 class VarselActionBuilderTest {
 
     private val objectMapper = jacksonObjectMapper()
+
+    @AfterEach
+    fun cleanUp() {
+        BuilderEnvironment.reset()
+    }
 
     @Test
     fun `lager opprett-event på ventet format`() {
@@ -75,20 +80,20 @@ class VarselActionBuilderTest {
             "NAIS_APP_NAME" to "test-app",
             "NAIS_NAMESPACE" to "test-namespace",
             "NAIS_CLUSTER_NAME" to "dev"
-        )
+        ).let { naisEnv ->
+            BuilderEnvironment.extend(naisEnv)
+        }
 
-        val opprettVarsel = withEnvironment(naisEnv) {
-            VarselActionBuilder.opprett {
-                type = Beskjed
-                varselId = UUID.randomUUID().toString()
-                ident = "12345678910"
-                sensitivitet = Sensitivitet.High
-                link = "https://link"
-                tekst = Tekst("no", "tekst", default = true)
-                tekster += Tekst("en", "text", default = false)
-                eksternVarsling = EksternVarslingBestilling()
-                aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
-            }
+        val opprettVarsel = VarselActionBuilder.opprett {
+            type = Beskjed
+            varselId = UUID.randomUUID().toString()
+            ident = "12345678910"
+            sensitivitet = Sensitivitet.High
+            link = "https://link"
+            tekst = Tekst("no", "tekst", default = true)
+            tekster += Tekst("en", "text", default = false)
+            eksternVarsling = EksternVarslingBestilling()
+            aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
         }
 
         objectMapper.readTree(opprettVarsel).let { json ->
@@ -161,16 +166,16 @@ class VarselActionBuilderTest {
 
     @Test
     fun `henter info om produsent automatisk for inaktiver-action der det er mulig`() {
-        val naisEnv = mapOf(
+        mapOf(
             "NAIS_APP_NAME" to "test-app",
             "NAIS_NAMESPACE" to "test-namespace",
             "NAIS_CLUSTER_NAME" to "dev"
-        )
+        ).let { naisEnv ->
+            BuilderEnvironment.extend(naisEnv)
+        }
 
-        val opprettVarsel = withEnvironment(naisEnv) {
-            VarselActionBuilder.inaktiver {
-                varselId = UUID.randomUUID().toString()
-            }
+        val opprettVarsel = VarselActionBuilder.inaktiver {
+            varselId = UUID.randomUUID().toString()
         }
 
         objectMapper.readTree(opprettVarsel).let { json ->

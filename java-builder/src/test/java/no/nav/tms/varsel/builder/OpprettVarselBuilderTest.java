@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.nav.tms.varsel.action.Sensitivitet;
 import no.nav.tms.varsel.action.VarselValidationException;
 import no.nav.tms.varsel.action.Varseltype;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
@@ -14,12 +15,16 @@ import java.util.Map;
 import java.util.UUID;
 
 import static no.nav.tms.varsel.action.ValidationKt.VarselActionVersion;
-import static no.nav.tms.varsel.builder.TestUtil.withEnv;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OpprettVarselBuilderTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @AfterEach
+    void cleanUp() {
+        BuilderEnvironment.reset();
+    }
 
     @Test
     void lagerOpprettVarselPaaVentetFormat() throws JsonProcessingException {
@@ -85,19 +90,19 @@ class OpprettVarselBuilderTest {
         naisEnv.put("NAIS_NAMESPACE", "test-namespace");
         naisEnv.put("NAIS_CLUSTER_NAME", "dev");
 
-        String opprettVarsel = withEnv(naisEnv, () ->
-            OpprettVarselBuilder.newInstance()
-                .withType(Varseltype.Beskjed)
-                .withVarselId(UUID.randomUUID().toString())
-                .withIdent("12345678910")
-                .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
-                .withTekst("no", "tekst", true)
-                .withTekst("en", "text", false)
-                .withEksternVarsling()
-                .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
-                .build()
-        );
+        BuilderEnvironment.extend(naisEnv);
+
+        String opprettVarsel = OpprettVarselBuilder.newInstance()
+            .withType(Varseltype.Beskjed)
+            .withVarselId(UUID.randomUUID().toString())
+            .withIdent("12345678910")
+            .withSensitivitet(Sensitivitet.High)
+            .withLink("https://link")
+            .withTekst("no", "tekst", true)
+            .withTekst("en", "text", false)
+            .withEksternVarsling()
+            .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
+            .build();
 
         JsonNode produsent = objectMapper.readTree(opprettVarsel).get("produsent");
         assertEquals(produsent.get("cluster").asText(), "dev");

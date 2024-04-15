@@ -12,9 +12,9 @@ import static no.nav.tms.varsel.action.ValidationKt.VarselActionVersion;
 
 class BuilderUtil {
     static Produsent produsent() {
-        String cluster = System.getenv("NAIS_CLUSTER_NAME");
-        String namespace = System.getenv("NAIS_NAMESPACE");
-        String appnavn = System.getenv("NAIS_APP_NAME");
+        String cluster = BuilderEnvironment.get("NAIS_CLUSTER_NAME");
+        String namespace = BuilderEnvironment.get("NAIS_NAMESPACE");
+        String appnavn = BuilderEnvironment.get("NAIS_APP_NAME");
 
         if (cluster == null || namespace == null || appnavn == null) {
             return null;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
-import observability.traceVarsel
+import nav.no.tms.common.observability.traceVarsel
 
 internal class EksternVarslingStatusSink(
     rapidsConnection: RapidsConnection,

@@ -2,13 +2,13 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import nav.no.tms.common.observability.traceVarsel
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import observability.traceVarsel
 import org.slf4j.MDC
 
 internal class InaktiverVarselSink(

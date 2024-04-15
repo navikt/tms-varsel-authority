@@ -105,9 +105,9 @@ object VarselActionBuilder {
     }
 
     private fun produsent(): Produsent? {
-        val cluster: String? = System.getenv("NAIS_CLUSTER_NAME")
-        val namespace: String? = System.getenv("NAIS_NAMESPACE")
-        val appnavn: String? = System.getenv("NAIS_APP_NAME")
+        val cluster: String? = BuilderEnvironment.get("NAIS_CLUSTER_NAME")
+        val namespace: String? = BuilderEnvironment.get("NAIS_NAMESPACE")
+        val appnavn: String? = BuilderEnvironment.get("NAIS_APP_NAME")
 
         return if (cluster.isNullOrBlank() || namespace.isNullOrBlank() || appnavn.isNullOrBlank()) {
             null
@@ -125,4 +125,24 @@ object VarselActionBuilder {
         "built_at" to ZonedDateTime.now(ZoneId.of("Z")).truncatedTo(ChronoUnit.MILLIS),
         "builder_lang" to "kotlin"
     )
+}
+
+object BuilderEnvironment {
+    private val baseEnv = System.getenv()
+    private val env = mutableMapOf<String, String>()
+
+    init {
+        env.putAll(baseEnv)
+    }
+
+    fun extend(extendedEnv: Map<String, String>) {
+        env.putAll(extendedEnv)
+    }
+
+    fun reset() {
+        env.clear()
+        env.putAll(baseEnv)
+    }
+
+    internal fun get(name: String): String? = env[name]
 }
