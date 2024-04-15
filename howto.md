@@ -199,6 +199,13 @@ String kafkaValueJson = InaktiverVarselBuilder.newInstance()
    .build();
 ```
 
+## Buildere i tester
+
+Dersom produsent ikke er satt eksplisitt vil builderene forsøke å hente dette basert på miljøvariablene [`NAIS_CLUSTER_NAME`, `NAIS_NAMESPACE`, `NAIS_APP_NAME`].
+
+For apper som kjører på nais vil disse være satt automatisk. Hvis en ønsker å kjøre tester med automatisk henting av produsent,
+kan en manuelt legge til disse variablene ved hjelp av `BuilderEnvironment.extend(<map med variabler>)`.
+
 ## Overvåking av varsler
 
 ### Logging
