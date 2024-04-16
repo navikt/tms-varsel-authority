@@ -13,7 +13,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.*
-import nav.no.tms.common.metrics.installTmsApiMetrics
+import no.nav.tms.common.metrics.installTmsApiMetrics
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.token.support.azure.validation.azure
 import no.nav.tms.token.support.tokenx.validation.tokenX
@@ -21,7 +21,7 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
-import nav.no.tms.common.observability.ApiMdc
+import no.nav.tms.common.observability.ApiMdc
 import java.text.DateFormat
 
 fun Application.varselApi(

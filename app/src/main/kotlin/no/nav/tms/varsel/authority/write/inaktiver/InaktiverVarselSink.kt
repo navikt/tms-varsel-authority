@@ -2,7 +2,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
-import nav.no.tms.common.observability.traceVarsel
+import no.nav.tms.common.observability.traceVarsel
 import no.nav.helse.rapids_rivers.*
 import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
