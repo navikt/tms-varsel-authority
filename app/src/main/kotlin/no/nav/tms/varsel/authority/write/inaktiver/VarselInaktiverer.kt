@@ -8,7 +8,7 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Admin
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import nav.no.tms.common.observability.traceVarsel
+import no.nav.tms.common.observability.traceVarsel
 import org.slf4j.MDC
 
 class VarselInaktiverer(
