@@ -155,7 +155,7 @@ object KtorDefaults {
 
 interface LogstashDefaults: DependencyGroup {
     override val groupId get() = "net.logstash.logback"
-    override val version get() = "7.17.20"
+    override val version get() = "7.4"
 
     val logbackEncoder get() = dependency("logstash-logback-encoder")
 }
