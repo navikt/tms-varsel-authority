@@ -222,6 +222,7 @@ interface TmsCommonLibDefaults: DependencyGroup {
     val observability get() = dependency("observability")
     val utils get() = dependency("utils")
     val kubernetes get() = dependency("kubernetes")
+    val testutils get () = dependency("testutils")
 }
 
 interface TmsKafkaToolsDefaults: DependencyGroup {
