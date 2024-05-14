@@ -182,7 +182,7 @@ interface PostgresqlDefaults: DependencyGroup {
 }
 
 interface PrometheusDefaults: DependencyGroup {
-    override val version get() = "0.16.0"
+    override val version get() = "2.52.0"
     override val groupId get() = "io.prometheus"
 
     val common get() = dependency("simpleclient_common")
