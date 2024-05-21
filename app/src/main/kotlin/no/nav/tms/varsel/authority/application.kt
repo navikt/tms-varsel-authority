@@ -1,12 +1,7 @@
 package no.nav.tms.varsel.authority
 
-import kotlinx.coroutines.runBlocking
-import no.nav.helse.rapids_rivers.RapidApplication
-import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
-import no.nav.helse.rapids_rivers.RapidsConnection
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
-import no.nav.tms.varsel.authority.config.Flyway
 import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.PostgresDatabase
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
@@ -15,14 +10,11 @@ import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusRepository
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSink
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
-import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.CommonClientConfigs
@@ -79,7 +71,7 @@ private fun startRapid(environment: Environment, database: Database) {
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
     val varselInaktiverer = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
-
+/*
     RapidApplication.Builder(fromEnv(environment.rapidConfig))
         .withKtorModule {
             varselApi(
@@ -119,7 +111,7 @@ private fun startRapid(environment: Environment, database: Database) {
                 }
             }
         })
-    }.start()
+    }.start()*/
 }
 
 

@@ -6,17 +6,16 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
-import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
-class OpprettVarselSinkTest {
+class OpprettVarselSubscriberTest {
 
     private val mockProducer = MockProducer(
         false,
@@ -24,20 +23,14 @@ class OpprettVarselSinkTest {
         StringSerializer()
     )
 
-    private val rapidProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-
-    private val testRapid = TestRapid()
+    private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val database = LocalPostgresDatabase.cleanDb()
     private val repository = WriteVarselRepository(database)
+    private val testBroadcaster = MessageBroadcaster(listOf(OpprettVarselSubscriber(repository, aktivertProducer)))
 
     private val objectMapper = jacksonMapperBuilder()
         .addModule(JavaTimeModule())
         .build()
-
-    @BeforeEach
-    fun setup() {
-        OpprettVarselSink(testRapid, repository, rapidProducer)
-    }
 
     @AfterEach
     fun cleanUp() {
@@ -51,13 +44,15 @@ class OpprettVarselSinkTest {
     fun `aktiverer varsler`() {
         val varselId = randomUUID().toString()
 
-        val opprettBeskjedEvent = opprettVarselEvent("beskjed", varselId, ekstraMetadada = """
+        val opprettBeskjedEvent = opprettVarselEvent(
+            "beskjed", varselId, ekstraMetadada = """
             ,"beredskap_tittel":"something"
             
-        """.trimIndent())
+        """.trimIndent()
+        )
         val opprettJson = objectMapper.readTree(opprettBeskjedEvent)
 
-        testRapid.sendTestMessage(opprettBeskjedEvent)
+        testBroadcaster.broadcastJson(opprettBeskjedEvent)
 
         val dbVarsel = repository.getVarsel(varselId)
 
@@ -100,7 +95,7 @@ class OpprettVarselSinkTest {
 
         val opprettBeskjedEvent = opprettVarselEvent("beskjed", varselId)
 
-        testRapid.sendTestMessage(opprettBeskjedEvent)
+        testBroadcaster.broadcastJson(opprettBeskjedEvent)
 
         val dbVarsel = repository.getVarsel(varselId)
 
@@ -116,8 +111,8 @@ class OpprettVarselSinkTest {
         val opprettEvent = opprettVarselEvent("oppgave", varselId)
         val duplikatEvent = opprettVarselEvent("beskjed", varselId)
 
-        testRapid.sendTestMessage(opprettEvent)
-        testRapid.sendTestMessage(duplikatEvent)
+        testBroadcaster.broadcastJson(opprettEvent)
+        testBroadcaster.broadcastJson(duplikatEvent)
 
         val dbVarsel = repository.getVarsel(varselId)
 
