@@ -3,38 +3,34 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.observability.traceVarsel
-import no.nav.helse.rapids_rivers.*
+import no.nav.tms.kafka.application.JsonMessage
+import no.nav.tms.kafka.application.Subscriber
+import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.config.rawJson
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.slf4j.MDC
 
-internal class InaktiverVarselSink(
-    rapidsConnection: RapidsConnection,
+internal class InaktiverVarselSubscriber(
     private val varselRepository: WriteVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer
-) :
-    River.PacketListener {
+) : Subscriber() {
 
     private val log = KotlinLogging.logger {}
     private val securelog = KotlinLogging.logger("secureLog")
     private val objectMapper = defaultObjectMapper()
 
     private val sourceTopic = "external"
+    override fun subscribe(): Subscription = Subscription
+        .forEvent("inaktiver")
+        .withFields("varselId","produsent")
+        .withOptionalFields("metadata")
 
-    init {
-        River(rapidsConnection).apply {
-            validate { it.demandValue("@event_name", "inaktiver") }
-            validate {it.requireKey("varselId") }
-            validate {it.interestedIn("metadata") }
-        }.register(this)
-    }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
-        traceVarsel(id = packet["varselId"].asText(), mapOf("action" to "inaktiver")) {
-            val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(packet.rawJson)
+    override suspend fun receive(jsonMessage: JsonMessage) {
+        traceVarsel(id = jsonMessage["varselId"].asText(), mapOf("action" to "inaktiver")) {
+            val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(jsonMessage.json)
             log.info { "Inaktiver-event motatt" }
 
             val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
@@ -67,9 +63,10 @@ internal class InaktiverVarselSink(
                 } else {
                     log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
                 }
-            }?: log.info { "Fant ikke varsel" }
+            } ?: log.info { "Fant ikke varsel" }
         }
     }
+
 
     fun mapMetadata(inaktiverVarsel: InaktiverVarsel): Map<String, Any> {
         val inaktiverEvent = mutableMapOf(
@@ -82,10 +79,5 @@ internal class InaktiverVarselSink(
         }
 
         return mapOf("inaktiver_event" to inaktiverEvent)
-    }
-
-    override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error { "Feil ved lesing av inaktiver-event fra kafka" }
-        securelog.error { "Problem ved lesing av inaktiver-event fra kafka: $problems" }
     }
 }

@@ -2,7 +2,10 @@ package no.nav.tms.varsel.authority.write.opprett
 
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.helse.rapids_rivers.*
+import no.nav.tms.kafka.application.JsonMessage
+import no.nav.tms.kafka.application.MessageException
+import no.nav.tms.kafka.application.Subscriber
+import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.action.OpprettVarselValidation
 import no.nav.tms.varsel.action.VarselValidationException
@@ -13,53 +16,45 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.traceOpprettVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import no.nav.tms.varsel.authority.config.rawJson
 import org.postgresql.util.PSQLException
 
-internal class OpprettVarselSink(
-    rapidsConnection: RapidsConnection,
+internal class OpprettVarselSubscriber(
     private val varselRepository: WriteVarselRepository,
     private val varselAktivertProducer: VarselOpprettetProducer
-) : River.PacketListener {
+) : Subscriber() {
 
     private val log = KotlinLogging.logger { }
+
+    override fun subscribe(): Subscription = Subscription
+        .forEvent("opprett")
+        .withFields(
+            "type",
+            "varselId",
+            "ident",
+            "sensitivitet",
+            "tekster",
+            "produsent"
+        )
+        .withOptionalFields(
+            "eksternVarsling",
+            "aktivFremTil",
+            "link",
+            "metadata"
+        )
+
     private val securelog = KotlinLogging.logger("secureLog")
     private val objectMapper = defaultObjectMapper()
-
     private val sourceTopic = "external"
 
-    init {
-        River(rapidsConnection).apply {
-            validate { it.demandValue("@event_name", "opprett") }
-            validate {
-                it.requireKey(
-                    "type",
-                    "varselId",
-                    "ident",
-                    "sensitivitet",
-                    "tekster",
-                    "produsent"
-                )
-            }
-            validate {
-                it.interestedIn(
-                    "eksternVarsling",
-                    "aktivFremTil",
-                    "link",
-                    "metadata"
-                )
-            }
-        }.register(this)
-    }
 
-    override fun onPacket(packet: JsonMessage, context: MessageContext) {
+    override suspend fun receive(jsonMessage: JsonMessage) {
         traceOpprettVarsel(
-            id = packet["varselId"].asText(),
-            initiatedBy = packet["produsent"]["namespace"].asText(),
-            action = "opprett", varseltype = packet["type"].asText()
+            id = jsonMessage["varselId"].asText(),
+            initiatedBy = jsonMessage["produsent"]["namespace"].asText(),
+            action = "opprett", varseltype = jsonMessage["type"].asText()
         ) {
             log.info { "Opprett-event motatt" }
-            objectMapper.treeToValue<OpprettVarsel>(packet.rawJson)
+            objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
                 .also { validate(it) }
                 .let {
                     DatabaseVarsel(
@@ -127,17 +122,14 @@ internal class OpprettVarselSink(
         return mapOf("opprett_event" to opprettEvent)
     }
 
-    private fun validate(opprettVarsel: OpprettVarsel) = try {
-        OpprettVarselValidation.validate(opprettVarsel)
-    } catch (e: VarselValidationException) {
-        log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
-        securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
+    private fun validate(opprettVarsel: OpprettVarsel) {
+        try {
+            OpprettVarselValidation.validate(opprettVarsel)
+        } catch (e: VarselValidationException) {
+            log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
+            securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
-        throw MessageProblems.MessageException(MessageProblems("OpprettVarsel event did not pass validation"))
-    }
-
-    override fun onError(problems: MessageProblems, context: MessageContext) {
-        log.error { "Feil ved lesing av opprett-event fra kafka" }
-        securelog.error { "Problem ved lesing av opprett-event fra kafka: $problems" }
+             throw MessageException("OpprettVarsel event did not pass validation")
+        }
     }
 }

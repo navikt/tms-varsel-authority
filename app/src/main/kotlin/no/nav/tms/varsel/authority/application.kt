@@ -1,9 +1,7 @@
 package no.nav.tms.varsel.authority
 
 import kotlinx.coroutines.runBlocking
-import no.nav.helse.rapids_rivers.RapidApplication
-import no.nav.helse.rapids_rivers.RapidApplication.RapidApplicationConfig.Companion.fromEnv
-import no.nav.helse.rapids_rivers.RapidsConnection
+import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.config.Flyway
@@ -15,14 +13,14 @@ import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusRepository
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSink
+import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSubscriber
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
+import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSubscriber
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
-import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSink
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
+import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.CommonClientConfigs
@@ -37,10 +35,10 @@ fun main() {
     val environment = Environment()
     val database: Database = PostgresDatabase(environment)
 
-    startRapid(environment, database)
+    startKafkaApplication(environment, database)
 }
 
-private fun startRapid(environment: Environment, database: Database) {
+private fun startKafkaApplication(environment: Environment, database: Database) {
 
     val varselRepository = WriteVarselRepository(database)
     val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(
@@ -49,7 +47,11 @@ private fun startRapid(environment: Environment, database: Database) {
     )
 
     val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
-    val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(eksternVarslingStatusRepository, varselRepository, eksternVarslingOppdatertProducer)
+    val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(
+        eksternVarslingStatusRepository,
+        varselRepository,
+        eksternVarslingOppdatertProducer
+    )
 
     val varselOpprettetProducer = VarselOpprettetProducer(
         kafkaProducer = initializeRapidKafkaProducer(environment),
@@ -74,51 +76,55 @@ private fun startRapid(environment: Environment, database: Database) {
 
     val varselArchivingRepository = VarselArkivRepository(database)
 
-    val varselArchiver = PeriodicVarselArchiver(varselArchivingRepository, varselArkivertProducer, environment.archivingThresholdDays, leaderElection)
+    val varselArchiver = PeriodicVarselArchiver(
+        varselArchivingRepository,
+        varselArkivertProducer,
+        environment.archivingThresholdDays,
+        leaderElection
+    )
 
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
     val varselInaktiverer = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
-
-    RapidApplication.Builder(fromEnv(environment.rapidConfig))
-        .withKtorModule {
+    KafkaApplication.build {
+        kafkaConfig {
+            groupId = environment.kafkaConsumerGroupId
+            readTopics(environment.publicVarselTopic, environment.internalVarselTopic)
+        }
+        ktorModule {
             varselApi(
                 readVarselRepository, varselInaktiverer
             )
-    }.build().apply {
-        OpprettVarselSink(
-            rapidsConnection = this,
-            varselRepository = varselRepository,
-            varselAktivertProducer = varselOpprettetProducer
+        }
+        subscribers(
+            OpprettVarselSubscriber(
+                varselRepository = varselRepository,
+                varselAktivertProducer = varselOpprettetProducer
+            ),
+            InaktiverVarselSubscriber(
+                varselRepository = varselRepository,
+                varselInaktivertProducer = varselInaktivertProducer
+            ),
+            EksternVarslingStatusSubscriber(
+                eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
+            )
         )
-        InaktiverVarselSink(
-            rapidsConnection = this,
-            varselRepository = varselRepository,
-            varselInaktivertProducer = varselInaktivertProducer
-        )
-        EksternVarslingStatusSink(
-            rapidsConnection = this,
-            eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
-        )
-    }.apply {
-        register(object : RapidsConnection.StatusListener {
-            override fun onStartup(rapidsConnection: RapidsConnection) {
-                Flyway.runFlywayMigrations(environment)
-                periodicExpiredVarselProcessor.start()
-                varselArchiver.start()
-            }
+        onStartup {
+            Flyway.runFlywayMigrations(environment)
+            periodicExpiredVarselProcessor.start()
+            varselArchiver.start()
+        }
 
-            override fun onShutdown(rapidsConnection: RapidsConnection) {
-                runBlocking {
-                    periodicExpiredVarselProcessor.stop()
-                    varselArchiver.stop()
-                    varselInaktivertProducer.flushAndClose()
-                    varselOpprettetProducer.flushAndClose()
-                    varselArkivertProducer.flushAndClose()
-                    eksternVarslingOppdatertProducer.flushAndClose()
-                }
+        onShutdown {
+            runBlocking {
+                periodicExpiredVarselProcessor.stop()
+                varselArchiver.stop()
+                varselInaktivertProducer.flushAndClose()
+                varselOpprettetProducer.flushAndClose()
+                varselArkivertProducer.flushAndClose()
+                eksternVarslingOppdatertProducer.flushAndClose()
             }
-        })
+        }
     }.start()
 }
 
@@ -135,15 +141,15 @@ private fun initializeRapidKafkaProducer(environment: Environment) = KafkaProduc
         put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 40000)
         put(ProducerConfig.ACKS_CONFIG, "all")
         put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true")
-            put(SaslConfigs.SASL_MECHANISM, "PLAIN")
-            put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL")
-            put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "jks")
-            put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, "PKCS12")
-            put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, environment.kafkaTruststorePath)
-            put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
-            put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, environment.kafkaKeystorePath)
-            put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
-            put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
-            put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "")
+        put(SaslConfigs.SASL_MECHANISM, "PLAIN")
+        put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL")
+        put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "jks")
+        put(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, "PKCS12")
+        put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, environment.kafkaTruststorePath)
+        put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
+        put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, environment.kafkaKeystorePath)
+        put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
+        put(SslConfigs.SSL_KEY_PASSWORD_CONFIG, environment.kafkaCredstorePassword)
+        put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "")
     }
 )

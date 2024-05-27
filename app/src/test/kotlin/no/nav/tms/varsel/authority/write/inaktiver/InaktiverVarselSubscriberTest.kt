@@ -5,21 +5,20 @@ import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
-import no.nav.helse.rapids_rivers.testsupport.TestRapid
+import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSink
+import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
-internal class InaktiverVarselSinkTest {
+internal class InaktiverVarselSubscriberTest {
     private val mockProducer = MockProducer(
         false,
         StringSerializer(),
@@ -29,19 +28,17 @@ internal class InaktiverVarselSinkTest {
     private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
 
-    private val testRapid = TestRapid()
     private val database = LocalPostgresDatabase.cleanDb()
     private val repository = WriteVarselRepository(database)
+    private val testBroadcaster = MessageBroadcaster(
+        listOf( OpprettVarselSubscriber(repository, varselOpprettetProducer),
+            InaktiverVarselSubscriber(repository, inaktivertProducer))
+    )
 
     private val objectMapper = jacksonMapperBuilder()
         .addModule(JavaTimeModule())
         .build()
 
-    @BeforeEach
-    fun setup() {
-        OpprettVarselSink(testRapid, repository, varselOpprettetProducer)
-        InaktiverVarselSink(testRapid, repository, inaktivertProducer)
-    }
 
     @AfterEach
     fun cleanUp() {
@@ -54,13 +51,11 @@ internal class InaktiverVarselSinkTest {
     @Test
     fun `inaktiverer varsel`() {
         val varselId = randomUUID().toString()
-
         val beskjedEvent = opprettVarselEvent("beskjed", varselId)
-
         val inaktiverEvent = inaktiverVarsel(varselId)
 
-        testRapid.sendTestMessage(beskjedEvent)
-        testRapid.sendTestMessage(inaktiverEvent)
+        testBroadcaster.broadcastJson(beskjedEvent)
+        testBroadcaster.broadcastJson(inaktiverEvent)
 
         val dbVarsel = repository.getVarsel(varselId)
 
@@ -90,12 +85,12 @@ internal class InaktiverVarselSinkTest {
 
         val inaktiverEvent = inaktiverVarsel(varselId)
 
-        testRapid.sendTestMessage(beskjedEvent)
-        testRapid.sendTestMessage(inaktiverEvent)
+        testBroadcaster.broadcastJson(beskjedEvent)
+        testBroadcaster.broadcastJson(inaktiverEvent)
 
         val inaktivertTid = repository.getVarsel(varselId)!!.inaktivert
 
-        testRapid.sendTestMessage(inaktiverEvent)
+        testBroadcaster.broadcastJson(inaktiverEvent)
 
         repository.getVarsel(varselId)!!.inaktivert shouldBe inaktivertTid
 

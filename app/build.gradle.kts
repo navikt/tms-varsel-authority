@@ -40,7 +40,7 @@ dependencies {
     implementation(Ktor.Server.statusPages)
     implementation(Ktor.Serialization.jackson)
     implementation(Logstash.logbackEncoder)
-    implementation(RapidsAndRiversLatest.rapidsAndRivers)
+    implementation(Prometheus.common)
     implementation(TmsKtorTokenSupport.azureValidation)
     implementation(TmsKtorTokenSupport.tokenXValidation)
     implementation(KotliQuery.kotliquery)
@@ -48,6 +48,8 @@ dependencies {
     implementation(TmsCommonLib.utils)
     implementation(TmsCommonLib.metrics)
     implementation(TmsCommonLib.observability)
+    implementation(TmsKafkaTools.kafkaApplication)
+    implementation(JacksonDatatype.datatypeJsr310)
     implementation(project(":varsel-action"))
 
     testRuntimeOnly(Junit.engine)
