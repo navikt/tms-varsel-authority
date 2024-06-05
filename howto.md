@@ -21,11 +21,13 @@ Alle varsler slettes 1 år etter mottaksdato.
 
 ## Ekstern varsling
 
-Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og epost). Produsent kan velge preferert kanal, og hvorvidt standardtekst skal overskrives. 
+Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og epost). Produsent kan velge preferert kanal, og hvorvidt standardtekst skal overskrives.
 
 Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
 
 Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
+
+Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup. 
 
 ### Revarsling 
 
