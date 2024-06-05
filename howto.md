@@ -25,10 +25,6 @@ Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og ep
 
 Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
 
-Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
-
-Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup. 
-
 ### Revarsling 
 
 Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir revarslet etter 4 dager.
@@ -36,6 +32,10 @@ Varsler med typen oppgave eller innboks får automatisk revarsling dersom varsel
 ### Overskriving av standardtekster
 
 Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
+
+Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
+
+Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup.
 
 ## Kafka, schemas og buildere
 
