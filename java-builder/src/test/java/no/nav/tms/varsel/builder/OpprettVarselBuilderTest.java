@@ -72,8 +72,6 @@ class OpprettVarselBuilderTest {
         assertEquals(eksternVarsling.get("kanBatches").asBoolean(), true);
         assertNull(eksternVarsling.get("utsettSendingTil"));
 
-
-
         assertEquals(json.get("aktivFremTil").asText(), "2023-10-10T10:00:00Z");
 
         JsonNode produsent = json.get("produsent");
@@ -85,6 +83,58 @@ class OpprettVarselBuilderTest {
         assertEquals(metadata.get("version").asText(), VarselActionVersion);
         assertEquals(metadata.get("builder_lang").asText(), "java");
         assertFalse(metadata.get("built_at").isNull());
+    }
+
+    @Test
+    void setterRiktigDefaultVerdierPaaEksternVarslingForOppgave() throws JsonProcessingException {
+
+        String testVarselId = UUID.randomUUID().toString();
+
+        String opprettVarsel = OpprettVarselBuilder.newInstance()
+                .withType(Varseltype.Oppgave)
+                .withVarselId(testVarselId)
+                .withIdent("12345678910")
+                .withSensitivitet(Sensitivitet.High)
+                .withLink("https://link")
+                .withTekst("no", "tekst", true)
+                .withEksternVarsling()
+                .withProdusent("cluster", "namespace", "app")
+                .build();
+
+        JsonNode json = objectMapper.readTree(opprettVarsel);
+
+        assertEquals(json.get("type").asText(), "oppgave");
+
+        JsonNode eksternVarsling = json.get("eksternVarsling");
+        assertFalse(eksternVarsling.isNull());
+        assertFalse(eksternVarsling.get("kanBatches").asBoolean());
+        assertNull(eksternVarsling.get("utsettSendingTil"));
+    }
+
+    @Test
+    void setterRiktigDefaultVerdierPaaEksternVarslingForInnboks() throws JsonProcessingException {
+
+        String testVarselId = UUID.randomUUID().toString();
+
+        String opprettVarsel = OpprettVarselBuilder.newInstance()
+                .withType(Varseltype.Innboks)
+                .withVarselId(testVarselId)
+                .withIdent("12345678910")
+                .withSensitivitet(Sensitivitet.High)
+                .withLink("https://link")
+                .withTekst("no", "tekst", true)
+                .withEksternVarsling()
+                .withProdusent("cluster", "namespace", "app")
+                .build();
+
+        JsonNode json = objectMapper.readTree(opprettVarsel);
+
+        assertEquals(json.get("type").asText(), "innboks");
+
+        JsonNode eksternVarsling = json.get("eksternVarsling");
+        assertFalse(eksternVarsling.isNull());
+        assertTrue(eksternVarsling.get("kanBatches").asBoolean());
+        assertNull(eksternVarsling.get("utsettSendingTil"));
     }
 
     @Test
