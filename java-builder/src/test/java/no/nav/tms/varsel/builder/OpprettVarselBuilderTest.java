@@ -69,6 +69,10 @@ class OpprettVarselBuilderTest {
         assertNull(eksternVarsling.get("smsVarslingstekst"));
         assertNull(eksternVarsling.get("epostVarslingstittel"));
         assertNull(eksternVarsling.get("epostVarslingstekst"));
+        assertEquals(eksternVarsling.get("kanBatches").asBoolean(), true);
+        assertNull(eksternVarsling.get("utsettSendingTil"));
+
+
 
         assertEquals(json.get("aktivFremTil").asText(), "2023-10-10T10:00:00Z");
 

@@ -70,6 +70,8 @@ data class EksternVarslingBestilling(
     val smsVarslingstekst: String? = null,
     val epostVarslingstittel: String? = null,
     val epostVarslingstekst: String? = null,
+    val kanBatches: Boolean? = null,
+    val utsettSendingTil: ZonedDateTime? = null,
 )
 
 internal data class EndreVarsel(
