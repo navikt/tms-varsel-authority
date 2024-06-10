@@ -86,6 +86,9 @@ class OpprettVarselSubscriberTest {
                 varselAktivert["produsent"]["namespace"].asText() shouldBe "namespace"
                 varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
                 varselAktivert["metadata"]["beredskap_tittel"].asText() shouldBe "something"
+                varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe opprettJson["eksternVarsling"]["kanBatches"].asBoolean()
+                varselAktivert["eksternVarslingBestilling"]["utsettSendingTil"].asText() shouldBe opprettJson["eksternVarsling"]["utsettSendingTil"].asText()
+
             }
     }
 

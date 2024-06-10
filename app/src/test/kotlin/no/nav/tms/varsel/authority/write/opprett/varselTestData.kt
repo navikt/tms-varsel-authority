@@ -1,6 +1,5 @@
 package no.nav.tms.varsel.authority.write.opprett
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import java.time.ZonedDateTime
@@ -18,7 +17,9 @@ fun opprettVarselEvent(
         prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
         smsVarslingstekst = "smsTekst",
         epostVarslingstittel = null,
-        epostVarslingstekst = null
+        epostVarslingstekst = null,
+        kanBatches = true,
+        utsettSendingTil = nowAtUtc().plusDays(7),
     ),
     ekstraMetadada: String=""
 ) = """
@@ -62,7 +63,10 @@ private fun eksternVarsling(eksternVarsling: EksternVarslingBestilling?): String
     "prefererteKanaler": [${eksternVarsling.prefererteKanaler.joinToString(",") { "\"${it.name}\"" }}],
     "smsVarslingstekst": ${ eksternVarsling.smsVarslingstekst.asJson() },
     "epostVarslingstittel": ${ eksternVarsling.epostVarslingstittel.asJson() },
-    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() }
+    "epostVarslingstekst": ${ eksternVarsling.epostVarslingstekst.asJson() },
+    "kanBatches": ${eksternVarsling.kanBatches.asJson()},
+    "utsettSendingTil": ${eksternVarsling.utsettSendingTil.asJson()}
+
 } 
     """
     } else {
@@ -70,8 +74,9 @@ private fun eksternVarsling(eksternVarsling: EksternVarslingBestilling?): String
     }
 }
 
-private fun String?.asJson() = if (this == null) {
+private fun Any?.asJson() = if (this == null) {
     "null"
 } else {
     "\"$this\""
 }
+
