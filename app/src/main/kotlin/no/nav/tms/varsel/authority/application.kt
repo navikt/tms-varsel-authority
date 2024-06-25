@@ -42,7 +42,7 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
 
     val varselRepository = WriteVarselRepository(database)
     val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(
-        kafkaProducer = initializeRapidKafkaProducer(environment),
+        kafkaProducer = initializeKafkaProducer(environment),
         topicName = environment.internalVarselTopic,
     )
 
@@ -54,12 +54,12 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
     )
 
     val varselOpprettetProducer = VarselOpprettetProducer(
-        kafkaProducer = initializeRapidKafkaProducer(environment),
+        kafkaProducer = initializeKafkaProducer(environment),
         topicName = environment.internalVarselTopic,
     )
 
     val varselInaktivertProducer = VarselInaktivertProducer(
-        kafkaProducer = initializeRapidKafkaProducer(environment),
+        kafkaProducer = initializeKafkaProducer(environment),
         topicName = environment.internalVarselTopic,
     )
 
@@ -70,7 +70,7 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
         PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
 
     val varselArkivertProducer = VarselArkivertProducer(
-        initializeRapidKafkaProducer(environment),
+        initializeKafkaProducer(environment),
         environment.internalVarselTopic
     )
 
@@ -129,7 +129,7 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
 }
 
 
-private fun initializeRapidKafkaProducer(environment: Environment) = KafkaProducer<String, String>(
+private fun initializeKafkaProducer(environment: Environment) = KafkaProducer<String, String>(
     Properties().apply {
         put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, environment.kafkaBrokers)
         put(

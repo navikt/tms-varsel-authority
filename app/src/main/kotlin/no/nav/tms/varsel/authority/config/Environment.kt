@@ -15,19 +15,7 @@ data class Environment(
     val kafkaConsumerGroupId: String = getEnvVar("KAFKA_GROUP_ID"),
     val internalVarselTopic: String = "min-side.brukervarsel-v1",
     val publicVarselTopic: String = "min-side.aapen-brukervarsel-v1"
-) {
-    val rapidConfig = mapOf(
-        "KAFKA_RAPID_TOPIC" to publicVarselTopic,
-        "KAFKA_EXTRA_TOPIC" to internalVarselTopic,
-        "KAFKA_BROKERS" to kafkaBrokers,
-        "KAFKA_CONSUMER_GROUP_ID" to kafkaConsumerGroupId,
-        "KAFKA_KEYSTORE_PATH" to kafkaKeystorePath,
-        "KAFKA_CREDSTORE_PASSWORD" to kafkaCredstorePassword,
-        "KAFKA_TRUSTSTORE_PATH" to kafkaTruststorePath,
-        "KAFKA_RESET_POLICY" to "earliest",
-        "HTTP_PORT" to "8080"
-    )
-}
+)
 
 fun getDbUrl(): String {
     val host: String = getEnvVar("DB_HOST")

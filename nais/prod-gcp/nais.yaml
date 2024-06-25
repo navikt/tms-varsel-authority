@@ -64,4 +64,4 @@ spec:
     - name: ARCHIVING_THRESHOLD
       value: "365"
     - name: KAFKA_GROUP_ID
-      value: "varsel-authority-01"
+      value: "varsel-authority-02"

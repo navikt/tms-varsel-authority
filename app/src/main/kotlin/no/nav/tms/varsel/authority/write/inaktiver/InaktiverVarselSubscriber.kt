@@ -59,7 +59,7 @@ internal class InaktiverVarselSubscriber(
                             kilde = VarselInaktivertKilde.Produsent
                         )
                     )
-                    log.info { "Inaktiverte varsel etter event fra rapid" }
+                    log.info { "Inaktiverte varsel etter event fra kafka" }
                 } else {
                     log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
                 }
