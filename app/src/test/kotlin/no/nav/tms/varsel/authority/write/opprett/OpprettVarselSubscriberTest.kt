@@ -7,6 +7,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
+import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import org.apache.kafka.clients.producer.MockProducer
@@ -124,5 +125,50 @@ class OpprettVarselSubscriberTest {
 
         mockProducer.history().size shouldBe 1
     }
+
+    @Test
+    fun `setter default verdi på erBatch når det ikke er satt`(){
+        val varselIdBeskjed = randomUUID().toString()
+        val varselIdOppgave = randomUUID().toString()
+
+
+        val opprettBeskjedEvent = opprettVarselEvent(
+            "beskjed", varselIdBeskjed, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
+        )
+        val opprettOppgaveEvent = opprettVarselEvent(
+            "oppgave", varselIdOppgave, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
+        )
+
+        testBroadcaster.broadcastJson(opprettBeskjedEvent)
+        testBroadcaster.broadcastJson(opprettOppgaveEvent)
+
+        val dbBeskjed = repository.getVarsel(varselIdBeskjed)
+        val dbOppgave = repository.getVarsel(varselIdOppgave)
+
+        dbBeskjed.shouldNotBeNull()
+        dbOppgave.shouldNotBeNull()
+
+        dbBeskjed.eksternVarslingBestilling?.kanBatches shouldBe true
+        dbOppgave.eksternVarslingBestilling?.kanBatches shouldBe false
+
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
+            .let { it.shouldNotBeNull() }
+            .let { varselAktivert ->
+                varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe true
+            }
+
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "oppgave"}
+            .let { it.shouldNotBeNull() }
+            .let { varselAktivert ->
+                varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
+            }
+    }
+
 }
 
