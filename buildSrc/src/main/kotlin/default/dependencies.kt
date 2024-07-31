@@ -20,6 +20,7 @@ interface FlywayDefaults: DependencyGroup {
 
     val pluginId get() = "org.flywaydb.flyway"
     val core get() = dependency("flyway-core")
+    val postgres get() = dependency("flyway-database-postgresql")
 }
 
 interface HikariDefaults: DependencyGroup {
