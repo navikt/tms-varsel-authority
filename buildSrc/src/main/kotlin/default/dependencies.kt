@@ -163,7 +163,7 @@ interface LogstashDefaults: DependencyGroup {
 
 interface MicrometerDefaults: DependencyGroup {
     override val groupId get() = "io.micrometer"
-    override val version get() = "1.13.2"
+    override val version get() = "1.12.5"
 
     val registryPrometheus get() = dependency("micrometer-registry-prometheus")
 }
