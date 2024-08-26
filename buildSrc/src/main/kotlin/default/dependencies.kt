@@ -16,7 +16,7 @@ interface DependencyGroup {
 
 interface FlywayDefaults: DependencyGroup {
     override val groupId get() = "org.flywaydb"
-    override val version get() = "10.17.1"
+    override val version get() = "10.17.2"
 
     val pluginId get() = "org.flywaydb.flyway"
     val core get() = dependency("flyway-core")
@@ -83,7 +83,7 @@ interface KotestDefaults: DependencyGroup {
 
 interface KotlinDefaults: DependencyGroup {
     override val groupId get() = "org.jetbrains.kotlin"
-    override val version get() = "2.0.10"
+    override val version get() = "2.0.20"
 
     val reflect get() = dependency("kotlin-reflect")
 }
@@ -163,7 +163,7 @@ interface LogstashDefaults: DependencyGroup {
 
 interface MicrometerDefaults: DependencyGroup {
     override val groupId get() = "io.micrometer"
-    override val version get() = "1.12.5"
+    override val version get() = "1.13.3"
 
     val registryPrometheus get() = dependency("micrometer-registry-prometheus")
 }
@@ -177,7 +177,7 @@ interface MockkDefaults: DependencyGroup {
 
 interface PostgresqlDefaults: DependencyGroup {
     override val groupId get() = "org.postgresql"
-    override val version get() = "42.7.3"
+    override val version get() = "42.7.4"
 
     val postgresql get() = dependency("postgresql")
 }
@@ -217,7 +217,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.common"
-    override val version get() = "4.0.2"
+    override val version get() = "4.0.3"
 
     val metrics get() = dependency("metrics")
     val observability get() = dependency("observability")
