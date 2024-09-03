@@ -131,11 +131,11 @@ internal class OpprettVarselSubscriber(
             log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
             securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
-             throw MessageException("OpprettVarsel event did not pass validation")
+            throw MessageException("OpprettVarsel event did not pass validation")
         }
     }
 
-    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : OpprettVarsel{
+    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : OpprettVarsel {
         return if (opprettVarsel.eksternVarsling != null && opprettVarsel.eksternVarsling?.kanBatches == null) {
             val default = when (opprettVarsel.type) {
                 Varseltype.Oppgave -> false
