@@ -66,14 +66,15 @@ object VarselActionBuilder {
             link = link,
             tekster = tekster,
             eksternVarsling = eksternVarsling?.let {
-                if(it.kanBatches == null){
+                if (it.kanBatches == null) {
                     val default = when (type!!) {
                         Varseltype.Beskjed, Varseltype.Innboks -> true
                         Varseltype.Oppgave -> false
                     }
                     eksternVarsling!!.copy(kanBatches = default)
+                } else {
+                    it
                 }
-                else it
             },
             aktivFremTil = aktivFremTil,
             produsent = produsent!!,

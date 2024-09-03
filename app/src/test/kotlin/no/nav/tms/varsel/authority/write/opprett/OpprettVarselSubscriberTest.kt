@@ -127,7 +127,7 @@ class OpprettVarselSubscriberTest {
     }
 
     @Test
-    fun `setter default verdi på erBatch når det ikke er satt`(){
+    fun `setter default verdi på erBatch når det ikke er satt`() {
         val varselIdBeskjed = randomUUID().toString()
         val varselIdOppgave = randomUUID().toString()
 
