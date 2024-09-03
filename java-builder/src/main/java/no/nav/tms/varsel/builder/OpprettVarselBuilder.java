@@ -11,15 +11,17 @@ import no.nav.tms.varsel.action.*;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+import static no.nav.tms.varsel.action.Varseltype.Beskjed;
+import static no.nav.tms.varsel.action.Varseltype.Innboks;
 import static no.nav.tms.varsel.builder.BuilderUtil.metadata;
 import static no.nav.tms.varsel.builder.BuilderUtil.produsent;
 
 public class OpprettVarselBuilder {
     private static final ObjectMapper objectMapper = JsonMapper.builder()
-        .addModule(new JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .build()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .addModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .build()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     private Varseltype type;
     private String varselId;
     private String ident;
@@ -63,10 +65,12 @@ public class OpprettVarselBuilder {
         this.ident = ident;
         return this;
     }
+
     public OpprettVarselBuilder withSensitivitet(Sensitivitet sensitivitet) {
         this.sensitivitet = sensitivitet;
         return this;
     }
+
     public OpprettVarselBuilder withLink(String link) {
         this.link = link;
         return this;
@@ -83,40 +87,68 @@ public class OpprettVarselBuilder {
 
     public OpprettVarselBuilder withEksternVarsling() {
         return withEksternVarsling(
-            Collections.emptyList(),
-            null,
-            null,
-            null
+                Collections.emptyList(),
+                null,
+                null,
+                null
         );
     }
 
     public OpprettVarselBuilder withEksternVarsling(EksternKanal kanal) {
         return withEksternVarsling(
-            Collections.singletonList(kanal),
-            null,
-            null,
-            null
+                Collections.singletonList(kanal),
+                null,
+                null,
+                null
         );
     }
 
     public OpprettVarselBuilder withEksternVarsling(
-        List<EksternKanal> prefererteKanaler,
-        String smsVarslingstekst,
-        String epostVarslingstittel,
-        String epostVarslingstekst
-        ) {
+            List<EksternKanal> prefererteKanaler,
+            String smsVarslingstekst,
+            String epostVarslingstittel,
+            String epostVarslingstekst
+    ) {
+
+        return withEksternVarsling(
+                prefererteKanaler,
+                smsVarslingstekst,
+                epostVarslingstittel,
+                epostVarslingstekst,
+                null,
+                null
+        );
+    }
+
+    public OpprettVarselBuilder withEksternVarsling(
+            List<EksternKanal> prefererteKanaler,
+            String smsVarslingstekst,
+            String epostVarslingstittel,
+            String epostVarslingstekst,
+            Boolean kanBatches,
+            ZonedDateTime utsendingTil
+    ) {
         this.eksternVarsling = new EksternVarslingBestilling(
-            prefererteKanaler,
-            smsVarslingstekst,
-            epostVarslingstittel,
-            epostVarslingstekst
+                prefererteKanaler,
+                smsVarslingstekst,
+                epostVarslingstittel,
+                epostVarslingstekst,
+                resolveKanBatches(this.type, kanBatches),
+                utsendingTil
         );
         return this;
     }
+
+    private Boolean resolveKanBatches(Varseltype type, Boolean original) {
+        return original != null ? original : type == Beskjed || type == Innboks;
+    }
+
+
     public OpprettVarselBuilder withAktivFremTil(ZonedDateTime aktivFremTil) {
         this.aktivFremTil = aktivFremTil;
         return this;
     }
+
     public OpprettVarselBuilder withProdusent(String cluster, String namespace, String appnavn) {
         this.produsent = new Produsent(cluster, namespace, appnavn);
         return this;
@@ -126,16 +158,16 @@ public class OpprettVarselBuilder {
         performNullCheck();
 
         OpprettVarsel opprettVarsel = new OpprettVarsel(
-            this.type,
-            this.varselId,
-            this.ident,
-            this.sensitivitet,
-            this.link,
-            this.tekster,
-            this.eksternVarsling,
-            this.aktivFremTil,
-            this.produsent,
-            this.metadata
+                this.type,
+                this.varselId,
+                this.ident,
+                this.sensitivitet,
+                this.link,
+                this.tekster,
+                this.eksternVarsling,
+                this.aktivFremTil,
+                this.produsent,
+                this.metadata
         );
 
         OpprettVarselValidation.INSTANCE.validate(opprettVarsel);

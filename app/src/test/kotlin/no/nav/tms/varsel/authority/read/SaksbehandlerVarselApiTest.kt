@@ -143,7 +143,7 @@ class SaksbehandlerVarselApiTest {
         }
     }
 
-    private suspend fun HttpClient.getVarsler(path: String, ident: String): List<DetaljertVarsel> = get(path){
+    private suspend fun HttpClient.getVarsler(path: String, ident: String): List<DetaljertVarsel> = get(path) {
         headers.append("ident", ident)
     }.body()
 

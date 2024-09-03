@@ -5,7 +5,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import no.nav.tms.varsel.action.*
-import no.nav.tms.varsel.action.Varseltype.Beskjed
+import no.nav.tms.varsel.action.Varseltype.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
@@ -60,6 +60,8 @@ class VarselActionBuilderTest {
                 it["smsVarslingstekst"].shouldBeNull()
                 it["epostVarslingstittel"].shouldBeNull()
                 it["epostVarslingstekst"].shouldBeNull()
+                it["kanBatches"].asBoolean() shouldBe true
+                it["utsettSendingTil"].shouldBeNull()
             }
             json["aktivFremTil"].asText() shouldBe "2023-10-10T10:00:00Z"
             json["produsent"].let {
@@ -73,6 +75,60 @@ class VarselActionBuilderTest {
             }
         }
     }
+
+    @Test
+    fun `Sette riktig default verdier på eksternvarsling for oppgave`() {
+
+        val testVarselId = UUID.randomUUID().toString()
+
+        val opprettVarsel = VarselActionBuilder.opprett {
+            type = Oppgave
+            varselId = testVarselId
+            ident = "12345678910"
+            sensitivitet = Sensitivitet.High
+            link = "https://link"
+            tekst = Tekst("no", "tekst", default = true)
+            eksternVarsling = EksternVarslingBestilling()
+            produsent = Produsent("cluster", "namespace", "app")
+        }
+
+        objectMapper.readTree(opprettVarsel).let { json ->
+            json["type"].asText() shouldBe "oppgave"
+            json["eksternVarsling"].let {
+                it.isNull shouldBe false
+                it["kanBatches"].asBoolean() shouldBe false
+                it["utsettSendingTil"].shouldBeNull()
+            }
+    }
+    }
+
+    @Test
+    fun `Sette riktig default verdier på eksternvarsling for innboks`() {
+
+        val testVarselId = UUID.randomUUID().toString()
+
+        val opprettVarsel = VarselActionBuilder.opprett {
+            type = Innboks
+            varselId = testVarselId
+            ident = "12345678910"
+            sensitivitet = Sensitivitet.High
+            link = "https://link"
+            tekst = Tekst("no", "tekst", default = true)
+            eksternVarsling = EksternVarslingBestilling()
+            produsent = Produsent("cluster", "namespace", "app")
+        }
+
+        objectMapper.readTree(opprettVarsel).let { json ->
+            json["type"].asText() shouldBe "innboks"
+            json["eksternVarsling"].let {
+                it.isNull shouldBe false
+                it["kanBatches"].asBoolean() shouldBe true
+                it["utsettSendingTil"].shouldBeNull()
+            }
+        }
+    }
+
+
 
     @Test
     fun `henter info om produsent automatisk for opprett-action der det er mulig`() {

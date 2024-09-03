@@ -9,6 +9,7 @@ import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.action.OpprettVarselValidation
 import no.nav.tms.varsel.action.VarselValidationException
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
@@ -56,6 +57,7 @@ internal class OpprettVarselSubscriber(
             log.info { "Opprett-event motatt" }
             objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
                 .also { validate(it) }
+                .let { applyEksternVarslingDefaults(it) }
                 .let {
                     DatabaseVarsel(
                         aktiv = true,
@@ -129,7 +131,20 @@ internal class OpprettVarselSubscriber(
             log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
             securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
-             throw MessageException("OpprettVarsel event did not pass validation")
+            throw MessageException("OpprettVarsel event did not pass validation")
+        }
+    }
+
+    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : OpprettVarsel {
+        return if (opprettVarsel.eksternVarsling != null && opprettVarsel.eksternVarsling?.kanBatches == null) {
+            val default = when (opprettVarsel.type) {
+                Varseltype.Oppgave -> false
+                else -> true
+            }
+            val bestilling = opprettVarsel.eksternVarsling!!.copy(kanBatches = default)
+            opprettVarsel.copy(eksternVarsling = bestilling)
+        } else {
+            opprettVarsel
         }
     }
 }

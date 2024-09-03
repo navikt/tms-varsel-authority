@@ -65,7 +65,17 @@ object VarselActionBuilder {
             sensitivitet = sensitivitet!!,
             link = link,
             tekster = tekster,
-            eksternVarsling = eksternVarsling,
+            eksternVarsling = eksternVarsling?.let {
+                if (it.kanBatches == null) {
+                    val default = when (type!!) {
+                        Varseltype.Beskjed, Varseltype.Innboks -> true
+                        Varseltype.Oppgave -> false
+                    }
+                    eksternVarsling!!.copy(kanBatches = default)
+                } else {
+                    it
+                }
+            },
             aktivFremTil = aktivFremTil,
             produsent = produsent!!,
             metadata = metadata
