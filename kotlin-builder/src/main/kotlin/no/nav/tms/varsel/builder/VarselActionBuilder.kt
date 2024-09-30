@@ -42,10 +42,11 @@ object VarselActionBuilder {
         var sensitivitet: Sensitivitet? = null,
         var link: String? = null,
         val tekster: MutableList<Tekst> = mutableListOf(),
-        var eksternVarsling: EksternVarslingBestilling? = null,
         var aktivFremTil: ZonedDateTime? = null,
         var produsent: Produsent? = produsent()
     ) {
+        private var eksternVarsling: EksternVarsling? = null
+
         val metadata = metadata()
 
         var tekst: Tekst? = null
@@ -58,6 +59,10 @@ object VarselActionBuilder {
                 field = value
             }
 
+        fun eksternVarsling(builder: EksternVarsling.() -> Unit) {
+            eksternVarsling = EksternVarsling().apply(builder)
+        }
+
         internal fun build() = OpprettVarsel(
             type = type!!,
             varselId = varselId!!,
@@ -65,33 +70,45 @@ object VarselActionBuilder {
             sensitivitet = sensitivitet!!,
             link = link,
             tekster = tekster,
-            eksternVarsling = eksternVarsling?.let {
-                if (it.kanBatches == null) {
-                    val default = when (type!!) {
-                        Varseltype.Beskjed, Varseltype.Innboks -> true
-                        Varseltype.Oppgave -> false
-                    }
-                    eksternVarsling!!.copy(kanBatches = default)
-                } else {
-                    it
-                }
-            },
+            eksternVarsling = eksternVarsling?.toBestilling(),
             aktivFremTil = aktivFremTil,
             produsent = produsent!!,
             metadata = metadata
         )
 
-        internal fun performNullCheck() = try {
-
-            requireNotNull(type) { "type kan ikke være null" }
-            requireNotNull(varselId) { "varselId kan ikke være null" }
-            requireNotNull(ident) { "ident kan ikke være null" }
-            requireNotNull(sensitivitet) { "sensitivitet kan ikke være null" }
-            requireNotNull(produsent) { "produsent kan ikke være null" }
-            require(tekster.isNotEmpty()) { "Må ha satt minst 1 tekst" }
-        } catch (e: IllegalArgumentException) {
-            throw VarselValidationException(e.message!!)
+        internal fun performNullCheck() {
+            try {
+                requireNotNull(type) { "type kan ikke være null" }
+                requireNotNull(varselId) { "varselId kan ikke være null" }
+                requireNotNull(ident) { "ident kan ikke være null" }
+                requireNotNull(sensitivitet) { "sensitivitet kan ikke være null" }
+                requireNotNull(produsent) { "produsent kan ikke være null" }
+                require(tekster.isNotEmpty()) { "Må ha satt minst 1 tekst" }
+                if (eksternVarsling != null) {
+                    requireNotNull(eksternVarsling?.kanBatches) { "Må spesifisere hvorvidt ekstern varsling kan batches" }
+                }
+            } catch (e: IllegalArgumentException) {
+                throw VarselValidationException(e.message!!)
+            }
         }
+    }
+
+    data class EksternVarsling internal constructor(
+        var preferertKanal: EksternKanal? = null,
+        var smsVarslingstekst: String? = null,
+        var epostVarslingstittel: String? = null,
+        var epostVarslingstekst: String? = null,
+        var kanBatches: Boolean? = null,
+        var utsettSendingTil: ZonedDateTime? = null,
+    ) {
+        fun toBestilling() = EksternVarslingBestilling(
+            prefererteKanaler = preferertKanal?.let { listOf(it) } ?: emptyList(),
+            smsVarslingstekst = smsVarslingstekst,
+            epostVarslingstittel = epostVarslingstittel,
+            epostVarslingstekst = epostVarslingstekst,
+            kanBatches = kanBatches,
+            utsettSendingTil = utsettSendingTil,
+        )
     }
 
     class InaktiverVarselInstance internal constructor(

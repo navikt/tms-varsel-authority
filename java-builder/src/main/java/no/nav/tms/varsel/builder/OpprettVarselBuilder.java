@@ -11,8 +11,6 @@ import no.nav.tms.varsel.action.*;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-import static no.nav.tms.varsel.action.Varseltype.Beskjed;
-import static no.nav.tms.varsel.action.Varseltype.Innboks;
 import static no.nav.tms.varsel.builder.BuilderUtil.metadata;
 import static no.nav.tms.varsel.builder.BuilderUtil.produsent;
 
@@ -85,64 +83,63 @@ public class OpprettVarselBuilder {
         return this;
     }
 
-    public OpprettVarselBuilder withEksternVarsling() {
+    // Ikke egnet for oppgave-varsler eller andre viktige varsler
+    public OpprettVarselBuilder withEnkelEpostVarsling() {
         return withEksternVarsling(
-                Collections.emptyList(),
-                null,
-                null,
-                null
+            EksternKanal.EPOST,
+            true,
+            null,
+            null,
+            null
         );
     }
 
-    public OpprettVarselBuilder withEksternVarsling(EksternKanal kanal) {
+    public OpprettVarselBuilder withEksternVarsling(EksternKanal kanal, Boolean kanBatches) {
         return withEksternVarsling(
-                Collections.singletonList(kanal),
-                null,
-                null,
-                null
+            kanal,
+            kanBatches,
+            null,
+            null,
+            null
         );
     }
 
     public OpprettVarselBuilder withEksternVarsling(
-            List<EksternKanal> prefererteKanaler,
+            EksternKanal preferertKanal,
+            Boolean kanBatches,
             String smsVarslingstekst,
             String epostVarslingstittel,
             String epostVarslingstekst
     ) {
 
         return withEksternVarsling(
-                prefererteKanaler,
-                smsVarslingstekst,
-                epostVarslingstittel,
-                epostVarslingstekst,
-                null,
-                null
+            preferertKanal,
+            kanBatches,
+            smsVarslingstekst,
+            epostVarslingstittel,
+            epostVarslingstekst,
+            null
         );
     }
 
     public OpprettVarselBuilder withEksternVarsling(
-            List<EksternKanal> prefererteKanaler,
+            EksternKanal prefererteKanaler,
+            Boolean kanBatches,
             String smsVarslingstekst,
             String epostVarslingstittel,
             String epostVarslingstekst,
-            Boolean kanBatches,
             ZonedDateTime utsendingTil
     ) {
         this.eksternVarsling = new EksternVarslingBestilling(
-                prefererteKanaler,
-                smsVarslingstekst,
-                epostVarslingstittel,
-                epostVarslingstekst,
-                resolveKanBatches(this.type, kanBatches),
-                utsendingTil
+            Collections.singletonList(prefererteKanaler),
+            smsVarslingstekst,
+            epostVarslingstittel,
+            epostVarslingstekst,
+            kanBatches,
+            utsendingTil
         );
         return this;
     }
-
-    private Boolean resolveKanBatches(Varseltype type, Boolean original) {
-        return original != null ? original : type == Beskjed || type == Innboks;
-    }
-
 
     public OpprettVarselBuilder withAktivFremTil(ZonedDateTime aktivFremTil) {
         this.aktivFremTil = aktivFremTil;
@@ -186,6 +183,10 @@ public class OpprettVarselBuilder {
             Objects.requireNonNull(ident, "ident kan ikke være null");
             Objects.requireNonNull(sensitivitet, "sensitivitet kan ikke være null");
             Objects.requireNonNull(produsent, "produsent kan ikke være null");
+
+            if (eksternVarsling != null) {
+                Objects.requireNonNull(eksternVarsling.getKanBatches(), "Må spesifisere hvorvidt ekstern varsling kan batches");
+            }
 
             if (tekster.isEmpty()) {
                 throw new VarselValidationException("Må ha satt minst 1 tekst", Collections.emptyList());

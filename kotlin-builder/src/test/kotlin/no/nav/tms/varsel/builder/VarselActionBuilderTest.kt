@@ -33,7 +33,9 @@ class VarselActionBuilderTest {
             link = "https://link"
             tekst = Tekst("no", "tekst", default = true)
             tekster += Tekst("en", "text", default = false)
-            eksternVarsling = EksternVarslingBestilling()
+            eksternVarsling {
+                kanBatches = true
+            }
             aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
             produsent = Produsent("cluster", "namespace", "app")
         }
@@ -88,7 +90,7 @@ class VarselActionBuilderTest {
             sensitivitet = Sensitivitet.High
             link = "https://link"
             tekst = Tekst("no", "tekst", default = true)
-            eksternVarsling = EksternVarslingBestilling()
+            eksternVarsling { kanBatches = false }
             produsent = Produsent("cluster", "namespace", "app")
         }
 
@@ -96,7 +98,6 @@ class VarselActionBuilderTest {
             json["type"].asText() shouldBe "oppgave"
             json["eksternVarsling"].let {
                 it.isNull shouldBe false
-                it["kanBatches"].asBoolean() shouldBe false
                 it["utsettSendingTil"].shouldBeNull()
             }
     }
@@ -114,7 +115,7 @@ class VarselActionBuilderTest {
             sensitivitet = Sensitivitet.High
             link = "https://link"
             tekst = Tekst("no", "tekst", default = true)
-            eksternVarsling = EksternVarslingBestilling()
+            eksternVarsling { kanBatches = true }
             produsent = Produsent("cluster", "namespace", "app")
         }
 
@@ -148,7 +149,7 @@ class VarselActionBuilderTest {
             link = "https://link"
             tekst = Tekst("no", "tekst", default = true)
             tekster += Tekst("en", "text", default = false)
-            eksternVarsling = EksternVarslingBestilling()
+            eksternVarsling { kanBatches = true }
             aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
         }
 
@@ -172,7 +173,7 @@ class VarselActionBuilderTest {
                 link = "https://link"
                 tekst = Tekst("no", "tekst", default = true)
                 tekster += Tekst("en", "text", default = false)
-                eksternVarsling = EksternVarslingBestilling()
+                eksternVarsling { kanBatches = true }
                 aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
             }
         }
@@ -212,7 +213,7 @@ class VarselActionBuilderTest {
                 link = "https://link"
                 tekst = Tekst("no", "tekst", default = true)
                 tekster += Tekst("en", "text", default = false)
-                eksternVarsling = EksternVarslingBestilling()
+                eksternVarsling { kanBatches = true }
                 aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
                 produsent = Produsent("cluster", "namespace", "app")
             }
@@ -239,6 +240,22 @@ class VarselActionBuilderTest {
                 it["cluster"].asText() shouldBe "dev"
                 it["namespace"].asText() shouldBe "test-namespace"
                 it["appnavn"].asText() shouldBe "test-app"
+            }
+        }
+    }
+
+    @Test
+    fun `feiler hvis kanBatches ikke er satt for ekstern varsling `() {
+        shouldThrow<IllegalArgumentException> {
+            VarselActionBuilder.opprett {
+                type = Oppgave
+                varselId = UUID.randomUUID().toString()
+                ident = "12345678910"
+                sensitivitet = Sensitivitet.High
+                link = "https://link"
+                tekst = Tekst("no", "tekst", default = true)
+                eksternVarsling { kanBatches = null }
+                produsent = Produsent("cluster", "namespace", "app")
             }
         }
     }

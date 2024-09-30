@@ -127,28 +127,36 @@ class OpprettVarselSubscriberTest {
     }
 
     @Test
-    fun `setter default verdi på erBatch når det ikke er satt`() {
+    fun `setter default verdi på kanBatches når det ikke er satt`() {
         val varselIdBeskjed = randomUUID().toString()
+        val varselIdInnboks = randomUUID().toString()
         val varselIdOppgave = randomUUID().toString()
-
 
         val opprettBeskjedEvent = opprettVarselEvent(
             "beskjed", varselIdBeskjed, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
+        )
+
+        val opprettInnboksEvent = opprettVarselEvent(
+            "innboks", varselIdInnboks, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
         )
         val opprettOppgaveEvent = opprettVarselEvent(
             "oppgave", varselIdOppgave, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
         )
 
         testBroadcaster.broadcastJson(opprettBeskjedEvent)
+        testBroadcaster.broadcastJson(opprettInnboksEvent)
         testBroadcaster.broadcastJson(opprettOppgaveEvent)
 
         val dbBeskjed = repository.getVarsel(varselIdBeskjed)
+        val dbInnboks = repository.getVarsel(varselIdInnboks)
         val dbOppgave = repository.getVarsel(varselIdOppgave)
 
         dbBeskjed.shouldNotBeNull()
+        dbInnboks.shouldNotBeNull()
         dbOppgave.shouldNotBeNull()
 
         dbBeskjed.eksternVarslingBestilling?.kanBatches shouldBe true
+        dbInnboks.eksternVarslingBestilling?.kanBatches shouldBe false
         dbOppgave.eksternVarslingBestilling?.kanBatches shouldBe false
 
         mockProducer.history()
@@ -168,7 +176,51 @@ class OpprettVarselSubscriberTest {
             .let { varselAktivert ->
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
             }
+
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "innboks"}
+            .let { it.shouldNotBeNull() }
+            .let { varselAktivert ->
+                varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
+            }
     }
 
+    @Test
+    fun `default verdi på kanBatches for beskjed er false hvis sms- eller epost-tekst er annet enn standard`() {
+        val varselIdSms = randomUUID().toString()
+        val varselIdEpost = randomUUID().toString()
+
+        val opprettBeskjedMedSms = opprettVarselEvent(
+            "beskjed", varselIdSms, eksternVarsling = EksternVarslingBestilling(kanBatches = null, smsVarslingstekst = "Annet")
+        )
+
+        val opprettBeskjedMedEpost = opprettVarselEvent(
+            "beskjed", varselIdEpost, eksternVarsling = EksternVarslingBestilling(kanBatches = null, epostVarslingstekst = "Annet")
+        )
+
+        testBroadcaster.broadcastJson(opprettBeskjedMedSms)
+        testBroadcaster.broadcastJson(opprettBeskjedMedEpost)
+
+        val dbBeskjedMedSms = repository.getVarsel(varselIdSms)
+        val dbBeskjedMedEpost = repository.getVarsel(varselIdEpost)
+
+        dbBeskjedMedSms.shouldNotBeNull()
+        dbBeskjedMedEpost.shouldNotBeNull()
+
+        dbBeskjedMedSms.eksternVarslingBestilling?.kanBatches shouldBe false
+        dbBeskjedMedEpost.eksternVarslingBestilling?.kanBatches shouldBe false
+
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .filter { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
+            .also { it.isEmpty() shouldBe false }
+            .forEach { varselOpprettet ->
+                varselOpprettet["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
+            }
+
+    }
 }
 

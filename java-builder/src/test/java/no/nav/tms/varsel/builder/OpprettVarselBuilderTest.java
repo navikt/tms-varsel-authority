@@ -3,6 +3,7 @@ package no.nav.tms.varsel.builder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.nav.tms.varsel.action.EksternKanal;
 import no.nav.tms.varsel.action.Sensitivitet;
 import no.nav.tms.varsel.action.VarselValidationException;
 import no.nav.tms.varsel.action.Varseltype;
@@ -39,7 +40,7 @@ class OpprettVarselBuilderTest {
             .withLink("https://link")
             .withTekst("no", "tekst", true)
             .withTekst("en", "text", false)
-            .withEksternVarsling()
+            .withEnkelEpostVarsling()
             .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
             .withProdusent("cluster", "namespace", "app")
             .build();
@@ -65,7 +66,7 @@ class OpprettVarselBuilderTest {
 
         JsonNode eksternVarsling = json.get("eksternVarsling");
         assertFalse(eksternVarsling.isNull());
-        assertEquals(eksternVarsling.get("prefererteKanaler").size(), 0);
+        assertEquals(eksternVarsling.get("prefererteKanaler").size(), 1);
         assertNull(eksternVarsling.get("smsVarslingstekst"));
         assertNull(eksternVarsling.get("epostVarslingstittel"));
         assertNull(eksternVarsling.get("epostVarslingstekst"));
@@ -97,7 +98,7 @@ class OpprettVarselBuilderTest {
                 .withSensitivitet(Sensitivitet.High)
                 .withLink("https://link")
                 .withTekst("no", "tekst", true)
-                .withEksternVarsling()
+                .withEnkelEpostVarsling()
                 .withProdusent("cluster", "namespace", "app")
                 .build();
 
@@ -107,7 +108,7 @@ class OpprettVarselBuilderTest {
 
         JsonNode eksternVarsling = json.get("eksternVarsling");
         assertFalse(eksternVarsling.isNull());
-        assertFalse(eksternVarsling.get("kanBatches").asBoolean());
+        assertTrue(eksternVarsling.get("kanBatches").asBoolean());
         assertNull(eksternVarsling.get("utsettSendingTil"));
     }
 
@@ -123,7 +124,7 @@ class OpprettVarselBuilderTest {
                 .withSensitivitet(Sensitivitet.High)
                 .withLink("https://link")
                 .withTekst("no", "tekst", true)
-                .withEksternVarsling()
+                .withEnkelEpostVarsling()
                 .withProdusent("cluster", "namespace", "app")
                 .build();
 
@@ -154,7 +155,7 @@ class OpprettVarselBuilderTest {
             .withLink("https://link")
             .withTekst("no", "tekst", true)
             .withTekst("en", "text", false)
-            .withEksternVarsling()
+            .withEnkelEpostVarsling()
             .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
             .build();
 
@@ -175,7 +176,7 @@ class OpprettVarselBuilderTest {
                 .withLink("https://link")
                 .withTekst("no", "tekst", true)
                 .withTekst("en", "text", false)
-                .withEksternVarsling()
+                .withEnkelEpostVarsling()
                 .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
                 .withProdusent("cluster", "namespace", "app")
                 .build()
@@ -193,7 +194,24 @@ class OpprettVarselBuilderTest {
                 .withLink("https://link")
                 .withTekst("no", "tekst", true)
                 .withTekst("en", "text", false)
-                .withEksternVarsling()
+                .withEnkelEpostVarsling()
+                .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
+                .build()
+        );
+    }
+
+    @Test
+    void feilerHvisKanBatchesIkkeErSatt() {
+        assertThrows(IllegalArgumentException.class, () ->
+            OpprettVarselBuilder.newInstance()
+                .withType(Varseltype.Beskjed)
+                .withVarselId(UUID.randomUUID().toString())
+                .withIdent("12345678910")
+                .withSensitivitet(Sensitivitet.High)
+                .withLink("https://link")
+                .withTekst("no", "tekst", true)
+                .withTekst("en", "text", false)
+                .withEksternVarsling(EksternKanal.EPOST, null)
                 .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
                 .build()
         );
