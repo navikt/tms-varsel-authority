@@ -11,10 +11,8 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingOppdatertProducer
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusRepository
+import no.nav.tms.varsel.authority.write.eksternvarsling.*
 import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSubscriber
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusUpdater
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
 import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSubscriber
@@ -106,6 +104,9 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
                 varselInaktivertProducer = varselInaktivertProducer
             ),
             EksternVarslingStatusSubscriber(
+                eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
+            ),
+            EksternVarslingStatusOppdatertSubscriber(
                 eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
             )
         )
