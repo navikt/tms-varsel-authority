@@ -80,7 +80,7 @@ internal class OpprettVarselSubscriber(
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselAktivert(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Opprett varsel fra kafka behandlet}" }
+            log.info { "Opprett varsel fra kafka behandlet" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel" }
         }

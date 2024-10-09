@@ -33,12 +33,20 @@ data class DatabaseProdusent(
     val namespace: String,
     val appnavn: String
 )
+
 data class EksternVarslingStatus(
     val sendt: Boolean,
+    val sendtSomBatch: Boolean = false,
     val renotifikasjonSendt: Boolean,
     val kanaler: List<String>,
     val historikk: List<EksternVarslingHistorikkEntry>,
+    val feilhistorikk: List<EksternFeilHistorikkEntry> = emptyList(),
     val sistOppdatert: ZonedDateTime
+)
+
+data class EksternFeilHistorikkEntry(
+    val feilmelding: String,
+    val tidspunkt: ZonedDateTime
 )
 
 data class EksternVarslingHistorikkEntry(

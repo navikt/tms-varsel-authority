@@ -10,6 +10,7 @@ import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.shouldBeSameTime
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
@@ -88,7 +89,7 @@ class OpprettVarselSubscriberTest {
                 varselAktivert["produsent"]["appnavn"].asText() shouldBe "appnavn"
                 varselAktivert["metadata"]["beredskap_tittel"].asText() shouldBe "something"
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe opprettJson["eksternVarsling"]["kanBatches"].asBoolean()
-                varselAktivert["eksternVarslingBestilling"]["utsettSendingTil"].asText() shouldBe opprettJson["eksternVarsling"]["utsettSendingTil"].asText()
+                varselAktivert["eksternVarslingBestilling"]["utsettSendingTil"].asText() shouldBeSameTime opprettJson["eksternVarsling"]["utsettSendingTil"].asText()
 
             }
     }
@@ -137,7 +138,7 @@ class OpprettVarselSubscriberTest {
         )
 
         val opprettInnboksEvent = opprettVarselEvent(
-            "innboks", varselIdInnboks, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
+            "innboks", varselIdInnboks, eksternVarsling = EksternVarslingBestilling(kanBatches = null), aktivFremTil = null,
         )
         val opprettOppgaveEvent = opprettVarselEvent(
             "oppgave", varselIdOppgave, eksternVarsling = EksternVarslingBestilling(kanBatches = null)
