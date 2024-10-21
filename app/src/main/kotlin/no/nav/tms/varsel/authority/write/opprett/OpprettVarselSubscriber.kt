@@ -54,7 +54,6 @@ internal class OpprettVarselSubscriber(
             log.info { "Opprett-event motatt" }
             objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
                 .also { validate(it) }
-                .let { applyEksternVarslingDefaults(it) }
                 .let {
                     DatabaseVarsel(
                         aktiv = true,
@@ -64,7 +63,7 @@ internal class OpprettVarselSubscriber(
                         sensitivitet = it.sensitivitet,
                         innhold = mapInnhold(it),
                         produsent = mapProdusent(it),
-                        eksternVarslingBestilling = it.eksternVarsling,
+                        eksternVarslingBestilling = applyEksternVarslingDefaults(it),
                         opprettet = nowAtUtc(),
                         aktivFremTil = it.aktivFremTil,
                         metadata = mapMetadata(it)
@@ -114,6 +113,10 @@ internal class OpprettVarselSubscriber(
             "source_topic" to sourceTopic
         )
 
+        if (opprettVarsel.eksternVarsling != null) {
+            opprettEvent += "bruk_default_kan_batches" to (opprettVarsel.eksternVarsling?.kanBatches == null)
+        }
+
         if (opprettVarsel.metadata != null) {
             opprettEvent += opprettVarsel.metadata!!
         }
@@ -132,16 +135,16 @@ internal class OpprettVarselSubscriber(
         }
     }
 
-    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : OpprettVarsel {
+    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : EksternVarslingBestilling? {
         return if (opprettVarsel.eksternVarsling != null && opprettVarsel.eksternVarsling?.kanBatches == null) {
             val default = when (opprettVarsel.type) {
                 Varseltype.Oppgave, Varseltype.Innboks -> false
                 else -> !eksterneTeksterErSpesifisert(opprettVarsel.eksternVarsling!!)
             }
-            val bestilling = opprettVarsel.eksternVarsling!!.copy(kanBatches = default)
-            opprettVarsel.copy(eksternVarsling = bestilling)
+
+            opprettVarsel.eksternVarsling!!.copy(kanBatches = default)
         } else {
-            opprettVarsel
+            opprettVarsel.eksternVarsling
         }
     }
 

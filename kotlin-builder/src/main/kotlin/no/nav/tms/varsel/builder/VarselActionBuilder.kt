@@ -84,9 +84,6 @@ object VarselActionBuilder {
                 requireNotNull(sensitivitet) { "sensitivitet kan ikke være null" }
                 requireNotNull(produsent) { "produsent kan ikke være null" }
                 require(tekster.isNotEmpty()) { "Må ha satt minst 1 tekst" }
-                if (eksternVarsling != null) {
-                    requireNotNull(eksternVarsling?.kanBatches) { "Må spesifisere hvorvidt ekstern varsling kan batches" }
-                }
             } catch (e: IllegalArgumentException) {
                 throw VarselValidationException(e.message!!)
             }

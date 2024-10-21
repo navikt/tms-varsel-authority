@@ -245,22 +245,6 @@ class VarselActionBuilderTest {
     }
 
     @Test
-    fun `feiler hvis kanBatches ikke er satt for ekstern varsling `() {
-        shouldThrow<IllegalArgumentException> {
-            VarselActionBuilder.opprett {
-                type = Oppgave
-                varselId = UUID.randomUUID().toString()
-                ident = "12345678910"
-                sensitivitet = Sensitivitet.High
-                link = "https://link"
-                tekst = Tekst("no", "tekst", default = true)
-                eksternVarsling { kanBatches = null }
-                produsent = Produsent("cluster", "namespace", "app")
-            }
-        }
-    }
-
-    @Test
     fun `feiler for inaktiver-action hvis produsent ikke er satt og det ikke kan hentes automatisk`() {
         shouldThrow<VarselValidationException> {
             VarselActionBuilder.inaktiver {
