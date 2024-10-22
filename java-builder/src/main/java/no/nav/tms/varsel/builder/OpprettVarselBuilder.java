@@ -125,10 +125,6 @@ public class OpprettVarselBuilder {
             utsettSendingTil = null;
         }
 
-        public EksternVarslingBuilder newInstance() {
-            return new EksternVarslingBuilder();
-        }
-
         public EksternVarslingBuilder withPreferertKanal(EksternKanal kanal) {
             this.preferertKanal = kanal;
             return this;
