@@ -3,6 +3,7 @@ package no.nav.tms.varsel.builder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.action.Varseltype.*
@@ -34,7 +35,12 @@ class VarselActionBuilderTest {
             tekst = Tekst("no", "tekst", default = true)
             tekster += Tekst("en", "text", default = false)
             eksternVarsling {
+                preferertKanal = EksternKanal.SMS
+                epostVarslingstittel = "eposttittel"
+                epostVarslingstekst = "eposttekst"
+                smsVarslingstekst = "smstekst"
                 kanBatches = true
+                utsettSendingTil = ZonedDateTime.parse("2023-10-05T10:00:00Z")
             }
             aktivFremTil = ZonedDateTime.parse("2023-10-10T10:00:00Z")
             produsent = Produsent("cluster", "namespace", "app")
@@ -58,12 +64,12 @@ class VarselActionBuilderTest {
             }
             json["eksternVarsling"].let {
                 it.isNull shouldBe false
-                it["prefererteKanaler"].size() shouldBe 0
-                it["smsVarslingstekst"].shouldBeNull()
-                it["epostVarslingstittel"].shouldBeNull()
-                it["epostVarslingstekst"].shouldBeNull()
+                it["prefererteKanaler"][0].asText() shouldBe "SMS"
+                it["epostVarslingstittel"].asText() shouldBe "eposttittel"
+                it["epostVarslingstekst"].asText() shouldBe "eposttekst"
+                it["smsVarslingstekst"].asText() shouldBe "smstekst"
                 it["kanBatches"].asBoolean() shouldBe true
-                it["utsettSendingTil"].shouldBeNull()
+                it["utsettSendingTil"].asText() shouldBe "2023-10-05T10:00:00Z"
             }
             json["aktivFremTil"].asText() shouldBe "2023-10-10T10:00:00Z"
             json["produsent"].let {
@@ -79,7 +85,7 @@ class VarselActionBuilderTest {
     }
 
     @Test
-    fun `Sette riktig default verdier på eksternvarsling for oppgave`() {
+    fun `Sette riktig default verdier på ekstern varsling`() {
 
         val testVarselId = UUID.randomUUID().toString()
 
@@ -90,46 +96,25 @@ class VarselActionBuilderTest {
             sensitivitet = Sensitivitet.High
             link = "https://link"
             tekst = Tekst("no", "tekst", default = true)
-            eksternVarsling { kanBatches = false }
+            eksternVarsling { }
             produsent = Produsent("cluster", "namespace", "app")
         }
 
         objectMapper.readTree(opprettVarsel).let { json ->
             json["type"].asText() shouldBe "oppgave"
+
             json["eksternVarsling"].let {
                 it.isNull shouldBe false
                 it["utsettSendingTil"].shouldBeNull()
-            }
-    }
-    }
-
-    @Test
-    fun `Sette riktig default verdier på eksternvarsling for innboks`() {
-
-        val testVarselId = UUID.randomUUID().toString()
-
-        val opprettVarsel = VarselActionBuilder.opprett {
-            type = Innboks
-            varselId = testVarselId
-            ident = "12345678910"
-            sensitivitet = Sensitivitet.High
-            link = "https://link"
-            tekst = Tekst("no", "tekst", default = true)
-            eksternVarsling { kanBatches = true }
-            produsent = Produsent("cluster", "namespace", "app")
-        }
-
-        objectMapper.readTree(opprettVarsel).let { json ->
-            json["type"].asText() shouldBe "innboks"
-            json["eksternVarsling"].let {
-                it.isNull shouldBe false
-                it["kanBatches"].asBoolean() shouldBe true
+                it["prefererteKanaler"].size() shouldBe 0
+                it["smsVarslingstekst"].shouldBeNull()
+                it["epostVarslingstittel"].shouldBeNull()
+                it["epostVarslingstekst"].shouldBeNull()
+                it["kanBatches"].shouldBeNull()
                 it["utsettSendingTil"].shouldBeNull()
             }
         }
     }
-
-
 
     @Test
     fun `henter info om produsent automatisk for opprett-action der det er mulig`() {

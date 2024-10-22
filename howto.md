@@ -161,7 +161,9 @@ val kafkaValueJson = VarselActionBuilder.opprett {
    )
    link = "https://www.nav.no"
    aktivFremTil = ZonedDateTime.now(ZoneId.of("Z")).plusDays(14)
-   eksternVarsling = EksternVarslingBestilling(prefererteKanaler = listOf(EksternKanal.SMS))
+   eksternVarsling {
+      preferertKanal = EksternKanal.SMS
+   }
 }
 ```
 
@@ -177,7 +179,10 @@ String kafkaValueJson = OpprettVarselBuilder.newInstance()
    .withTekst("en", "English text", false)
    .withLink("https://www.nav.no")
    .withAktivFremTil(ZonedDateTime.now(ZoneId.of("Z")).plusDays(14))
-   .withEksternVarsling(EksternKanal.SMS)
+   .withEksternVarsling(
+       OpprettVarselBuilder.eksternVarsling()
+               .withPreferertKanal(EksternKanal.SMS)
+   )
    .build();
 ```
 

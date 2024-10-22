@@ -25,13 +25,13 @@ class VarselOpprettetProducer(
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         .build()
 
-    fun varselAktivert(dbVarsel: DatabaseVarsel) {
+    fun varselOpprettet(dbVarsel: DatabaseVarsel) {
 
         val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
 
         sendEvent(dbVarsel.varselId, varselOpprettetEvent)
 
-        log.info { "Aktivert-event produsert til kafka" }
+        log.info { "Opprettet-event produsert til kafka" }
     }
 
     private fun sendEvent(varselId: String, body: Any) {
@@ -66,11 +66,14 @@ private data class VarselOpprettet(
     val opprettet: ZonedDateTime,
     val aktivFremTil: ZonedDateTime?,
     val metadata: Map<String, Any>?,
-    @JsonProperty("@event_name") val eventName: String = "opprettet"
 ) {
+    @JsonProperty("@event_name") val eventName = "opprettet"
+
     val tidspunkt = nowAtUtc()
 
     companion object {
+
+        @Suppress("UNCHECKED_CAST")
         fun fromDatabaseVarsel(dbVarsel: DatabaseVarsel) = VarselOpprettet(
             type = dbVarsel.type,
             varselId = dbVarsel.varselId,
