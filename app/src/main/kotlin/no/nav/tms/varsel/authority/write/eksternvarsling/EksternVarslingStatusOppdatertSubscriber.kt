@@ -33,7 +33,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
             val oppdatertEvent: EksternVarslingOppdatert = objectMapper.treeToValue(jsonMessage.json)
 
             eksternVarslingStatusUpdater.updateEksternVarslingStatus(oppdatertEvent)
-            log.info { "Behandlet eksternVarslingStatusOppdatert" }
+            log.info { "Behandlet eksternVarslingStatusOppdatert med status ${oppdatertEvent.status}" }
         }
     }
 }
