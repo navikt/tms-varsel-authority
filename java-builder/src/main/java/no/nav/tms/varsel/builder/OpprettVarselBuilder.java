@@ -11,8 +11,6 @@ import no.nav.tms.varsel.action.*;
 import java.time.ZonedDateTime;
 import java.util.*;
 
-import static no.nav.tms.varsel.action.Varseltype.Beskjed;
-import static no.nav.tms.varsel.action.Varseltype.Innboks;
 import static no.nav.tms.varsel.builder.BuilderUtil.metadata;
 import static no.nav.tms.varsel.builder.BuilderUtil.produsent;
 
@@ -28,7 +26,7 @@ public class OpprettVarselBuilder {
     private Sensitivitet sensitivitet;
     private String link;
     private List<Tekst> tekster;
-    private EksternVarslingBestilling eksternVarsling;
+    private EksternVarslingBuilder eksternVarsling;
     private ZonedDateTime aktivFremTil;
     private Produsent produsent;
 
@@ -85,64 +83,16 @@ public class OpprettVarselBuilder {
         return this;
     }
 
+    // Ikke egnet for oppgave-varsler eller andre viktige varsler
     public OpprettVarselBuilder withEksternVarsling() {
-        return withEksternVarsling(
-                Collections.emptyList(),
-                null,
-                null,
-                null
-        );
-    }
-
-    public OpprettVarselBuilder withEksternVarsling(EksternKanal kanal) {
-        return withEksternVarsling(
-                Collections.singletonList(kanal),
-                null,
-                null,
-                null
-        );
-    }
-
-    public OpprettVarselBuilder withEksternVarsling(
-            List<EksternKanal> prefererteKanaler,
-            String smsVarslingstekst,
-            String epostVarslingstittel,
-            String epostVarslingstekst
-    ) {
-
-        return withEksternVarsling(
-                prefererteKanaler,
-                smsVarslingstekst,
-                epostVarslingstittel,
-                epostVarslingstekst,
-                null,
-                null
-        );
-    }
-
-    public OpprettVarselBuilder withEksternVarsling(
-            List<EksternKanal> prefererteKanaler,
-            String smsVarslingstekst,
-            String epostVarslingstittel,
-            String epostVarslingstekst,
-            Boolean kanBatches,
-            ZonedDateTime utsendingTil
-    ) {
-        this.eksternVarsling = new EksternVarslingBestilling(
-                prefererteKanaler,
-                smsVarslingstekst,
-                epostVarslingstittel,
-                epostVarslingstekst,
-                resolveKanBatches(this.type, kanBatches),
-                utsendingTil
-        );
+        this.eksternVarsling = new EksternVarslingBuilder();
         return this;
     }
 
-    private Boolean resolveKanBatches(Varseltype type, Boolean original) {
-        return original != null ? original : type == Beskjed || type == Innboks;
+    public OpprettVarselBuilder withEksternVarsling(EksternVarslingBuilder builder) {
+        this.eksternVarsling = builder;
+        return this;
     }
-
 
     public OpprettVarselBuilder withAktivFremTil(ZonedDateTime aktivFremTil) {
         this.aktivFremTil = aktivFremTil;
@@ -152,6 +102,69 @@ public class OpprettVarselBuilder {
     public OpprettVarselBuilder withProdusent(String cluster, String namespace, String appnavn) {
         this.produsent = new Produsent(cluster, namespace, appnavn);
         return this;
+    }
+
+    public static EksternVarslingBuilder eksternVarsling() {
+        return new EksternVarslingBuilder();
+    }
+
+    public static class EksternVarslingBuilder {
+        private EksternKanal preferertKanal;
+        private String smsVarslingstekst;
+        private String epostVarslingstittel;
+        private String epostVarslingstekst;
+        private Boolean kanBatches;
+        private ZonedDateTime utsettSendingTil;
+
+        private EksternVarslingBuilder() {
+            preferertKanal = null;
+            smsVarslingstekst = null;
+            epostVarslingstittel = null;
+            epostVarslingstekst = null;
+            kanBatches = null;
+            utsettSendingTil = null;
+        }
+
+        public EksternVarslingBuilder withPreferertKanal(EksternKanal kanal) {
+            this.preferertKanal = kanal;
+            return this;
+        }
+
+        public EksternVarslingBuilder withSmsVarslingstekst(String smsVarslingstekst) {
+            this.smsVarslingstekst = smsVarslingstekst;
+            return this;
+        }
+
+        public EksternVarslingBuilder withEpostVarslingstittel(String epostVarslingstittel) {
+            this.epostVarslingstittel = epostVarslingstittel;
+            return this;
+        }
+
+        public EksternVarslingBuilder withEpostVarslingstekst(String epostVarslingstekst) {
+            this.epostVarslingstekst = epostVarslingstekst;
+            return this;
+        }
+
+        public EksternVarslingBuilder withKanBatches(Boolean kanBatches) {
+            this.kanBatches = kanBatches;
+            return this;
+        }
+
+        public EksternVarslingBuilder withUtsettSendingTil(ZonedDateTime utsettSendingTil) {
+            this.utsettSendingTil = utsettSendingTil;
+            return this;
+        }
+
+        private EksternVarslingBestilling build() {
+            return new EksternVarslingBestilling(
+                this.preferertKanal == null ? Collections.emptyList() : Collections.singletonList(preferertKanal),
+                this.smsVarslingstekst,
+                this.epostVarslingstittel,
+                this.epostVarslingstekst,
+                this.kanBatches,
+                this.utsettSendingTil
+            );
+        }
     }
 
     public String build() {
@@ -164,7 +177,7 @@ public class OpprettVarselBuilder {
                 this.sensitivitet,
                 this.link,
                 this.tekster,
-                this.eksternVarsling,
+                this.eksternVarsling.build(),
                 this.aktivFremTil,
                 this.produsent,
                 this.metadata

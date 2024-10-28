@@ -10,9 +10,6 @@ import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.common.json
 import no.nav.tms.varsel.authority.common.parseVarseltype
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
 
 class ExpiredVarselRepository(private val database: Database) {
 

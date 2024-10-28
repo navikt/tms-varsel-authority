@@ -17,6 +17,7 @@ internal class EksternVarslingStatusSubscriber(
 
     override fun subscribe(): Subscription = Subscription
         .forEvent("eksternVarslingStatus")
+        .withoutValue("bestillerAppnavn", "tms-ekstern-varsling")
         .withFields(
             "eventId",
             "status",

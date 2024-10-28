@@ -6,10 +6,7 @@ import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
-import no.nav.tms.varsel.action.OpprettVarsel
-import no.nav.tms.varsel.action.OpprettVarselValidation
-import no.nav.tms.varsel.action.VarselValidationException
-import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
@@ -57,7 +54,6 @@ internal class OpprettVarselSubscriber(
             log.info { "Opprett-event motatt" }
             objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
                 .also { validate(it) }
-                .let { applyEksternVarslingDefaults(it) }
                 .let {
                     DatabaseVarsel(
                         aktiv = true,
@@ -67,7 +63,7 @@ internal class OpprettVarselSubscriber(
                         sensitivitet = it.sensitivitet,
                         innhold = mapInnhold(it),
                         produsent = mapProdusent(it),
-                        eksternVarslingBestilling = it.eksternVarsling,
+                        eksternVarslingBestilling = applyEksternVarslingDefaults(it),
                         opprettet = nowAtUtc(),
                         aktivFremTil = it.aktivFremTil,
                         metadata = mapMetadata(it)
@@ -81,9 +77,9 @@ internal class OpprettVarselSubscriber(
     private fun aktiverVarsel(dbVarsel: DatabaseVarsel) {
         try {
             varselRepository.insertVarsel(dbVarsel)
-            varselAktivertProducer.varselAktivert(dbVarsel)
+            varselAktivertProducer.varselOpprettet(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
-            log.info { "Opprett varsel fra kafka behandlet}" }
+            log.info { "Opprett varsel fra kafka behandlet" }
         } catch (e: PSQLException) {
             log.warn(e) { "Feil ved aktivering av varsel" }
         }
@@ -117,6 +113,10 @@ internal class OpprettVarselSubscriber(
             "source_topic" to sourceTopic
         )
 
+        if (opprettVarsel.eksternVarsling != null) {
+            opprettEvent += "bruk_default_kan_batches" to (opprettVarsel.eksternVarsling?.kanBatches == null)
+        }
+
         if (opprettVarsel.metadata != null) {
             opprettEvent += opprettVarsel.metadata!!
         }
@@ -135,16 +135,20 @@ internal class OpprettVarselSubscriber(
         }
     }
 
-    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : OpprettVarsel {
+    private fun applyEksternVarslingDefaults(opprettVarsel: OpprettVarsel) : EksternVarslingBestilling? {
         return if (opprettVarsel.eksternVarsling != null && opprettVarsel.eksternVarsling?.kanBatches == null) {
             val default = when (opprettVarsel.type) {
-                Varseltype.Oppgave -> false
-                else -> true
+                Varseltype.Oppgave, Varseltype.Innboks -> false
+                else -> !eksterneTeksterErSpesifisert(opprettVarsel.eksternVarsling!!)
             }
-            val bestilling = opprettVarsel.eksternVarsling!!.copy(kanBatches = default)
-            opprettVarsel.copy(eksternVarsling = bestilling)
+
+            opprettVarsel.eksternVarsling!!.copy(kanBatches = default)
         } else {
-            opprettVarsel
+            opprettVarsel.eksternVarsling
         }
+    }
+
+    private fun eksterneTeksterErSpesifisert(eksternVarsling: EksternVarslingBestilling): Boolean {
+        return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
     }
 }

@@ -12,7 +12,7 @@ fun opprettVarselEvent(
     tekster: List<Tekst> = listOf(Tekst("no", "tekst", true)),
     link: String? = "http://link",
     sensitivitet: Sensitivitet = Sensitivitet.High,
-    aktivFremTil: ZonedDateTime = nowAtUtc().plusDays(1),
+    aktivFremTil: ZonedDateTime? = nowAtUtc().plusDays(1),
     eksternVarsling: EksternVarslingBestilling? = EksternVarslingBestilling(
         prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
         smsVarslingstekst = "smsTekst",
@@ -36,7 +36,7 @@ fun opprettVarselEvent(
     "tekster": ${tekster(tekster)},
     "link": ${link.asJson()},
     "sensitivitet": "${sensitivitet.name.lowercase()}",
-    "aktivFremTil": "$aktivFremTil",
+    "aktivFremTil": ${aktivFremTil.asJson()},
     "eksternVarsling": ${eksternVarsling(eksternVarsling)},
     "metadata": {
         "built_at": "${nowAtUtc()}",

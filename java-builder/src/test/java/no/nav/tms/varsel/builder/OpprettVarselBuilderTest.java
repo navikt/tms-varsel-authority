@@ -3,6 +3,7 @@ package no.nav.tms.varsel.builder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.nav.tms.varsel.action.EksternKanal;
 import no.nav.tms.varsel.action.Sensitivitet;
 import no.nav.tms.varsel.action.VarselValidationException;
 import no.nav.tms.varsel.action.Varseltype;
@@ -39,7 +40,15 @@ class OpprettVarselBuilderTest {
             .withLink("https://link")
             .withTekst("no", "tekst", true)
             .withTekst("en", "text", false)
-            .withEksternVarsling()
+            .withEksternVarsling(
+                OpprettVarselBuilder.eksternVarsling()
+                    .withPreferertKanal(EksternKanal.SMS)
+                    .withEpostVarslingstittel("eposttittel")
+                    .withEpostVarslingstekst("eposttekst")
+                    .withSmsVarslingstekst("smstekst")
+                    .withKanBatches(true)
+                    .withUtsettSendingTil(ZonedDateTime.parse("2023-10-05T10:00:00Z"))
+            )
             .withAktivFremTil(ZonedDateTime.parse("2023-10-10T10:00:00Z"))
             .withProdusent("cluster", "namespace", "app")
             .build();
@@ -65,12 +74,12 @@ class OpprettVarselBuilderTest {
 
         JsonNode eksternVarsling = json.get("eksternVarsling");
         assertFalse(eksternVarsling.isNull());
-        assertEquals(eksternVarsling.get("prefererteKanaler").size(), 0);
-        assertNull(eksternVarsling.get("smsVarslingstekst"));
-        assertNull(eksternVarsling.get("epostVarslingstittel"));
-        assertNull(eksternVarsling.get("epostVarslingstekst"));
-        assertEquals(eksternVarsling.get("kanBatches").asBoolean(), true);
-        assertNull(eksternVarsling.get("utsettSendingTil"));
+        assertEquals(eksternVarsling.get("prefererteKanaler").get(0).asText(), "SMS");
+        assertEquals(eksternVarsling.get("epostVarslingstittel").asText(), "eposttittel");
+        assertEquals(eksternVarsling.get("epostVarslingstekst").asText(), "eposttekst");
+        assertEquals(eksternVarsling.get("smsVarslingstekst").asText(), "smstekst");
+        assertTrue(eksternVarsling.get("kanBatches").asBoolean());
+        assertEquals(eksternVarsling.get("utsettSendingTil").asText(), "2023-10-05T10:00:00Z");
 
         assertEquals(json.get("aktivFremTil").asText(), "2023-10-10T10:00:00Z");
 
@@ -86,7 +95,7 @@ class OpprettVarselBuilderTest {
     }
 
     @Test
-    void setterRiktigDefaultVerdierPaaEksternVarslingForOppgave() throws JsonProcessingException {
+    void setterRiktigDefaultVerdierPaaEksternVarsling() throws JsonProcessingException {
 
         String testVarselId = UUID.randomUUID().toString();
 
@@ -107,33 +116,13 @@ class OpprettVarselBuilderTest {
 
         JsonNode eksternVarsling = json.get("eksternVarsling");
         assertFalse(eksternVarsling.isNull());
-        assertFalse(eksternVarsling.get("kanBatches").asBoolean());
+        assertEquals(0, eksternVarsling.get("prefererteKanaler").size());
+        assertNull(eksternVarsling.get("kanBatches"));
         assertNull(eksternVarsling.get("utsettSendingTil"));
-    }
-
-    @Test
-    void setterRiktigDefaultVerdierPaaEksternVarslingForInnboks() throws JsonProcessingException {
-
-        String testVarselId = UUID.randomUUID().toString();
-
-        String opprettVarsel = OpprettVarselBuilder.newInstance()
-                .withType(Varseltype.Innboks)
-                .withVarselId(testVarselId)
-                .withIdent("12345678910")
-                .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
-                .withTekst("no", "tekst", true)
-                .withEksternVarsling()
-                .withProdusent("cluster", "namespace", "app")
-                .build();
-
-        JsonNode json = objectMapper.readTree(opprettVarsel);
-
-        assertEquals(json.get("type").asText(), "innboks");
-
-        JsonNode eksternVarsling = json.get("eksternVarsling");
-        assertFalse(eksternVarsling.isNull());
-        assertTrue(eksternVarsling.get("kanBatches").asBoolean());
+        assertNull(eksternVarsling.get("smsVarslingstekst"));
+        assertNull(eksternVarsling.get("epostVarslingstittel"));
+        assertNull(eksternVarsling.get("epostVarslingstekst"));
+        assertNull(eksternVarsling.get("kanBatches"));
         assertNull(eksternVarsling.get("utsettSendingTil"));
     }
 

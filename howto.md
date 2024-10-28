@@ -25,7 +25,7 @@ Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og ep
 
 Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
 
-### Revarsling 
+### Revarsling
 
 Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir revarslet etter 4 dager.
 
@@ -36,6 +36,31 @@ Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å
 Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
 
 Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup.
+
+### Utsatt sending
+
+Produsent kan velge om ekstern varsling skal utsettes til et gitt tidspunkt. Dersom det underliggende varselet inaktiveres før dette,
+vil det ikke sendes ekstern varsling.
+
+Etter ekstern varsling er sendt gjelder vanlige regler for revarsling. Hvis en opprettet Oppgave med utsatt sending av ekstern varsling på 10 dager,
+vil bruker evt revarsles etter ytterligere 7 dager - 17 dager etter varselet ble opprettet.
+
+### Batching
+
+Produsent kan bestemme om ekstern varsling kan holdes igjen og batches sammen med andre varsler som bestilles innen et gitt tidsrom. Hensikten med dette
+er å skjerme bruker for støy i tilfeller der de ville fått mange sms-er og eposter over en kort periode. Eksterne varsler holdes igjen i opptil én time.
+
+Fra og med versjon 2.0.0 av builder må produsent selv ta stilling til om ekstern varsling kan batches eller ikke (gjelder ikke for utsatt sending). 
+
+For varsler opprettet med eldre buildere, eller sendt til legacy-topics, gjelder følgende defaults:
+
+| type    | kan batches                                 |
+|---------|---------------------------------------------|
+| Beskjed | Hvis sms-tekst og epost-tekst ikke er satt  | 
+| Oppgave | Nei                                         |
+| Innboks | Nei                                         |
+
+Varsler med utsatt sending vil aldri batches.
 
 ## Kafka, schemas og buildere
 
@@ -94,7 +119,8 @@ For å gi varsel til bruker sender en et opprett-varsel event.
       "prefererteKanaler": ["SMS", "EPOST"],
       "smsVarslingstekst": "<smsTekst>",
       "epostVarslingstittel": "epostTittel",
-      "epostVarslingstekst": "epostTekst"
+      "epostVarslingstekst": "epostTekst",
+      "kanBatches": false
    },
    "produsent": {
       "cluster": "<cluster>",
@@ -135,7 +161,9 @@ val kafkaValueJson = VarselActionBuilder.opprett {
    )
    link = "https://www.nav.no"
    aktivFremTil = ZonedDateTime.now(ZoneId.of("Z")).plusDays(14)
-   eksternVarsling = EksternVarslingBestilling(prefererteKanaler = listOf(EksternKanal.SMS))
+   eksternVarsling {
+      preferertKanal = EksternKanal.SMS
+   }
 }
 ```
 
@@ -151,7 +179,10 @@ String kafkaValueJson = OpprettVarselBuilder.newInstance()
    .withTekst("en", "English text", false)
    .withLink("https://www.nav.no")
    .withAktivFremTil(ZonedDateTime.now(ZoneId.of("Z")).plusDays(14))
-   .withEksternVarsling(EksternKanal.SMS)
+   .withEksternVarsling(
+       OpprettVarselBuilder.eksternVarsling()
+               .withPreferertKanal(EksternKanal.SMS)
+   )
    .build();
 ```
 
