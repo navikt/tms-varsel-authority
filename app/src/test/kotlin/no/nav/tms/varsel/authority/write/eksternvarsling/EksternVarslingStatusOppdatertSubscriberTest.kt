@@ -31,13 +31,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         StringSerializer()
     )
 
-    private val eksternVarslingOppdatertProducer: EksternVarslingOppdatertProducer = mockk()
     private val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     private val eksternVarslingStatusUpdater =
         EksternVarslingStatusUpdater(
             eksternVarslingStatusRepository,
-            varselRepository,
-            eksternVarslingOppdatertProducer
+            varselRepository
         )
 
     private val testBroadcaster =
