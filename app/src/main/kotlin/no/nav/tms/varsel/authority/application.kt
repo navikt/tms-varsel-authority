@@ -12,7 +12,6 @@ import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
 import no.nav.tms.varsel.authority.write.eksternvarsling.*
-import no.nav.tms.varsel.authority.write.eksternvarsling.EksternVarslingStatusSubscriber
 import no.nav.tms.varsel.authority.write.expiry.ExpiredVarselRepository
 import no.nav.tms.varsel.authority.write.expiry.PeriodicExpiredVarselProcessor
 import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSubscriber
@@ -39,16 +38,11 @@ fun main() {
 private fun startKafkaApplication(environment: Environment, database: Database) {
 
     val varselRepository = WriteVarselRepository(database)
-    val eksternVarslingOppdatertProducer = EksternVarslingOppdatertProducer(
-        kafkaProducer = initializeKafkaProducer(environment),
-        topicName = environment.internalVarselTopic,
-    )
 
     val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     val eksternVarslingStatusUpdater = EksternVarslingStatusUpdater(
         eksternVarslingStatusRepository,
-        varselRepository,
-        eksternVarslingOppdatertProducer
+        varselRepository
     )
 
     val varselOpprettetProducer = VarselOpprettetProducer(
@@ -103,9 +97,6 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
                 varselRepository = varselRepository,
                 varselInaktivertProducer = varselInaktivertProducer
             ),
-            EksternVarslingStatusSubscriber(
-                eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
-            ),
             EksternVarslingStatusOppdatertSubscriber(
                 eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
             )
@@ -123,7 +114,6 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
                 varselInaktivertProducer.flushAndClose()
                 varselOpprettetProducer.flushAndClose()
                 varselArkivertProducer.flushAndClose()
-                eksternVarslingOppdatertProducer.flushAndClose()
             }
         }
     }.start()
