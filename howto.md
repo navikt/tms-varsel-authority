@@ -37,6 +37,16 @@ Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ans
 
 Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup.
 
+### Betinget sms
+
+Fra og med versjon 2.1.0 av varsel-builder kan en velge BETINGET_SMS som preferert kanal. Dette gjør at systemet velger
+sms eller epost som kanal dynamisk basert på tidspunkt ved sending. 
+
+Tidsrommet der systemet velger sms fremfor epost er basert på reglene til altinn - utgangsvis 09:00-17:15,
+innskrenket til 09:00-17:00 for å ta hensyn til forsinkelser i systemet.
+
+Varsler produsert med både SMS og EPOST som preferert kanal (fra eldre buildere), vil fungere på samme måte.
+
 ### Utsatt sending
 
 Produsent kan velge om ekstern varsling skal utsettes til et gitt tidspunkt. Dersom det underliggende varselet inaktiveres før dette,
