@@ -62,7 +62,7 @@ data class Produsent(
 )
 
 enum class EksternKanal {
-    SMS, EPOST
+    SMS, EPOST, BETINGET_SMS
 }
 
 data class EksternVarslingBestilling(
