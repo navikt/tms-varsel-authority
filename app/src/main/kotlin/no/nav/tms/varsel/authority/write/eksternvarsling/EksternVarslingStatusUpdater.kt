@@ -35,11 +35,11 @@ class EksternVarslingStatusUpdater(
 
         val updatedStatus = EksternVarslingStatus(
             sendt = currentStatus.sendt || statusEvent.status == Sendt,
-            sendtSomBatch = currentStatus.sendtSomBatch || statusEvent.batch == true,
+            sendtSomBatch = currentStatus.sendtSomBatch || (statusEvent.batch == true && statusEvent.status == Sendt),
             renotifikasjonSendt = if (statusEvent.renotifikasjon == true) true else currentStatus.renotifikasjonSendt,
             kanaler = (currentStatus.kanaler + statusEvent.kanal).filterNotNull().distinct(),
-            historikk = currentStatus.historikk,
             feilhistorikk = feilhistorikk,
+            sisteStatus = statusEvent.status,
             sistOppdatert = nowAtUtc()
         )
 
@@ -47,12 +47,10 @@ class EksternVarslingStatusUpdater(
     }
 
 
-
     private fun emptyEksternVarsling() = EksternVarslingStatus(
         sendt = false,
         renotifikasjonSendt = false,
         kanaler = emptyList(),
-        historikk = emptyList(),
         sistOppdatert = nowAtUtc()
     )
 }

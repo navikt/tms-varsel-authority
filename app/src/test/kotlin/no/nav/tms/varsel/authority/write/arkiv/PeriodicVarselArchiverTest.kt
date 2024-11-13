@@ -194,16 +194,6 @@ internal class PeriodicVarselArchiverTest {
             sendt = true,
             renotifikasjonSendt = true,
             kanaler = listOf("EPOST"),
-            historikk = listOf(
-                EksternVarslingHistorikkEntry(
-                    melding = "Melding",
-                    status = EksternStatus.Sendt,
-                    distribusjonsId = 1L,
-                    kanal = "EPOST",
-                    renotifikasjon = false,
-                    tidspunkt = nowAtUtc()
-                )
-            ),
             sistOppdatert = nowAtUtc()
         ),
         opprettet = opprettet
