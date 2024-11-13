@@ -8,10 +8,10 @@ import java.time.ZonedDateTime
 fun eksternVarslingOppdatert(
     status: EksternStatus,
     varselId: String,
-    kanal: String?,
-    renotifikasjon: Boolean?,
-    batch: Boolean?,
-    feilmelding: String?,
+    kanal: String? = null,
+    renotifikasjon: Boolean? = null,
+    batch: Boolean? = null,
+    feilmelding: String? = null,
     tidspunkt: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc()
 ) = """
 {

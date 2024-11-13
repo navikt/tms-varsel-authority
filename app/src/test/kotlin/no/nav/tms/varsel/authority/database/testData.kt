@@ -75,50 +75,10 @@ fun dbEksternVarslingStatus(
     sendt: Boolean = true,
     renotifikasjonSendt: Boolean = false,
     kanaler: List<String> = listOf("SMS", "EPOST"),
-    historikk: List<EksternVarslingHistorikkEntry> = dbEksternVarslingHistorikk(),
     sistOppdatert: ZonedDateTime = nowAtUtc()
 ) = EksternVarslingStatus(
     sendt = sendt,
     renotifikasjonSendt = renotifikasjonSendt,
     kanaler = kanaler,
-    historikk = historikk,
     sistOppdatert = sistOppdatert
-)
-
-fun dbEksternVarslingHistorikk() = listOf(
-    dbHistorikkEntry(),
-    dbHistorikkEntry(
-        melding = "Sendt på sms",
-        status = EksternStatus.Sendt,
-        distribusjonsId = 1L,
-        kanal = "SMS",
-        renotifikasjon = false
-    ),
-    dbHistorikkEntry(
-        melding = "Sendt på epost",
-        status = EksternStatus.Sendt,
-        distribusjonsId = 2L,
-        kanal = "EPOST",
-        renotifikasjon = false
-    ),
-    dbHistorikkEntry(
-        melding = "Sendt på sms",
-        status = EksternStatus.Ferdigstilt,
-    )
-)
-
-fun dbHistorikkEntry(
-    melding: String = "Oversendt",
-    status: EksternStatus = EksternStatus.Bestilt,
-    distribusjonsId: Long? = null,
-    kanal: String? = null,
-    renotifikasjon: Boolean? = null,
-    tidspunkt: ZonedDateTime = nowAtUtc()
-) = EksternVarslingHistorikkEntry(
-    melding = melding,
-    status = status,
-    distribusjonsId = distribusjonsId,
-    kanal = kanal,
-    renotifikasjon = renotifikasjon,
-    tidspunkt = tidspunkt
 )

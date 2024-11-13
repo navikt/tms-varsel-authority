@@ -85,8 +85,8 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.sendt shouldBe true
             it.renotifikasjonSendt shouldBe false
             it.sendtSomBatch shouldBe false
+            it.sisteStatus shouldBe EksternStatus.Sendt
 
-            it.historikk.size shouldBe 0
             it.kanaler shouldContain kanal
         }
 
@@ -134,7 +134,6 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.renotifikasjonSendt shouldBe false
             it.sendtSomBatch shouldBe false
 
-            it.historikk.size shouldBe 0
             it.kanaler.size shouldBe 0
 
             it.feilhistorikk.size shouldBe 2
@@ -321,7 +320,6 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.renotifikasjonSendt shouldBe true
             it.sendtSomBatch shouldBe true
 
-            it.historikk.size shouldBe 0
             it.kanaler.size shouldBe 2
             it.kanaler shouldContainAll listOf("SMS", "EPOST")
         }
@@ -368,5 +366,68 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         }
 
         mockProducer.history().size shouldBe 0
+    }
+
+    @Test
+    fun `lagrer info om siste status`() {
+        val varselId = UUID.randomUUID().toString()
+
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
+        val venter = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Venter
+        )
+        val sendt = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            kanal = "SMS",
+            renotifikasjon = false,
+            batch = false
+        )
+        val kansellert = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Kansellert,
+            batch = false
+        )
+        val feilet = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Feilet,
+            batch = false,
+            feilmelding = "En feilmelding"
+        )
+
+        testBroadcaster.broadcastJson(varselEvent)
+
+        testBroadcaster.broadcastJson(venter)
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.also { it.shouldNotBeNull() }
+            ?.let {
+                it.sisteStatus shouldBe EksternStatus.Venter
+            }
+
+        testBroadcaster.broadcastJson(sendt)
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.also { it.shouldNotBeNull() }
+            ?.let {
+                it.sisteStatus shouldBe EksternStatus.Sendt
+            }
+
+        testBroadcaster.broadcastJson(kansellert)
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.also { it.shouldNotBeNull() }
+            ?.let {
+                it.sisteStatus shouldBe EksternStatus.Kansellert
+            }
+
+        testBroadcaster.broadcastJson(feilet)
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.also { it.shouldNotBeNull() }
+            ?.let {
+                it.sisteStatus shouldBe EksternStatus.Feilet
+            }
     }
 }

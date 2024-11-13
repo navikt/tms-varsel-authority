@@ -20,7 +20,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
 
     override fun subscribe(): Subscription = Subscription
         .forEvent("eksternVarslingStatusOppdatert")
-        .withAnyValue("status", "sendt", "feilet")
+        .withAnyValue("status", "venter", "sendt", "feilet", "kansellert")
         .withFields(
             "varselId",
             "tidspunkt"

@@ -39,8 +39,8 @@ data class EksternVarslingStatus(
     val sendtSomBatch: Boolean = false,
     val renotifikasjonSendt: Boolean,
     val kanaler: List<String>,
-    val historikk: List<EksternVarslingHistorikkEntry>,
     val feilhistorikk: List<EksternFeilHistorikkEntry> = emptyList(),
+    val sisteStatus: EksternStatus? = null,
     val sistOppdatert: ZonedDateTime
 )
 
@@ -59,7 +59,7 @@ data class EksternVarslingHistorikkEntry(
 )
 
 enum class EksternStatus {
-    Feilet, Info, Bestilt, Sendt, Ferdigstilt;
+    Feilet, Info, Bestilt, Sendt, Ferdigstilt, Kansellert, Venter;
 
     val lowercaseName = name.lowercase()
 
