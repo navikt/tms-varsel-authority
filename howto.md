@@ -60,15 +60,13 @@ vil bruker evt revarsles etter ytterligere 7 dager - 17 dager etter varselet ble
 Produsent kan bestemme om ekstern varsling kan holdes igjen og batches sammen med andre varsler som bestilles innen et gitt tidsrom. Hensikten med dette
 er å skjerme bruker for støy i tilfeller der de ville fått mange sms-er og eposter over en kort periode. Eksterne varsler holdes igjen i opptil én time.
 
-Fra og med versjon 2.0.0 av builder må produsent selv ta stilling til om ekstern varsling kan batches eller ikke (gjelder ikke for utsatt sending). 
-
 For varsler opprettet med eldre buildere, eller sendt til legacy-topics, gjelder følgende defaults:
 
-| type    | kan batches                                 |
-|---------|---------------------------------------------|
-| Beskjed | Hvis sms-tekst og epost-tekst ikke er satt  | 
-| Oppgave | Nei                                         |
-| Innboks | Nei                                         |
+| type    | batches                                    |
+|---------|--------------------------------------------|
+| Beskjed | Hvis sms-tekst og epost-tekst ikke er satt | 
+| Oppgave | Nei                                        |
+| Innboks | Nei                                        |
 
 Varsler med utsatt sending vil aldri batches.
 
@@ -287,11 +285,24 @@ Eksempel for oppgave-varsel først opprettet av `team-test:demo-app` med id `112
 
 Beskriver ekstern endring i status for et varsel (sms og epost). Kommer med ulike 3 statuser.
 
-- `bestilt`: Bestilling av varsling på sms/epost er mottatt av distribusjonsystem.
+- `venter`: Bestilling av varsling på sms/epost er lagt til i intern kø
+- `bestilt`: Bestilling av ekstern varsling er oversendt til altinn for distribusjon.
 - `sendt`: Ekstern varsling er bekreftet sendt via bestemt kanal (sms eller epost), og om det er renotifikasjon.
 - `feilet`: Ekstern varsling feilet. Kommer med feilmelding.
+- `kansellert`: Det underliggende varselet ble inaktivert før bestilling ble oversendt til altinn.
 
 Eksempler:
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "venter",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
 
 ```json
 {
@@ -312,6 +323,7 @@ Eksempler:
   "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
   "kanal": "SMS",
   "renotifikasjon": false,
+  "sendtSomBatch": false,
   "namespace": "team-test",
   "appnavn": "demo-app"
 }
@@ -324,6 +336,17 @@ Eksempler:
   "varseltype": "oppgave",
   "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
   "feilmelding": "mottaker har reservert seg mot digital kommunikasjon",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "kansellert",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
   "namespace": "team-test",
   "appnavn": "demo-app"
 }
