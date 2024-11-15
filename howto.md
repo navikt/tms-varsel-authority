@@ -290,6 +290,7 @@ Beskriver ekstern endring i status for et varsel (sms og epost). Kommer med ulik
 - `sendt`: Ekstern varsling er bekreftet sendt via bestemt kanal (sms eller epost), og om det er renotifikasjon.
 - `feilet`: Ekstern varsling feilet. Kommer med feilmelding.
 - `kansellert`: Det underliggende varselet ble inaktivert før bestilling ble oversendt til altinn.
+- `ferdigstilt`: Kommer når varsling er ferdigstilt. For eksempel når alle renotifikasjoner er utført eller stoppet.
 
 Eksempler:
 
@@ -347,6 +348,18 @@ Eksempler:
   "status": "kansellert",
   "varseltype": "oppgave",
   "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "namespace": "team-test",
+  "appnavn": "demo-app"
+}
+```
+
+```json
+{
+  "@event_name": "eksternStatusOppdatert",
+  "status": "ferdigstilt",
+  "varseltype": "oppgave",
+  "varselId": "11223344-aaaa-bbbb-cccc-112233445566",
+  "melding": "Varsling er ferdigstilt og renotifikasjon er stanset.",
   "namespace": "team-test",
   "appnavn": "demo-app"
 }
