@@ -19,7 +19,7 @@ import no.nav.tms.varsel.authority.common.parseVarseltype
 
 fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
 
-    suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
+    suspend fun RoutingContext.fetchVarslerAndRespond(
         user: TokenXUser,
         type: Varseltype? = null,
         aktiv: Boolean? = null

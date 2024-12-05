@@ -15,7 +15,7 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 
 fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 
-    suspend fun PipelineContext<Unit, ApplicationCall>.fetchVarslerAndRespond(
+    suspend fun RoutingContext.fetchVarslerAndRespond(
         ident: String,
         type: Varseltype? = null,
         aktiv: Boolean? = null

@@ -109,7 +109,7 @@ interface KotliQueryDefaults: DependencyGroup {
 }
 
 object KtorDefaults {
-    val version get() = "2.3.12"
+    val version get() = "3.0.1"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
@@ -210,7 +210,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.common"
-    override val version get() = "4.0.2"
+    override val version get() = "5.0.0"
 
     val metrics get() = dependency("metrics")
     val observability get() = dependency("observability")
@@ -221,14 +221,14 @@ interface TmsCommonLibDefaults: DependencyGroup {
 
 interface TmsKafkaToolsDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.kafka"
-    override val version get() = "1.6.0"
+    override val version get() = "2.0.0-ktor-3"
 
     val kafkaApplication get() = dependency("kafka-application")
 }
 
 interface TmsKtorTokenSupportDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.token.support"
-    override val version get() = "4.1.2"
+    override val version get() = "5.0.0"
 
     val azureExchange get() = dependency("azure-exchange")
     val azureValidation get() = dependency("azure-validation")
