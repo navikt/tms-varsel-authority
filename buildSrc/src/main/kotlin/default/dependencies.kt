@@ -183,14 +183,11 @@ interface PostgresqlDefaults: DependencyGroup {
 }
 
 interface PrometheusDefaults: DependencyGroup {
-    override val version get() = "0.16.0"
+    override val version get() = "1.3.4"
     override val groupId get() = "io.prometheus"
 
-    val common get() = dependency("simpleclient_common")
-    val hotspot get() = dependency("simpleclient_hotspot")
-    val httpServer get() = dependency("simpleclient_httpserver")
-    val logback get() = dependency("simpleclient_logback")
-    val simpleClient get() = dependency("simpleclient")
+    val metricsCore get() = dependency("prometheus-metrics-core")
+    val exporterCommon get() = dependency("prometheus-metrics-exporter-common")
 }
 
 interface ShadowDefaults: DependencyGroup {
@@ -210,7 +207,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.common"
-    override val version get() = "5.0.0"
+    override val version get() = "5.0.1"
 
     val metrics get() = dependency("metrics")
     val observability get() = dependency("observability")
@@ -221,7 +218,7 @@ interface TmsCommonLibDefaults: DependencyGroup {
 
 interface TmsKafkaToolsDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.kafka"
-    override val version get() = "2.0.0-ktor-3"
+    override val version get() = "2.0.0-beta"
 
     val kafkaApplication get() = dependency("kafka-application")
 }
