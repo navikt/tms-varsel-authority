@@ -225,7 +225,7 @@ interface TmsKafkaToolsDefaults: DependencyGroup {
 
 interface TmsKtorTokenSupportDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.token.support"
-    override val version get() = "5.0.0"
+    override val version get() = "5.0.1"
 
     val azureExchange get() = dependency("azure-exchange")
     val azureValidation get() = dependency("azure-validation")
