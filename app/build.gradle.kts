@@ -41,7 +41,7 @@ dependencies {
     implementation(Ktor.Server.statusPages)
     implementation(Ktor.Serialization.jackson)
     implementation(Logstash.logbackEncoder)
-    implementation(Prometheus.common)
+    implementation(Prometheus.metricsCore)
     implementation(TmsKtorTokenSupport.azureValidation)
     implementation(TmsKtorTokenSupport.tokenXValidation)
     implementation(KotliQuery.kotliquery)
