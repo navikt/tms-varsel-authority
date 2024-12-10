@@ -80,7 +80,6 @@ fun Application.varselApi(
                     log.warn(cause) { "Apikall feiler" }
                 }
             }
-
         }
     }
 
