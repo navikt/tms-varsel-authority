@@ -187,5 +187,20 @@ class OpprettVarselBuilderTest {
                 .build()
         );
     }
+
+    @Test
+    void tillaterAtEksternVarslingIkkeErSatt() {
+        assertDoesNotThrow(() ->
+            OpprettVarselBuilder.newInstance()
+                .withType(Varseltype.Beskjed)
+                .withVarselId(UUID.randomUUID().toString())
+                .withIdent("12345678910")
+                .withSensitivitet(Sensitivitet.High)
+                .withLink("https://link")
+                .withTekst("no", "tekst")
+                .withProdusent("cluster", "namespace", "app")
+                .build()
+        );
+    }
 }
 

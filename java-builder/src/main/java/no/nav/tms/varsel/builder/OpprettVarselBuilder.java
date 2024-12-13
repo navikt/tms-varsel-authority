@@ -177,7 +177,7 @@ public class OpprettVarselBuilder {
                 this.sensitivitet,
                 this.link,
                 this.tekster,
-                this.eksternVarsling.build(),
+                this.eksternVarsling != null ? this.eksternVarsling.build() : null,
                 this.aktivFremTil,
                 this.produsent,
                 this.metadata
