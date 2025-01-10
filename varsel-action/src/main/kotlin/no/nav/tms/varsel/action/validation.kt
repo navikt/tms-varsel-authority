@@ -1,6 +1,8 @@
 package no.nav.tms.varsel.action
 
 import java.net.MalformedURLException
+import java.net.URI
+import java.net.URISyntaxException
 import java.net.URL
 
 private const val BASE_16 = "[0-9a-fA-F]"
@@ -204,9 +206,9 @@ private object LinkContentValidator {
 
     private fun isValidURL(link: String) =
         link.length <= MAX_LENGTH_LINK && try {
-            URL(link)
+            URI.create(link).toURL()
             true
-        } catch (e: MalformedURLException) {
+        } catch (e: IllegalArgumentException) {
             false
         }
 }
