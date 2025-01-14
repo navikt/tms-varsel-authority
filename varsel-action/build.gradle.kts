@@ -19,8 +19,10 @@ repositories {
 
 dependencies {
     api(JacksonEx.annotations)
-    testRuntimeOnly(Junit.engine)
-    testImplementation(Junit.api)
+
+    testImplementation(JunitPlatform.launcher)
+    testImplementation(JunitJupiter.api)
+    testImplementation(JunitJupiter.engine)
     testImplementation(Kotest.runnerJunit5)
 }
 
@@ -55,7 +57,7 @@ publishing {
             version = libraryVersion
             from(components["java"])
 
-            val sourcesJar by tasks.creating(Jar::class) {
+            val sourcesJar by tasks.registering(Jar::class) {
                 archiveClassifier.set("sources")
                 from(sourceSets.main.get().allSource)
             }
