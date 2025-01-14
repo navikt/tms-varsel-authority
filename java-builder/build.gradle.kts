@@ -20,8 +20,9 @@ dependencies {
     api(project(":varsel-action"))
     implementation(JacksonDatatype.datatypeJsr310)
 
-    testImplementation(Junit.api)
-    testRuntimeOnly(Junit.engine)
+    testImplementation(JunitPlatform.launcher)
+    testImplementation(JunitJupiter.api)
+    testImplementation(JunitJupiter.engine)
 }
 
 tasks {
@@ -55,7 +56,7 @@ publishing {
             version = libraryVersion
             from(components["java"])
 
-            val sourcesJar by tasks.creating(Jar::class) {
+            val sourcesJar by tasks.registering(Jar::class) {
                 archiveClassifier.set("sources")
                 from(sourceSets.main.get().allSource)
             }

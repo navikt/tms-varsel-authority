@@ -90,7 +90,7 @@ object VarselActionBuilder {
         }
     }
 
-    data class EksternVarsling internal constructor(
+    class EksternVarsling internal constructor(
         var preferertKanal: EksternKanal? = null,
         var smsVarslingstekst: String? = null,
         var epostVarslingstittel: String? = null,
