@@ -78,8 +78,8 @@ Builderne finnes i følgende bibliotek:
 
 ### Github Maven repository
 
-- kotlin: no.nav.tms.varsel:kotlin-builder:1.0.0
-- java: no.nav.tms.varsel:java-builder:1.0.0
+- kotlin: no.nav.tms.varsel:kotlin-builder:2.1.1
+- java: no.nav.tms.varsel:java-builder:2.1.1
 
 Vi publiserer disse artifaktene til githubs package-repository. Husk å legge til én av disse repositories i ditt prosjekt:
 
