@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.EksternStatus.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
@@ -15,7 +16,7 @@ class EksternVarslingStatusUpdater(
         val varsel = varselRepository.getVarsel(statusEvent.varselId)
 
         if (varsel == null) {
-            return
+            throw UpdatedVarselMissingException()
         }
 
         MDC.put("type", varsel.type.name.lowercase())
@@ -54,3 +55,5 @@ class EksternVarslingStatusUpdater(
         sistOppdatert = nowAtUtc()
     )
 }
+
+class UpdatedVarselMissingException : MessageException("Fant ikke varsel tilhørende ekstern varseloppdatering")

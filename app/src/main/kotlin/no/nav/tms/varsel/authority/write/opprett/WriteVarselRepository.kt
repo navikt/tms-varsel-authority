@@ -15,7 +15,7 @@ class WriteVarselRepository(val database: Database) {
 
     fun insertVarsel(dbVarsel: DatabaseVarsel) {
 
-        database.update {
+        database.insert {
             queryOf(
                 """
                     insert into varsel(

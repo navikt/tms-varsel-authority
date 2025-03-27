@@ -10,6 +10,7 @@ import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
+import no.nav.tms.varsel.authority.common.UniqueConstraintException
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.common.traceOpprettVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
@@ -80,8 +81,13 @@ internal class OpprettVarselSubscriber(
             varselAktivertProducer.varselOpprettet(dbVarsel)
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
             log.info { "Opprett varsel fra kafka behandlet" }
+
+        } catch (e: UniqueConstraintException) {
+            log.info { "Ignorerte duplikat varsel" }
+            throw DuplikatVarselException()
         } catch (e: PSQLException) {
-            log.warn(e) { "Feil ved aktivering av varsel" }
+            log.error(e) { "Feil ved oppretting av varsel" }
+            throw MessageException("Uventet feil ved oppretting av varsel")
         }
     }
 
@@ -131,7 +137,7 @@ internal class OpprettVarselSubscriber(
             log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
             securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
-            throw MessageException("OpprettVarsel event did not pass validation")
+            throw OpprettVarselValidationException()
         }
     }
 
@@ -152,3 +158,6 @@ internal class OpprettVarselSubscriber(
         return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
     }
 }
+
+class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")
+class OpprettVarselValidationException: MessageException("Varsel består ikke validering")
