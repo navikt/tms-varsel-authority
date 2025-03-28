@@ -31,8 +31,9 @@ internal class InaktiverVarselSubscriberTest {
     private val database = LocalPostgresDatabase.cleanDb()
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(
-        listOf( OpprettVarselSubscriber(repository, varselOpprettetProducer),
-            InaktiverVarselSubscriber(repository, inaktivertProducer))
+        OpprettVarselSubscriber(repository, varselOpprettetProducer),
+        InaktiverVarselSubscriber(repository, inaktivertProducer),
+        enableTracking = true
     )
 
     private val objectMapper = jacksonMapperBuilder()
@@ -46,6 +47,7 @@ internal class InaktiverVarselSubscriberTest {
         database.update {
             queryOf("delete from varsel")
         }
+        testBroadcaster.clearHistory()
     }
 
     @Test
@@ -94,11 +96,38 @@ internal class InaktiverVarselSubscriberTest {
 
         repository.getVarsel(varselId)!!.inaktivert shouldBe inaktivertTid
 
+        testBroadcaster.history().collectAggregate(InaktiverVarselSubscriber::class).let {
+            it.shouldNotBeNull()
+            it.accepted shouldBe 2
+        }
+
         mockProducer.history()
             .map { it.value() }
             .map { objectMapper.readTree(it) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 1
+    }
+
+    @Test
+    fun `melder feil dersom inaktivert varsel ikke finnes`() {
+        val varselId = randomUUID().toString()
+
+        val inaktiverEvent = inaktiverVarsel(varselId)
+
+        testBroadcaster.broadcastJson(inaktiverEvent)
+
+        testBroadcaster.history().findFailedOutcome(InaktiverVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe InaktivertVarselMissingException::class
+        }
+
+        mockProducer.history()
+            .map { it.value() }
+            .map { objectMapper.readTree(it) }
+            .filter { it["@event_name"].asText() == "inaktivert" }
+            .size shouldBe 0
     }
 
     private fun inaktiverVarsel(varselId: String) = """

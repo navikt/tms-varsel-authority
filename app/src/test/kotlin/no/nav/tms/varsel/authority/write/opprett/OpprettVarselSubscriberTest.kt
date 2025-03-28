@@ -28,7 +28,7 @@ class OpprettVarselSubscriberTest {
     private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val database = LocalPostgresDatabase.cleanDb()
     private val repository = WriteVarselRepository(database)
-    private val testBroadcaster = MessageBroadcaster(listOf(OpprettVarselSubscriber(repository, aktivertProducer)))
+    private val testBroadcaster = MessageBroadcaster(OpprettVarselSubscriber(repository, aktivertProducer), enableTracking = true)
 
     private val objectMapper = jacksonMapperBuilder()
         .addModule(JavaTimeModule())
@@ -40,6 +40,7 @@ class OpprettVarselSubscriberTest {
         database.update {
             queryOf("delete from varsel")
         }
+        testBroadcaster.clearHistory()
     }
 
     @Test
@@ -106,6 +107,13 @@ class OpprettVarselSubscriberTest {
 
         dbVarsel.shouldBeNull()
 
+        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe OpprettVarselValidationException::class
+        }
+
         mockProducer.history().size shouldBe 0
     }
 
@@ -123,6 +131,13 @@ class OpprettVarselSubscriberTest {
 
         dbVarsel.shouldNotBeNull()
         dbVarsel.type shouldBe Varseltype.Oppgave
+
+        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe DuplikatVarselException::class
+        }
 
         mockProducer.history().size shouldBe 1
     }

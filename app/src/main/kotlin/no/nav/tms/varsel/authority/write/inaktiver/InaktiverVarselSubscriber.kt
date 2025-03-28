@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
+import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.InaktiverVarsel
@@ -63,7 +64,10 @@ internal class InaktiverVarselSubscriber(
                 } else {
                     log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
                 }
-            } ?: log.info { "Fant ikke varsel" }
+            } ?: run {
+                log.warn { "Fant ikke varsel å inaktivere" }
+                throw InaktivertVarselMissingException()
+            }
         }
     }
 
@@ -81,3 +85,5 @@ internal class InaktiverVarselSubscriber(
         return mapOf("inaktiver_event" to inaktiverEvent)
     }
 }
+
+class InaktivertVarselMissingException : MessageException("Fant ikke inaktivert varsel")

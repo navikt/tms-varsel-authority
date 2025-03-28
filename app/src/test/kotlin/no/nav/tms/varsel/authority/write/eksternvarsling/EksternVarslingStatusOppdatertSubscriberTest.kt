@@ -11,6 +11,7 @@ import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.write.inaktiver.VarselNotFoundException
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
@@ -40,19 +41,19 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
     private val testBroadcaster =
         MessageBroadcaster(
-            listOf(
-                EksternVarslingStatusOppdatertSubscriber(eksternVarslingStatusUpdater = eksternVarslingStatusUpdater),
-                OpprettVarselSubscriber(
-                    varselRepository = varselRepository,
-                    varselAktivertProducer = mockk(relaxed = true)
-                )
-            )
+            EksternVarslingStatusOppdatertSubscriber(eksternVarslingStatusUpdater = eksternVarslingStatusUpdater),
+            OpprettVarselSubscriber(
+                varselRepository = varselRepository,
+                varselAktivertProducer = mockk(relaxed = true)
+            ),
+            enableTracking = true
         )
 
     @BeforeEach
     fun resetDb() {
         database.update { queryOf("delete from varsel") }
         mockProducer.clear()
+        testBroadcaster.clearHistory()
     }
 
     @Test
@@ -184,6 +185,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         dbVarsel?.eksternVarslingStatus.shouldBeNull()
 
+        testBroadcaster.history().collectAggregate(EksternVarslingStatusOppdatertSubscriber::class).let {
+            it.shouldNotBeNull()
+            it.ignored shouldBe 4
+        }
+
         mockProducer.history().size shouldBe 0
     }
 
@@ -269,7 +275,12 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         testBroadcaster.broadcastJson(event)
 
-        varselRepository.getVarsel(varselId)?.eksternVarslingStatus shouldBe null
+        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe UpdatedVarselMissingException::class
+        }
 
         mockProducer.history().size shouldBe 0
     }
