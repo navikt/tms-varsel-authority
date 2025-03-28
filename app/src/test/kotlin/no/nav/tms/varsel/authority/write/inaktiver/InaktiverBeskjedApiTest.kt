@@ -98,6 +98,13 @@ class InaktiverBeskjedApiTest {
         response.status shouldBe HttpStatusCode.Forbidden
     }
 
+    @Test
+    fun `svarer med feilkode hvis varselId ikke er gyldig`() = testVarselApi(userIdent = ident) {client ->
+        val response = client.inaktiverBeskjed(varselId = "bad id")
+
+        response.status shouldBe HttpStatusCode.Forbidden
+    }
+
     private suspend fun HttpClient.inaktiverBeskjed(varselId: String) =
         post("/beskjed/inaktiver") {
             header(HttpHeaders.ContentType, ContentType.Application.Json)

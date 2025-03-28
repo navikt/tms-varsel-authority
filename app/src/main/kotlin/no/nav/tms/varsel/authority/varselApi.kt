@@ -22,6 +22,7 @@ import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
 import no.nav.tms.common.observability.ApiMdc
+import no.nav.tms.varsel.action.VarselIdException
 import java.text.DateFormat
 
 fun Application.varselApi(
@@ -51,7 +52,7 @@ fun Application.varselApi(
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             when (cause) {
-                is UnprivilegedAccessException, is VarselNotFoundException -> {
+                is UnprivilegedAccessException, is VarselNotFoundException, is VarselIdException -> {
                     call.respondText(
                         status = HttpStatusCode.Forbidden,
                         text = "feilaktig varselId"

@@ -5,19 +5,29 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.net.URL
 
-private const val BASE_16 = "[0-9a-fA-F]"
-private const val BASE_32_ULID = "[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]"
-
-private val UUID_PATTERN = "^$BASE_16{8}-$BASE_16{4}-$BASE_16{4}-$BASE_16{4}-$BASE_16{12}$".toRegex()
-private val ULID_PATTERN = "^[0-7]$BASE_32_ULID{25}$".toRegex()
-
 const val VarselActionVersion = "v2.1"
+
+class VarselIdException(msg: String): IllegalArgumentException(msg)
+
+object VarselIdValidator {
+    private const val BASE_16 = "[0-9a-fA-F]"
+    private const val BASE_32_ULID = "[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]"
+
+    private val UUID_PATTERN = "^$BASE_16{8}-$BASE_16{4}-$BASE_16{4}-$BASE_16{4}-$BASE_16{12}$".toRegex()
+    private val ULID_PATTERN = "^[0-7]$BASE_32_ULID{25}$".toRegex()
+
+    fun validate(varselId: String) {
+        if (!UUID_PATTERN.matches(varselId) && !ULID_PATTERN.matches(varselId)) {
+            throw VarselIdException("varselId must be either UUID or ULID")
+        }
+    }
+}
 
 object OpprettVarselValidation {
 
     private val validators: List<OpprettVarselValidator> = listOf(
         IdentValidator,
-        VarselIdValidator,
+        OpprettVarselVarselIdValidator,
         OpprettVarselLanguageCodeValidator,
         OpprettVarselTekstLengthValidator,
         OpprettVarselDefaultTekstValidator,
@@ -80,12 +90,17 @@ private object IdentValidator: OpprettVarselValidator {
     }
 }
 
-private object VarselIdValidator: OpprettVarselValidator {
+private object OpprettVarselVarselIdValidator: OpprettVarselValidator {
     override val description: String = "Eventid må være gyldig UUID eller ULID"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
-        varselAction.varselId.let {
-            UUID_PATTERN.matches(it) || ULID_PATTERN.matches(it)
+        varselAction.varselId.let { varselId ->
+            try {
+                VarselIdValidator.validate(varselId)
+                true
+            } catch (e: VarselIdException) {
+                false
+            }
         }
     }
 }
