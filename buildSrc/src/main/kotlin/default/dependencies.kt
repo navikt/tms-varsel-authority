@@ -16,7 +16,7 @@ interface DependencyGroup {
 
 interface FlywayDefaults: DependencyGroup {
     override val groupId get() = "org.flywaydb"
-    override val version get() = "11.4.1"
+    override val version get() = "11.5.0"
 
     val pluginId get() = "org.flywaydb.flyway"
     val core get() = dependency("flyway-core")
@@ -25,7 +25,7 @@ interface FlywayDefaults: DependencyGroup {
 
 interface HikariDefaults: DependencyGroup {
     override val groupId get() = "com.zaxxer"
-    override val version get() = "6.2.1"
+    override val version get() = "6.3.0"
 
     val cp get() = dependency("HikariCP")
 }
@@ -116,7 +116,7 @@ interface KotliQueryDefaults: DependencyGroup {
 }
 
 object KtorDefaults {
-    val version get() = "3.1.1"
+    val version get() = "3.1.2"
     val groupId get() = "io.ktor"
 
     interface ServerDefaults: DependencyGroup {
@@ -219,7 +219,7 @@ interface TmsCommonLibDefaults: DependencyGroup {
 
 interface TmsKafkaToolsDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.kafka"
-    override val version get() = "2.1.1-test"
+    override val version get() = "2.1.1"
 
     val kafkaApplication get() = dependency("kafka-application")
 }
