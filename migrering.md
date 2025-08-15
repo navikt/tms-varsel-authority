@@ -112,7 +112,7 @@ val opprettVarsel = VarselActionBuilder.opprett {
     link = "https://www.nav.no"
     aktivFremTil = ZonedDateTime.now().plusDays(14)
     eksternVarsling = EksternVarslingBestilling(
-        prefererteKanaler = listOf(EksternKanal.SMS),
+        preferertKanal = EksternKanal.SMS,
         smsVarslingstekst = "Dette er en sms om oppgave",
     )
 }
