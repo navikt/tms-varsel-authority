@@ -117,7 +117,7 @@ val opprettVarsel = VarselActionBuilder.opprett {
     }
 }
 
-kafkaProducer.send(ProducerRecord(nyttVarselTopic, varselId, opprettVarsel))
+kafkaProducer.send(ProducerRecord(nyttVarselTopic, oppgaveId, opprettVarsel))
 // ...
 val inaktiverVarsel = VarselActionBuilder.inaktiver {
     varselId = oppgaveId
