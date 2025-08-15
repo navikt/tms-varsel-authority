@@ -123,5 +123,5 @@ val inaktiverVarsel = VarselActionBuilder.inaktiver {
     varselId = oppgaveId
 }
 
-kafkaProducer.send(ProducerRecord(nyttVarselTopic, varselId, inaktiverVarsel))
+kafkaProducer.send(ProducerRecord(nyttVarselTopic, oppgaveId, inaktiverVarsel))
 ```
