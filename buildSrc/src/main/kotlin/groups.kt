@@ -29,7 +29,7 @@ object Postgresql : PostgresqlDefaults
 object Prometheus : PrometheusDefaults
 object TestContainers : TestContainersDefaults
 object TmsCommonLib : TmsCommonLibDefaults {
-    override val version = "5.0.4-beta"
+    override val version = "5.0.4-beta-2"
 }
 
 object TmsKafkaTools : TmsKafkaToolsDefaults
