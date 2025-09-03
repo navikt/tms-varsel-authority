@@ -21,7 +21,7 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
-import no.nav.tms.common.observability.ApiMdc
+import no.nav.tms.common.observability.ApiMdc2
 import no.nav.tms.varsel.action.VarselIdException
 import java.text.DateFormat
 
@@ -35,7 +35,7 @@ fun Application.varselApi(
 
     installAuthenticatorsFunction()
 
-    install(ApiMdc)
+    install(ApiMdc2)
 
     installTmsApiMetrics {
         setupMetricsRoute = false
