@@ -14,6 +14,7 @@ import io.ktor.server.routing.routing
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.*
 import no.nav.tms.common.metrics.installTmsApiMetrics
+import no.nav.tms.common.observability.ApiMdc
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.token.support.azure.validation.azure
 import no.nav.tms.token.support.tokenx.validation.tokenX
@@ -21,7 +22,6 @@ import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
-import no.nav.tms.common.observability.ApiMdc2
 import no.nav.tms.varsel.action.VarselIdException
 import java.text.DateFormat
 
@@ -35,7 +35,7 @@ fun Application.varselApi(
 
     installAuthenticatorsFunction()
 
-    install(ApiMdc2)
+    install(ApiMdc)
 
     installTmsApiMetrics {
         setupMetricsRoute = false
