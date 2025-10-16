@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContainOnly
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.*
@@ -91,11 +91,11 @@ class SaksbehandlerVarselApiTest {
             val aktivtVarselOct2025 =
                 dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
             val inaktivtVarselOct2025 =
-                dbVarsel(type = Beskjed, opprettet = "10-10-2025".toZonedDateTime(), ident = ident, aktiv = false)
+                dbVarsel(type = Beskjed, opprettet = "10-10-2025".toZonedDateTime(), inaktivert = "10-10-2025".toZonedDateTime(), ident = ident, aktiv = false)
             val aktivtVarselJun2025 =
                 dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
             val inaktivtVarselJun2024 =
-                dbVarsel(type = Oppgave, ident = ident, opprettet = "08-06-2024".toZonedDateTime(), aktiv = false)
+                dbVarsel(type = Oppgave, ident = ident, opprettet = "08-06-2024".toZonedDateTime(), inaktivert = "21-06-2025".toZonedDateTime(),aktiv = false)
             val inaktivtVarselMay2023 =
                 dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
 
@@ -108,17 +108,18 @@ class SaksbehandlerVarselApiTest {
             )
 
             val varsler2025 = client.getVarslerAsJson("/varsel/detaljert/alle?fom=2025-01-01&tom=2025-12-31", ident)
-            varsler2025.size shouldBe 3
-            varsler2025.mapIds() shouldContainExactly listOf(
+            varsler2025.size shouldBe 4
+            varsler2025.mapIds() shouldContainOnly listOf(
                 aktivtVarselJun2025,
                 aktivtVarselOct2025,
-                inaktivtVarselOct2025
+                inaktivtVarselOct2025,
+                inaktivtVarselJun2024
             ).ids()
 
             val varsler2023til20205 =
                 client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2025-12-31", ident)
             varsler2023til20205.size shouldBe 5
-            varsler2023til20205.mapIds() shouldContainExactly listOf(
+            varsler2023til20205.mapIds() shouldContainOnly  listOf(
                 aktivtVarselJun2025,
                 inaktivtVarselMay2023,
                 aktivtVarselOct2025,
@@ -126,11 +127,15 @@ class SaksbehandlerVarselApiTest {
                 inaktivtVarselJun2024
             ).ids()
 
-            val varslerBefore2024 =
-                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2025-12-31", ident)
-            varslerBefore2024.size shouldBe 2
-            varslerBefore2024.mapIds() shouldContainExactly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
+            val varslerBefore2025 =
+                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2024-12-31", ident)
+            varslerBefore2025.size shouldBe 2
+            varslerBefore2025.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
 
+            val varselOpprettetFørMenAktivEtter =
+                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2025-06-10&tom=2025-06-22", ident)
+            varselOpprettetFørMenAktivEtter.size shouldBe 1
+            varselOpprettetFørMenAktivEtter.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024).ids()
         }
 
 
