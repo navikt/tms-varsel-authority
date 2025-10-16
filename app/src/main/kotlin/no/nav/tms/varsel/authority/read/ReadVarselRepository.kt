@@ -5,6 +5,7 @@ import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
+import org.intellij.lang.annotations.Language
 
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
@@ -35,7 +36,12 @@ class ReadVarselRepository(private val database: Database) {
         }
     }
 
-    fun getDetaljertVarselForUser(ident: String, type: Varseltype? = null, aktiv: Boolean? = null): List<DetaljertVarsel> {
+    fun getDetaljertVarselForUser(
+        ident: String,
+        type: Varseltype? = null,
+        aktiv: Boolean? = null,
+        timeRange: Timerange?
+    ): List<DetaljertVarsel> {
         return database.list {
             queryOf("""
                 select
@@ -53,8 +59,9 @@ class ReadVarselRepository(private val database: Database) {
                 from varsel where ident = :ident
                     ${ if (type != null) " and type = :type " else "" }
                     ${ if (aktiv != null) " and aktiv = :aktiv " else "" }
+                    ${ if (timeRange != null) "and (opprettet between :fom and :tom or inaktivert between :fom and :tom)" else "" }
             """,
-                mapOf("ident" to ident, "type" to type?.name?.lowercase(), "aktiv" to aktiv)
+                mapOf("ident" to ident, "type" to type?.name?.lowercase(), "aktiv" to aktiv, "fom" to timeRange?.fom, "tom" to timeRange?.tom)
             )
                 .map(toDetaljertVarsel())
                 .asList
