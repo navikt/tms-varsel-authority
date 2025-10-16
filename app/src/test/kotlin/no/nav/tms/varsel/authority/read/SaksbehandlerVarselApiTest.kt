@@ -1,17 +1,20 @@
 package no.nav.tms.varsel.authority.read
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
 import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
@@ -26,11 +29,17 @@ import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 
 class SaksbehandlerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
+    private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).registerModule(JavaTimeModule())
 
     private val mockProducer = MockProducer(
         false,
@@ -51,26 +60,92 @@ class SaksbehandlerVarselApiTest {
         LocalPostgresDatabase.cleanDb()
     }
 
-    @Test
-    fun `henter varsler for bruker`() = testVarselApi{  client ->
-        val annenIdent = "456"
+    @Nested
+    inner class AlleVarsler {
+        val dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        val zoneId = ZoneId.of("Europe/Oslo")
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
-        val oppgave = dbVarsel(type = Oppgave, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident)
-        val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
-        val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
-        val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
+        @Test
+        fun `henter varsler for bruker`() = testVarselApi { client ->
+            val annenIdent = "456"
 
-        insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
+            val beskjed = dbVarsel(type = Beskjed, ident = ident)
+            val oppgave = dbVarsel(type = Oppgave, ident = ident)
+            val innboks = dbVarsel(type = Innboks, ident = ident)
+            val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
+            val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
+            val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
 
-        val varsler = client.getVarsler("/varsel/detaljert/alle", ident)
+            insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
 
-        varsler.size shouldBe 3
-        varsler.shouldFind { it.varselId == beskjed.varselId } shouldMatch beskjed
-        varsler.shouldFind { it.varselId == oppgave.varselId } shouldMatch oppgave
-        varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
+            val varsler = client.getVarsler("/varsel/detaljert/alle", ident)
+
+            varsler.size shouldBe 3
+            varsler.shouldFind { it.varselId == beskjed.varselId } shouldMatch beskjed
+            varsler.shouldFind { it.varselId == oppgave.varselId } shouldMatch oppgave
+            varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
+        }
+
+        @Test
+        fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
+            val aktivtVarselOct2025 =
+                dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
+            val inaktivtVarselOct2025 =
+                dbVarsel(type = Beskjed, opprettet = "10-10-2025".toZonedDateTime(), ident = ident, aktiv = false)
+            val aktivtVarselJun2025 =
+                dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
+            val inaktivtVarselJun2024 =
+                dbVarsel(type = Oppgave, ident = ident, opprettet = "08-06-2024".toZonedDateTime(), aktiv = false)
+            val inaktivtVarselMay2023 =
+                dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
+
+            insertVarsel(
+                aktivtVarselJun2025,
+                inaktivtVarselMay2023,
+                aktivtVarselOct2025,
+                inaktivtVarselOct2025,
+                inaktivtVarselJun2024
+            )
+
+            val varsler2025 = client.getVarslerAsJson("/varsel/detaljert/alle?fom=2025-01-01&tom=2025-12-31", ident)
+            varsler2025.size shouldBe 3
+            varsler2025.mapIds() shouldContainExactly listOf(
+                aktivtVarselJun2025,
+                aktivtVarselOct2025,
+                inaktivtVarselOct2025
+            ).ids()
+
+            val varsler2023til20205 =
+                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2025-12-31", ident)
+            varsler2023til20205.size shouldBe 5
+            varsler2023til20205.mapIds() shouldContainExactly listOf(
+                aktivtVarselJun2025,
+                inaktivtVarselMay2023,
+                aktivtVarselOct2025,
+                inaktivtVarselOct2025,
+                inaktivtVarselJun2024
+            ).ids()
+
+            val varslerBefore2024 =
+                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2025-12-31", ident)
+            varslerBefore2024.size shouldBe 2
+            varslerBefore2024.mapIds() shouldContainExactly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
+
+        }
+
+
+        private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): List<JsonNode> = get(path) {
+            headers.append("ident", ident)
+        }.let { objectMapper.readTree(it.bodyAsText()).toList() }
+
+        private fun String.toZonedDateTime() =
+            LocalDate.parse(this, dateFormat).atStartOfDay().atZone(zoneId)
+
+        private fun List<DatabaseVarsel>.ids(): List<String> = map { it.varselId }
+
+        private fun List<JsonNode>.mapIds() = map { it["varselId"].asText() }
     }
+
 
     @Test
     fun `henter varsler av type`() = testVarselApi { client ->
@@ -120,9 +195,10 @@ class SaksbehandlerVarselApiTest {
     }
 
     @Test
-    fun `godtar varsler der ekstern varsling er null`() = testVarselApi{  client ->
+    fun `godtar varsler der ekstern varsling er null`() = testVarselApi { client ->
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
+        val beskjed =
+            dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
 
         insertVarsel(beskjed)
 
