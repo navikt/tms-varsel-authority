@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -12,6 +13,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
@@ -29,6 +31,7 @@ import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
@@ -59,11 +62,11 @@ class SaksbehandlerVarselApiTest {
     fun deleteData() {
         LocalPostgresDatabase.cleanDb()
     }
-
     @Nested
     inner class AlleVarsler {
         val dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy")
         val zoneId = ZoneId.of("Europe/Oslo")
+
 
         @Test
         fun `henter varsler for bruker`() = testVarselApi { client ->
@@ -86,62 +89,161 @@ class SaksbehandlerVarselApiTest {
             varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
         }
 
-        @Test
-        fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
+        @Nested
+        inner class Admin {
+            private val endpoint = "/varsel/detaljert/alle/admin"
             val aktivtVarselOct2025 =
                 dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
             val inaktivtVarselOct2025 =
-                dbVarsel(type = Beskjed, opprettet = "10-10-2025".toZonedDateTime(), inaktivert = "10-10-2025".toZonedDateTime(), ident = ident, aktiv = false)
+                dbVarsel(
+                    type = Beskjed,
+                    opprettet = "10-10-2025".toZonedDateTime(),
+                    inaktivert = "10-10-2025".toZonedDateTime(),
+                    ident = ident,
+                    aktiv = false
+                )
             val aktivtVarselJun2025 =
                 dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
             val inaktivtVarselJun2024 =
-                dbVarsel(type = Oppgave, ident = ident, opprettet = "08-06-2024".toZonedDateTime(), inaktivert = "21-06-2025".toZonedDateTime(),aktiv = false)
+                dbVarsel(
+                    type = Oppgave,
+                    ident = ident,
+                    opprettet = "08-06-2024".toZonedDateTime(),
+                    inaktivert = "21-06-2025".toZonedDateTime(),
+                    aktiv = false
+                )
             val inaktivtVarselMay2023 =
                 dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
 
-            insertVarsel(
-                aktivtVarselJun2025,
-                inaktivtVarselMay2023,
-                aktivtVarselOct2025,
-                inaktivtVarselOct2025,
-                inaktivtVarselJun2024
-            )
+            @Test
+            fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
 
-            val varsler2025 = client.getVarslerAsJson("/varsel/detaljert/alle?fom=2025-01-01&tom=2025-12-31", ident)
-            varsler2025.size shouldBe 4
-            varsler2025.mapIds() shouldContainOnly listOf(
-                aktivtVarselJun2025,
-                aktivtVarselOct2025,
-                inaktivtVarselOct2025,
-                inaktivtVarselJun2024
-            ).ids()
+                insertVarsel(
+                    aktivtVarselJun2025,
+                    inaktivtVarselMay2023,
+                    aktivtVarselOct2025,
+                    inaktivtVarselOct2025,
+                    inaktivtVarselJun2024
+                )
 
-            val varsler2023til20205 =
-                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2025-12-31", ident)
-            varsler2023til20205.size shouldBe 5
-            varsler2023til20205.mapIds() shouldContainOnly  listOf(
-                aktivtVarselJun2025,
-                inaktivtVarselMay2023,
-                aktivtVarselOct2025,
-                inaktivtVarselOct2025,
-                inaktivtVarselJun2024
-            ).ids()
+                val varsler2025 = client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)
+                varsler2025.size shouldBe 4
+                varsler2025.mapIds() shouldContainOnly listOf(
+                    aktivtVarselJun2025,
+                    aktivtVarselOct2025,
+                    inaktivtVarselOct2025,
+                    inaktivtVarselJun2024
+                ).ids()
 
-            val varslerBefore2025 =
-                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2023-01-01&tom=2024-12-31", ident)
-            varslerBefore2025.size shouldBe 2
-            varslerBefore2025.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
+                val varsler2023til20205 =
+                    client.getVarslerAsJson("$endpoint?fom=2023-01-01&tom=2025-12-31", ident)
+                varsler2023til20205.size shouldBe 5
+                varsler2023til20205.mapIds() shouldContainOnly listOf(
+                    aktivtVarselJun2025,
+                    inaktivtVarselMay2023,
+                    aktivtVarselOct2025,
+                    inaktivtVarselOct2025,
+                    inaktivtVarselJun2024
+                ).ids()
 
-            val varselOpprettetFørMenAktivEtter =
-                client.getVarslerAsJson("/varsel/detaljert/alle?fom=2025-06-10&tom=2025-06-22", ident)
-            varselOpprettetFørMenAktivEtter.size shouldBe 1
-            varselOpprettetFørMenAktivEtter.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024).ids()
+                val varslerBefore2025 =
+                    client.getVarslerAsJson("${endpoint}?fom=2023-01-01&tom=2024-12-31", ident)
+                varslerBefore2025.size shouldBe 2
+                varslerBefore2025.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
+
+                val varselOpprettetFørMenAktivEtter =
+                    client.getVarslerAsJson("${endpoint}?fom=2025-06-10&tom=2025-06-22", ident)
+                varselOpprettetFørMenAktivEtter.size shouldBe 1
+                varselOpprettetFørMenAktivEtter.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024).ids()
+            }
+
+
+            @Test
+            @Disabled("Trenger funksjonalitet for legacy arkiverte varsler")
+            fun `inkluderer arkiverte varsler for bruker i tidsperiode`() = testVarselApi {
+                val aktivtVarselOct2025 =
+                    dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
+                val inaktivtVarselOct2025 =
+                    dbVarsel(
+                        type = Beskjed,
+                        opprettet = "10-10-2025".toZonedDateTime(),
+                        inaktivert = "10-10-2025".toZonedDateTime(),
+                        ident = ident,
+                        aktiv = false
+                    )
+                val arkivertVarselJun2025 =
+                    dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
+                val inaktivtVarselJun2024 =
+                    dbVarsel(
+                        type = Oppgave,
+                        ident = ident,
+                        opprettet = "08-06-2024".toZonedDateTime(),
+                        inaktivert = "21-06-2025".toZonedDateTime(),
+                        aktiv = false
+                    )
+                val arkivertVarselMay2023 =
+                    dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
+
+                insertVarsel(
+                    aktivtVarselOct2025,
+                    inaktivtVarselOct2025,
+                    inaktivtVarselJun2024
+                )
+
+               // insertArkivertLegacyVarsel(arkivertVarselMay2023, arkivertVarselJun2025)
+
+                val varslerUtenArkiverte2025 = client.getVarslerAsJson(
+                    "${endpoint}?fom=2025-01-01&tom=2025-12-31&inkluderArkiverte=false",
+                    ident
+                )
+                varslerUtenArkiverte2025.size shouldBe 2
+                varslerUtenArkiverte2025.mapIds() shouldContainOnly listOf(aktivtVarselOct2025, inaktivtVarselOct2025)
+                varslerUtenArkiverte2025.firstOrNull { it["arkivert"].asBoolean() } shouldBe null
+
+                val varslerMedArkiverte2025 = client.getVarslerAsJson(
+                    "${endpoint}?fom=2025-01-01&tom=2025-12-31&inkluderArkiverte=true",
+                    ident
+                )
+                varslerMedArkiverte2025.size shouldBe 3
+                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselJun2025.varselId
+
+                val varsler2023til20205UtenArkiverte2025 =
+                    client.getVarslerAsJson("${endpoint}?fom=2023-01-01&tom=2025-12-31", ident)
+                varsler2023til20205UtenArkiverte2025.size shouldBe 3
+                varslerUtenArkiverte2025.mapIds() shouldContainOnly listOf(
+                    aktivtVarselOct2025,
+                    inaktivtVarselOct2025,
+                    inaktivtVarselJun2024
+                )
+
+                val varsler2023til20205MedArkiverte =
+                    client.getVarslerAsJson(
+                        "${endpoint}?fom=2023-01-01&tom=2025-12-31&inkluderArkiverte=true",
+                        ident
+                    )
+                varsler2023til20205MedArkiverte.size shouldBe 5
+                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselJun2025.varselId
+                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselMay2023.varselId
+            }
+        }
+
+        private infix fun List<JsonNode>.shouldContainArkivertVarselWithId(varselId: String) {
+            val varsel = this.firstOrNull { it["varselId"].asText() == varselId }
+            withClue("Forventet varsel med id $varselId finnes ikke i responsen") {
+                varsel.shouldNotBeNull()
+            }
+            withClue("Forventet at varsel med id $varselId er ikke markert som arkivert") {
+                varsel!!["arkivert"].asBoolean() shouldBe true
+            }
         }
 
 
         private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): List<JsonNode> = get(path) {
             headers.append("ident", ident)
-        }.let { objectMapper.readTree(it.bodyAsText()).toList() }
+        }.let {
+            it.status shouldBe HttpStatusCode.OK
+            objectMapper.readTree(it.bodyAsText()).toList()
+        }
 
         private fun String.toZonedDateTime() =
             LocalDate.parse(this, dateFormat).atStartOfDay().atZone(zoneId)
@@ -150,7 +252,6 @@ class SaksbehandlerVarselApiTest {
 
         private fun List<JsonNode>.mapIds() = map { it["varselId"].asText() }
     }
-
 
     @Test
     fun `henter varsler av type`() = testVarselApi { client ->

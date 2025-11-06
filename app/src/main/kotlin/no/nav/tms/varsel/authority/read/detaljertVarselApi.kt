@@ -24,11 +24,13 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
         timeRange: Timerange? = null
     ) = withContext(Dispatchers.IO) {
         VarselMetricsReporter.registerVarselHentet(type, Source.SAKSBEHANDLER)
-        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange=timeRange))
+        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange = timeRange))
     }
 
     get("/varsel/detaljert/alle") {
-
+        fetchVarslerAndRespond(ident = call.request.identHeader)
+    }
+    get("/varsel/detaljert/alle/admin") {
         fetchVarslerAndRespond(ident = call.request.identHeader, timeRange = call.timeRange())
     }
 
