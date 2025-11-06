@@ -31,7 +31,16 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
         fetchVarslerAndRespond(ident = call.request.identHeader)
     }
     get("/varsel/detaljert/alle/admin") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, timeRange = call.timeRange())
+        VarselMetricsReporter.registerVarselHentet(
+            source = Source.ADMIN,
+            varseltype = null
+        )
+        call.respond(
+            readRepository.getDetaljertVarselForUser(
+                ident = call.request.identHeader,
+                timeRange = call.timeRange()
+            )
+        )
     }
 
     get("/varsel/detaljert/aktive") {

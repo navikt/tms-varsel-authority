@@ -6,6 +6,7 @@ import no.nav.tms.varsel.action.EksternKanal.SMS
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
+import org.intellij.lang.annotations.Language
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -82,3 +83,21 @@ fun dbEksternVarslingStatus(
     kanaler = kanaler,
     sistOppdatert = sistOppdatert
 )
+
+fun legacyVarselJson(id: String, datoString: String) = """
+                {
+                    "link": "https://tester.test",
+                    "type": "oppgave",
+                    "aktiv": false,
+                    "tekst": "Du må oppdatere CV-en og jobbprofilen på arbeidsplassen.no",
+                    "eventId": "$id",
+                    "arkivert": "2022-08-19T08:51:32.329437Z",
+                    "fristUtlopt": false,
+                    "produsentApp": "enSystemBruker",
+                    "fodselsnummer": "10108000398",
+                    "forstBehandlet": "${datoString}T11:13:55.917Z",
+                    "sikkerhetsnivaa": 3,
+                    "eksternVarslingSendt": false,
+                    "eksternVarslingKanaler": []
+                  }
+            """.trimIndent()

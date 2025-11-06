@@ -83,6 +83,6 @@ object VarselMetricsReporter {
 }
 
 enum class Source {
-    BRUKER, SAKSBEHANDLER;
+    BRUKER, SAKSBEHANDLER, ADMIN;
     val lowercaseName = name.lowercase()
 }

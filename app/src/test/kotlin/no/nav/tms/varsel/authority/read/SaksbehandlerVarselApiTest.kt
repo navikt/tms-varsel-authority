@@ -24,6 +24,7 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.dbVarsel
+import no.nav.tms.varsel.authority.database.legacyVarselJson
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
@@ -31,13 +32,16 @@ import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 
 class SaksbehandlerVarselApiTest {
@@ -62,6 +66,7 @@ class SaksbehandlerVarselApiTest {
     fun deleteData() {
         LocalPostgresDatabase.cleanDb()
     }
+
     @Nested
     inner class AlleVarsler {
         val dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy")
@@ -115,9 +120,8 @@ class SaksbehandlerVarselApiTest {
             val inaktivtVarselMay2023 =
                 dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
 
-            @Test
-            fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
-
+            @BeforeEach
+            fun addVarslerToDb() {
                 insertVarsel(
                     aktivtVarselJun2025,
                     inaktivtVarselMay2023,
@@ -125,6 +129,10 @@ class SaksbehandlerVarselApiTest {
                     inaktivtVarselOct2025,
                     inaktivtVarselJun2024
                 )
+            }
+
+            @Test
+            fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
 
                 val varsler2025 = client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)
                 varsler2025.size shouldBe 4
@@ -159,84 +167,83 @@ class SaksbehandlerVarselApiTest {
 
 
             @Test
-            @Disabled("Trenger funksjonalitet for legacy arkiverte varsler")
             fun `inkluderer arkiverte varsler for bruker i tidsperiode`() = testVarselApi {
-                val aktivtVarselOct2025 =
-                    dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
-                val inaktivtVarselOct2025 =
-                    dbVarsel(
-                        type = Beskjed,
-                        opprettet = "10-10-2025".toZonedDateTime(),
-                        inaktivert = "10-10-2025".toZonedDateTime(),
-                        ident = ident,
-                        aktiv = false
-                    )
-                val arkivertVarselJun2025 =
-                    dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
-                val inaktivtVarselJun2024 =
-                    dbVarsel(
-                        type = Oppgave,
-                        ident = ident,
-                        opprettet = "08-06-2024".toZonedDateTime(),
-                        inaktivert = "21-06-2025".toZonedDateTime(),
-                        aktiv = false
-                    )
-                val arkivertVarselMay2023 =
-                    dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
+                val legacyJsonAug2020 = legacyVarselJson(id = "legacyAug2020", datoString = "2020-08-19")
+                val legacyJsonFeb2023 = legacyVarselJson(id = "legacyFeb2023", datoString = "2023-02-18")
+                val varselJsonJan2025 = """
+                    {
+                    "type": "innboks",
+                    "aktiv": false,
+                    "ident": "$ident",
+                    "innhold": {
+                    "link": "https://test.pest.no/skriv",
+                    "tekst": "Du har mottatt en ny melding fra NAV som ligger i din innboks.",
+                    "tekster": [
+                    {
+                        "tekst": "Du har mottatt en ny melding fra NAV som ligger i din innboks.",
+                        "default": true,
+                        "spraakkode": "nb"
+                    }
+                    ]
+                },
+                    "varselId": "arkivertJan2025",
+                    "opprettet": "2025-01-04T10:56:18.325+01:00",
+                    "produsent": {
+                    "appnavn": "minside-testapp",
+                    "cluster": "test-cluster",
+                    "namespace": "team-test"
+                },
+                    "inaktivert": "2025-02-11T13:25:06.631+01:00",
+                    "inaktivertAv": "produsent",
+                    "sensitivitet": "high",
+                    "eksternVarslingStatus": {
+                    "sendt": false,
+                    "kanaler": [],
+                    "feilhistorikk": [
+                    {
+                        "tidspunkt": "2024-11-04T09:56:19.854Z",
+                        "feilmelding": "mottaker mangler gyldig kontaktinformasjon i kontakt- og reservasjonsregisteret"
+                    }
+                    ],
+                    "sendtSomBatch": false,
+                    "sistOppdatert": "2024-11-04T09:56:19.944Z",
+                    "renotifikasjonSendt": false
+                },
+                    "eksternVarslingBestilling": {
+                    "kanBatches": false,
+                    "prefererteKanaler": [
+                    "SMS",
+                    "EPOST"
+                    ]
+                }
+                }
+                """.trimIndent()
+                database.insertArkivertVarsel(ident = ident, varselId = "legacyAug2020", jsonBlob = legacyJsonAug2020)
+                database.insertArkivertVarsel(ident = ident, varselId = "legacyFeb2023", jsonBlob = legacyJsonFeb2023)
+                database.insertArkivertVarsel(ident = ident, varselId = "arkivertJan2025", jsonBlob = varselJsonJan2025)
 
-                insertVarsel(
-                    aktivtVarselOct2025,
-                    inaktivtVarselOct2025,
-                    inaktivtVarselJun2024
-                )
+                val varsler2020til20205 =
+                    client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", ident)
+                varsler2020til20205.size shouldBe 8
 
-               // insertArkivertLegacyVarsel(arkivertVarselMay2023, arkivertVarselJun2025)
+                val varsler2023til2025 =
+                    client.getVarslerAsJson("$endpoint?fom=2023-02-01&tom=2025-12-31", ident)
+                varsler2023til2025.size shouldBe 7
 
-                val varslerUtenArkiverte2025 = client.getVarslerAsJson(
-                    "${endpoint}?fom=2025-01-01&tom=2025-12-31&inkluderArkiverte=false",
-                    ident
-                )
-                varslerUtenArkiverte2025.size shouldBe 2
-                varslerUtenArkiverte2025.mapIds() shouldContainOnly listOf(aktivtVarselOct2025, inaktivtVarselOct2025)
-                varslerUtenArkiverte2025.firstOrNull { it["arkivert"].asBoolean() } shouldBe null
+                val varslerMayToDec2025 = client.getVarslerAsJson("$endpoint?fom=2025-05-01&tom=2025-12-31", ident)
+                varslerMayToDec2025.size shouldBe 3
+            }
 
-                val varslerMedArkiverte2025 = client.getVarslerAsJson(
-                    "${endpoint}?fom=2025-01-01&tom=2025-12-31&inkluderArkiverte=true",
-                    ident
-                )
-                varslerMedArkiverte2025.size shouldBe 3
-                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselJun2025.varselId
-
-                val varsler2023til20205UtenArkiverte2025 =
-                    client.getVarslerAsJson("${endpoint}?fom=2023-01-01&tom=2025-12-31", ident)
-                varsler2023til20205UtenArkiverte2025.size shouldBe 3
-                varslerUtenArkiverte2025.mapIds() shouldContainOnly listOf(
-                    aktivtVarselOct2025,
-                    inaktivtVarselOct2025,
-                    inaktivtVarselJun2024
-                )
-
-                val varsler2023til20205MedArkiverte =
-                    client.getVarslerAsJson(
-                        "${endpoint}?fom=2023-01-01&tom=2025-12-31&inkluderArkiverte=true",
-                        ident
-                    )
-                varsler2023til20205MedArkiverte.size shouldBe 5
-                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselJun2025.varselId
-                varslerUtenArkiverte2025 shouldContainArkivertVarselWithId arkivertVarselMay2023.varselId
+            private infix fun List<JsonNode>.shouldContainArkivertVarselWithId(varselId: String) {
+                val varsel = this.firstOrNull { it["varselId"].asText() == varselId }
+                withClue("Forventet varsel med id $varselId finnes ikke i responsen") {
+                    varsel.shouldNotBeNull()
+                }
+                withClue("Forventet at varsel med id $varselId er ikke markert som arkivert") {
+                    varsel!!["arkivert"].asBoolean() shouldBe true
+                }
             }
         }
-
-        private infix fun List<JsonNode>.shouldContainArkivertVarselWithId(varselId: String) {
-            val varsel = this.firstOrNull { it["varselId"].asText() == varselId }
-            withClue("Forventet varsel med id $varselId finnes ikke i responsen") {
-                varsel.shouldNotBeNull()
-            }
-            withClue("Forventet at varsel med id $varselId er ikke markert som arkivert") {
-                varsel!!["arkivert"].asBoolean() shouldBe true
-            }
-        }
-
 
         private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): List<JsonNode> = get(path) {
             headers.append("ident", ident)
