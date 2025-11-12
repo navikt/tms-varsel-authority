@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.database
 import com.zaxxer.hikari.HikariDataSource
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.Database
+import no.nav.tms.varsel.authority.common.toJsonb
 import org.flywaydb.core.Flyway
 import org.testcontainers.containers.PostgreSQLContainer
 
@@ -50,6 +51,22 @@ class LocalPostgresDatabase private constructor() : Database {
             .load()
             .migrate()
             .let { assert(it.migrationsExecuted == expectedMigrations) }
+    }
+
+    fun insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
+        instance.update {
+            queryOf(
+                """
+                    insert into varsel_arkiv(varselId, ident, varsel, arkivert)
+                    values (:varselId, :ident, :varsel::jsonb, now())
+                    """,
+                mapOf(
+                    "varselId" to varselId,
+                    "ident" to ident,
+                    "varsel" to jsonBlob
+                )
+            )
+        }
     }
 }
 
