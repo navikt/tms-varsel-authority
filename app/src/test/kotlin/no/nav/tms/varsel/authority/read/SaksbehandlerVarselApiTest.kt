@@ -22,9 +22,12 @@ import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Companion.toZonedDateTimeUtc
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.ConfidentlityLevel.LEVEL4
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.ConfidentlityLevel.SUBSTANTIAL
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.dbVarsel
-import no.nav.tms.varsel.authority.database.legacyVarselJson
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
@@ -33,15 +36,12 @@ import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 
 class SaksbehandlerVarselApiTest {
@@ -98,27 +98,45 @@ class SaksbehandlerVarselApiTest {
         inner class Admin {
             private val endpoint = "/varsel/detaljert/alle/admin"
             val aktivtVarselOct2025 =
-                dbVarsel(type = Beskjed, opprettet = "12-10-2025".toZonedDateTime(), ident = ident)
+                dbVarsel(
+                    type = Beskjed,
+                    opprettet = "12-10-2025".toZonedDateTime(),
+                    ident = ident,
+                    varselId = "aktivOct2025"
+                )
             val inaktivtVarselOct2025 =
                 dbVarsel(
                     type = Beskjed,
                     opprettet = "10-10-2025".toZonedDateTime(),
                     inaktivert = "10-10-2025".toZonedDateTime(),
                     ident = ident,
-                    aktiv = false
+                    aktiv = false,
+                    varselId = "inaktivOct2025"
                 )
             val aktivtVarselJun2025 =
-                dbVarsel(type = Oppgave, ident = ident, opprettet = "23-06-2025".toZonedDateTime())
-            val inaktivtVarselJun2024 =
                 dbVarsel(
                     type = Oppgave,
                     ident = ident,
-                    opprettet = "08-06-2024".toZonedDateTime(),
-                    inaktivert = "21-06-2025".toZonedDateTime(),
-                    aktiv = false
+                    opprettet = "23-06-2025".toZonedDateTime(),
+                    varselId = "aktivJun2025"
+                )
+            val varselDec2024Inaktivert2025 =
+                dbVarsel(
+                    type = Oppgave,
+                    ident = ident,
+                    opprettet = "08-12-2024".toZonedDateTime(),
+                    inaktivert = "01-01-2025".toZonedDateTime(),
+                    aktiv = false,
+                    varselId = "varselDec2024Inaktivert2025"
                 )
             val inaktivtVarselMay2023 =
-                dbVarsel(type = Innboks, ident = ident, opprettet = "10-10-2023".toZonedDateTime(), aktiv = false)
+                dbVarsel(
+                    type = Innboks,
+                    ident = ident,
+                    opprettet = "10-10-2023".toZonedDateTime(),
+                    aktiv = false,
+                    varselId = "inaktivMay2023"
+                )
 
             @BeforeEach
             fun addVarslerToDb() {
@@ -127,7 +145,7 @@ class SaksbehandlerVarselApiTest {
                     inaktivtVarselMay2023,
                     aktivtVarselOct2025,
                     inaktivtVarselOct2025,
-                    inaktivtVarselJun2024
+                    varselDec2024Inaktivert2025
                 )
             }
 
@@ -135,92 +153,65 @@ class SaksbehandlerVarselApiTest {
             fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
 
                 val varsler2025 = client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)
-                varsler2025.size shouldBe 4
+
                 varsler2025.mapIds() shouldContainOnly listOf(
                     aktivtVarselJun2025,
                     aktivtVarselOct2025,
                     inaktivtVarselOct2025,
-                    inaktivtVarselJun2024
+                    varselDec2024Inaktivert2025
                 ).ids()
 
                 val varsler2023til20205 =
                     client.getVarslerAsJson("$endpoint?fom=2023-01-01&tom=2025-12-31", ident)
-                varsler2023til20205.size shouldBe 5
                 varsler2023til20205.mapIds() shouldContainOnly listOf(
                     aktivtVarselJun2025,
                     inaktivtVarselMay2023,
                     aktivtVarselOct2025,
                     inaktivtVarselOct2025,
-                    inaktivtVarselJun2024
+                    varselDec2024Inaktivert2025
                 ).ids()
 
                 val varslerBefore2025 =
                     client.getVarslerAsJson("${endpoint}?fom=2023-01-01&tom=2024-12-31", ident)
-                varslerBefore2025.size shouldBe 2
-                varslerBefore2025.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024, inaktivtVarselMay2023).ids()
+                varslerBefore2025.mapIds() shouldContainOnly listOf(varselDec2024Inaktivert2025, inaktivtVarselMay2023).ids()
 
                 val varselOpprettetFørMenAktivEtter =
-                    client.getVarslerAsJson("${endpoint}?fom=2025-06-10&tom=2025-06-22", ident)
-                varselOpprettetFørMenAktivEtter.size shouldBe 1
-                varselOpprettetFørMenAktivEtter.mapIds() shouldContainOnly listOf(inaktivtVarselJun2024).ids()
+                    client.getVarslerAsJson("${endpoint}?fom=2025-01-01&tom=2025-06-22", ident)
+                varselOpprettetFørMenAktivEtter.mapIds() shouldContainOnly listOf(varselDec2024Inaktivert2025).ids()
             }
 
 
             @Test
             fun `inkluderer arkiverte varsler for bruker i tidsperiode`() = testVarselApi {
-                val legacyJsonAug2020 = legacyVarselJson(id = "legacyAug2020", datoString = "2020-08-19")
-                val legacyJsonFeb2023 = legacyVarselJson(id = "legacyFeb2023", datoString = "2023-02-18")
-                val varselJsonJan2025 = """
-                    {
-                    "type": "innboks",
-                    "aktiv": false,
-                    "ident": "$ident",
-                    "innhold": {
-                    "link": "https://test.pest.no/skriv",
-                    "tekst": "Du har mottatt en ny melding fra NAV som ligger i din innboks.",
-                    "tekster": [
-                    {
-                        "tekst": "Du har mottatt en ny melding fra NAV som ligger i din innboks.",
-                        "default": true,
-                        "spraakkode": "nb"
-                    }
-                    ]
-                },
-                    "varselId": "arkivertJan2025",
-                    "opprettet": "2025-01-04T10:56:18.325+01:00",
-                    "produsent": {
-                    "appnavn": "minside-testapp",
-                    "cluster": "test-cluster",
-                    "namespace": "team-test"
-                },
-                    "inaktivert": "2025-02-11T13:25:06.631+01:00",
-                    "inaktivertAv": "produsent",
-                    "sensitivitet": "high",
-                    "eksternVarslingStatus": {
-                    "sendt": false,
-                    "kanaler": [],
-                    "feilhistorikk": [
-                    {
-                        "tidspunkt": "2024-11-04T09:56:19.854Z",
-                        "feilmelding": "mottaker mangler gyldig kontaktinformasjon i kontakt- og reservasjonsregisteret"
-                    }
-                    ],
-                    "sendtSomBatch": false,
-                    "sistOppdatert": "2024-11-04T09:56:19.944Z",
-                    "renotifikasjonSendt": false
-                },
-                    "eksternVarslingBestilling": {
-                    "kanBatches": false,
-                    "prefererteKanaler": [
-                    "SMS",
-                    "EPOST"
-                    ]
-                }
-                }
-                """.trimIndent()
-                database.insertArkivertVarsel(ident = ident, varselId = "legacyAug2020", jsonBlob = legacyJsonAug2020)
-                database.insertArkivertVarsel(ident = ident, varselId = "legacyFeb2023", jsonBlob = legacyJsonFeb2023)
-                database.insertArkivertVarsel(ident = ident, varselId = "arkivertJan2025", jsonBlob = varselJsonJan2025)
+                val varselAug2020 = ArkiverteDbVarsel(
+                    id = "legacyAug2020",
+                    ident = ident,
+                    confidentilality = LEVEL4,
+                ).withLegacyProperties(forstBehandletStr = "2020-08-10")
+                val legacyJsonFeb2023 =
+                    varselAug2020.copy(id = "legacyFeb2023", forstBehandlet = "2023-02-18".toZonedDateTimeUtc())
+
+                val varselJsonJan2025 = ArkiverteDbVarsel(
+                    id = "arkivertJan2025",
+                    ident = ident,
+                    confidentilality = SUBSTANTIAL
+                ).withCurrentProperties()
+
+                database.insertArkivertVarsel(
+                    ident = ident,
+                    varselId = "legacyAug2020",
+                    jsonBlob = varselAug2020.legacyJsonFormat()
+                )
+                database.insertArkivertVarsel(
+                    ident = ident,
+                    varselId = "legacyFeb2023",
+                    jsonBlob = legacyJsonFeb2023.legacyJsonFormat()
+                )
+                database.insertArkivertVarsel(
+                    ident = ident,
+                    varselId = "arkivertJan2025",
+                    jsonBlob = varselJsonJan2025.currentJsonFormat()
+                )
 
                 val varsler2020til20205 =
                     client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", ident)

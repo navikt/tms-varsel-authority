@@ -36,7 +36,7 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
             varseltype = null
         )
         call.respond(
-            readRepository.getDetaljertVarselForUser(
+            readRepository.getAlleVarselForUserIncludeArchived(
                 ident = call.request.identHeader,
                 timeRange = call.timeRange()
             )
@@ -99,11 +99,8 @@ class Timerange(fomQueryParam: String, tomQueryParam: String) {
     }
 }
 
-private fun ApplicationCall.timeRange(): Timerange? {
-    val fom = this.request.queryParameters["fom"]
-    val tom = this.request.queryParameters["tom"]
-
-    return if (fom != null && tom != null) {
-        Timerange(fom, tom)
-    } else null
-}
+private fun ApplicationCall.timeRange(): Timerange =
+    Timerange(
+        fomQueryParam = this.request.queryParameters["fom"] ?: throw BadRequestException("fom parameter må være satt"),
+        tomQueryParam = this.request.queryParameters["tom"] ?: throw BadRequestException("tom parameter må være satt")
+    )
