@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.write.expiry
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.tms.varsel.authority.common.PeriodicJob
+import no.nav.tms.common.util.scheduling.PeriodicJob
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
