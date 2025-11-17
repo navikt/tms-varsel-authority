@@ -49,6 +49,7 @@ dependencies {
     implementation(TmsCommonLib.utils)
     implementation(TmsCommonLib.metrics)
     implementation(TmsCommonLib.observability)
+    implementation(TmsCommonLib.kubernetes)
     implementation(TmsKafkaTools.kafkaApplication)
     implementation(JacksonDatatype.datatypeJsr310)
     implementation(project(":varsel-action"))

@@ -1,6 +1,5 @@
 package no.nav.tms.varsel.authority
 
-import io.kotest.assertions.AssertionFailedError
 import io.kotest.matchers.date.shouldHaveSameInstantAs
 import java.time.LocalDateTime
 import java.time.ZoneId
