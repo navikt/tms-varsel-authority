@@ -1,11 +1,11 @@
 package no.nav.tms.varsel.authority
 
 import kotlinx.coroutines.runBlocking
+import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.config.Flyway
-import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.PostgresDatabase
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
