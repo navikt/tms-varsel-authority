@@ -105,6 +105,24 @@ class InaktiverBeskjedApiTest {
         response.status shouldBe HttpStatusCode.Forbidden
     }
 
+
+    @Test
+    fun `ignorerer dobbel inaktivering av samme varsel`() = testVarselApi(userIdent = ident) {client ->
+        val beskjed1 = dbVarsel(type = Varseltype.Beskjed, ident = ident, aktiv = true)
+
+        insertVarsel(beskjed1)
+
+        val response1 = client.inaktiverBeskjed(beskjed1.varselId)
+        val response2 = client.inaktiverBeskjed(beskjed1.varselId)
+
+        getDbVarsel(beskjed1.varselId).aktiv shouldBe false
+
+        response1.status shouldBe HttpStatusCode.OK
+        response2.status shouldBe HttpStatusCode.OK
+
+        mockProducer.history().size shouldBe 1
+    }
+
     private suspend fun HttpClient.inaktiverBeskjed(varselId: String) =
         post("/beskjed/inaktiver") {
             header(HttpHeaders.ContentType, ContentType.Application.Json)
