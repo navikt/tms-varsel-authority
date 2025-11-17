@@ -29,6 +29,10 @@ class VarselInaktiverer(
                     varsel.type.name
                 )
 
+                varsel.aktiv == false -> {
+                     log.info { "Ignorer forespørsel om å inaktivere allerede inaktiv beskjed." }
+                }
+
                 else -> {
                     log.info { "Inaktiverer beskjed." }
 
