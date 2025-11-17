@@ -50,6 +50,7 @@ class InaktiverBeskjedApiTest {
     @AfterEach
     fun deleteData() {
         LocalPostgresDatabase.cleanDb()
+        mockProducer.clear()
     }
 
     @Test
