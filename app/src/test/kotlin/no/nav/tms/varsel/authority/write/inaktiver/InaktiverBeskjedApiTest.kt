@@ -19,6 +19,7 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.dbVarsel
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -32,11 +33,7 @@ import java.util.*
 class InaktiverBeskjedApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 
