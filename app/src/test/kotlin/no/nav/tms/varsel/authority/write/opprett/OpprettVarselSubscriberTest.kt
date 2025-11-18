@@ -10,21 +10,15 @@ import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.shouldBeSameTime
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 class OpprettVarselSubscriberTest {
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
-
+    private val mockProducer = mockProducer()
     private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val database = LocalPostgresDatabase.cleanDb()
     private val repository = WriteVarselRepository(database)
