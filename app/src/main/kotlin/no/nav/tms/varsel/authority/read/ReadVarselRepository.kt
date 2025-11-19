@@ -1,11 +1,14 @@
 package no.nav.tms.varsel.authority.read
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotliquery.Row
 import kotliquery.queryOf
 import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
+
+private val log = KotlinLogging.logger { }
 
 class ReadVarselRepository(private val database: Database) {
     private val objectMapper = defaultObjectMapper()
@@ -83,8 +86,12 @@ class ReadVarselRepository(private val database: Database) {
     fun getAlleVarselForUserIncludeArchived(
         ident: String,
         timeRange: Timerange
-    ): List<DetaljertAdminVarsel> {
-        return database.list {
+    ): ArchivedAndCurrentVarsler {
+
+        val success = mutableListOf<DetaljertAdminVarsel>()
+        val failed = mutableListOf<String>()
+
+        val result = database.list {
             queryOf(
                 """
                 select varselid,
@@ -105,11 +112,13 @@ class ReadVarselRepository(private val database: Database) {
                                then (varsel -> 'eksternVarslingStatus')
                            when (varsel -> 'eksternVarslingSendt' is not null) OR (varsel -> 'eksternVarslingKanaler' is not null)
                                then json_build_object('sendt', varsel ->> 'eksternVarslingSendt', 'kanaler',
-                                                      varsel ->> 'eksternVarslingKanaler')::jsonb
+                                                      varsel -> 'eksternVarslingKanaler')::jsonb
                            end                                                                                     as eksternVarsling,
                        case
                            when varsel ->> 'inaktivert' is not null and varsel ->> 'inaktivertAv' is not null
                                then concat(varsel ->> 'inaktivert', ' av ', varsel ->> 'inaktivertAv')
+                           when varsel ->> 'inaktivert' is not null
+                               then concat(varsel ->> 'inaktivert', ' av ukjent inaktiveringskilde')
                            end                                                                                     as inaktivert,
                        true                                                                                        as arkivert
                 from varsel_arkiv
@@ -143,10 +152,19 @@ class ReadVarselRepository(private val database: Database) {
                 mapOf(
                     "ident" to ident, "fom" to timeRange.fom, "tom" to timeRange.tom
                 )
-            )
-                .map(toDetaljertAdminVarsel())
-                .asList
+            ).map(toDetaljertAdminVarsel()).asList
         }
+        for ((adminVarsel, errorStringId) in result) {
+            if (adminVarsel != null) {
+                success.add(adminVarsel)
+            } else if (errorStringId != null) {
+                failed.add(errorStringId)
+            }
+        }
+        return ArchivedAndCurrentVarsler(
+            varsler = success,
+            feilendeVarsler = failed
+        )
     }
 
     private fun toVarselsammendrag(): (Row) -> DatabaseVarselsammendrag = {
@@ -180,21 +198,30 @@ class ReadVarselRepository(private val database: Database) {
         )
     }
 
-    private fun toDetaljertAdminVarsel(): (Row) -> DetaljertAdminVarsel = {
-        val readEksternVarsling: EksternVarslingArchiveCompatible? = it.optionalJson("eksternVarsling", objectMapper)
+    private fun toDetaljertAdminVarsel(): (Row) -> Pair<DetaljertAdminVarsel?, String?> = {
 
-        DetaljertAdminVarsel(
-            type = it.string("type").let(::parseVarseltype),
-            varselId = it.string("varselId"),
-            aktiv = it.boolean("aktiv"),
-            produsertAv = it.string("produsent"),
-            innhold = Innhold(tekst = it.string("tekst"), link = it.stringOrNull("link")),
-            tilgangstyring = it.resolveTilgangstyring(),
-            eksternVarsling = readEksternVarsling?.toEksternVarslingInfo(),
-            opprettet = it.zonedDateTime("opprettet"),
-            inaktivert = it.stringOrNull("inaktivert") ?: "Ukjent",
-            arkivert = it.boolean("arkivert")
-        )
+        val readEksternVarsling: EksternVarslingArchiveCompatible? = it.optionalJson("eksternVarsling", objectMapper)
+        var adminVarsel: DetaljertAdminVarsel? = null
+        var errorStringId: String? = null
+        try {
+            adminVarsel = DetaljertAdminVarsel(
+                type = it.string("type").let(::parseVarseltype),
+                varselId = it.string("varselId"),
+                aktiv = it.boolean("aktiv"),
+                produsertAv = it.string("produsent"),
+                innhold = Innhold(tekst = it.string("tekst"), link = it.stringOrNull("link")),
+                tilgangstyring = it.resolveTilgangstyring(),
+                eksternVarsling = readEksternVarsling?.toEksternVarslingInfo(),
+                opprettet = it.zonedDateTime("opprettet"),
+                inaktivert = it.stringOrNull("inaktivert") ?: "Ukjent",
+                arkivert = it.boolean("arkivert")
+            )
+        } catch (ex: Exception) {
+            log.warn { "Feil ved lesing av arkivert varsel med id: ${ex.message}" }
+            errorStringId = it.string("varselId")
+        }
+
+        Pair(adminVarsel, errorStringId)
     }
 
 }

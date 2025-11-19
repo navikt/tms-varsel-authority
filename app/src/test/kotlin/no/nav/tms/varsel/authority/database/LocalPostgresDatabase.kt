@@ -53,6 +53,18 @@ class LocalPostgresDatabase private constructor() : Database {
             .let { assert(it.migrationsExecuted == expectedMigrations) }
     }
 
+    fun insertLegacyArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+        varsler.forEach {
+            insertArkivertVarsel(ident, it.id, it.legacyJsonFormat())
+        }
+    }
+    fun insertCurrentArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+        varsler.forEach {
+            insertArkivertVarsel(ident, it.id, it.currentJsonFormat())
+        }
+    }
+
+
     fun insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
         instance.update {
             queryOf(

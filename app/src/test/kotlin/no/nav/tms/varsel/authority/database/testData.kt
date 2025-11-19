@@ -87,27 +87,9 @@ fun dbEksternVarslingStatus(
     sistOppdatert = sistOppdatert
 )
 
-fun legacyVarselJson(id: String, datoString: String) = """
-                {
-                    "link": "https://tester.test",
-                    "type": "oppgave",
-                    "aktiv": false,
-                    "tekst": "Du må oppdatere CV-en og jobbprofilen på arbeidsplassen.no",
-                    "eventId": "$id",
-                    "arkivert": "2022-08-19T08:51:32.329437Z",
-                    "fristUtlopt": false,
-                    "produsentApp": "enSystemBruker",
-                    "fodselsnummer": "10108000398",
-                    "forstBehandlet": "${datoString}T11:13:55.917Z",
-                    "sikkerhetsnivaa": 3,
-                    "eksternVarslingSendt": false,
-                    "eksternVarslingKanaler": []
-                  }
-            """.trimIndent()
-
 data class ArkiverteDbVarsel(
     val ident: String,
-    val link: String = "https://tester.test",
+    val link: String? = "https://tester.test",
     val tekst: String = "Dette er ett testvarsel",
     val type: String = "oppgave",
     val id: String = UUID.randomUUID().toString(),
@@ -125,6 +107,7 @@ data class ArkiverteDbVarsel(
     var deaktivertPgaUtløptFrist: Boolean? = null,
     var nameSpace: String? = null,
     var feilhistorikk: List<FeilhistorikkEntry>? = null,
+    var eksternVarslingSistOppdatert: ZonedDateTime? = null,
 ) {
 
     private val serializedKanalList = eksternVarslingKanaler.joinToString(
@@ -141,7 +124,7 @@ data class ArkiverteDbVarsel(
                     "link": "$link",
                     "type": "$type",
                     "aktiv": false,
-                    "tekst": "Du må oppdatere CV-en og jobbprofilen på arbeidsplassen.no",
+                    "tekst": "$tekst",
                     "eventId": "$id",
                     "arkivert": "${arkivertDato.serializeToLegacyDbFormat()}",
                     "fristUtlopt": false,
@@ -161,7 +144,6 @@ data class ArkiverteDbVarsel(
         require(inaktivertAv != null) { "inaktivertAv må være satt før current json kan genereres" }
         require(nameSpace != null) { "nameSpace må være satt før current json kan genereres" }
         require(renotifikasjonSendt != null) { "renotifikasjonSendt må være satt før current json kan genereres" }
-
 
 
         return """
@@ -193,10 +175,12 @@ data class ArkiverteDbVarsel(
                     "eksternVarslingStatus": {
                       "sendt": $eksternVarslingSendt,
                       "kanaler": $serializedKanalList,
-                      "feilhistorikk": ${feilhistorikk?.let { serializeFeilhistorikk() } ?: "[]"},
                       "sendtSomBatch": $sendSomBatch,
-                      "sistOppdatert": "${opprettet.serializeToDbFormat()}",
-                      "renotifikasjonSendt": $renotifikasjonSendt
+                      "sistOppdatert": ${
+            eksternVarslingSistOppdatert?.serializeToDbFormat()?.let { "\"$it\"" } ?: "null"
+        },
+                      "renotifikasjonSendt": $renotifikasjonSendt,
+                      "feilhistorikk": ${serializeFeilhistorikk()}
                     },
                     "eksternVarslingBestilling": {
                       "kanBatches": false,
@@ -234,13 +218,15 @@ data class ArkiverteDbVarsel(
         inaktivertAv: String = "SYSTEM",
         nameSpace: String = "test-namespace",
         renotifikasjonSendt: Boolean = false,
-        feilhistorikk: List<FeilhistorikkEntry> = emptyList()
+        feilhistorikk: List<FeilhistorikkEntry> = emptyList(),
+        sistOppdatert: ZonedDateTime? = null
     ) = apply {
         this.inaktiverDato = inaktiverDato
         this.inaktivertAv = inaktivertAv
         this.nameSpace = nameSpace
         this.renotifikasjonSendt = renotifikasjonSendt
         this.feilhistorikk = feilhistorikk
+        this.eksternVarslingSistOppdatert = sistOppdatert
     }
 
     companion object {
@@ -255,6 +241,34 @@ data class ArkiverteDbVarsel(
 
         fun ZonedDateTime.serializeToLegacyDbFormat(): String? =
             this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
+
+        fun generateFromDatabaseVarsel(varsel: DatabaseVarsel, id: String = UUID.randomUUID().toString()) =
+            ArkiverteDbVarsel(
+                id = id,
+                ident = varsel.ident,
+                link = varsel.innhold.link!!,
+                tekst = varsel.innhold.tekst,
+                type = varsel.type.name,
+                arkivertDato = nowAtUtc(),
+                produsentApp = varsel.produsent.appnavn,
+                eksternVarslingSendt = varsel.eksternVarslingStatus?.sendt!!,
+                eksternVarslingKanaler = varsel.eksternVarslingStatus.kanaler,
+                confidentilality = ConfidentlityLevel.convertFromLoa(varsel.sensitivitet),
+                sendSomBatch = varsel.eksternVarslingStatus.sendtSomBatch,
+                opprettet = varsel.opprettet,
+                renotifikasjonSendt = varsel.eksternVarslingStatus.renotifikasjonSendt,
+                forstBehandlet = varsel.opprettet,
+                inaktiverDato = varsel.inaktivert,
+                inaktivertAv = varsel.inaktivertAv?.name,
+                deaktivertPgaUtløptFrist = varsel.inaktivertAv == VarselInaktivertKilde.Frist,
+                nameSpace = varsel.produsent.namespace,
+                feilhistorikk = varsel.eksternVarslingStatus.feilhistorikk.map {
+                    FeilhistorikkEntry(
+                        tidspunkt = it.tidspunkt,
+                        feilmelding = it.feilmelding
+                    )
+                }
+            )
     }
 
     enum class ConfidentlityLevel(val sikkerhetsnivaa: Int, val loa: String) {
@@ -262,6 +276,14 @@ data class ArkiverteDbVarsel(
         LEVEL4(4, "high"),
         HIGH(4, "high"),
         SUBSTANTIAL(3, "substantial");
+
+        companion object {
+            fun convertFromLoa(loa: Sensitivitet): ConfidentlityLevel = when (loa.name.lowercase()) {
+                "high" -> LEVEL4
+                "substantial" -> LEVEL3
+                else -> throw IllegalArgumentException("Ukjent loa-nivå: $loa")
+            }
+        }
     }
 
     class FeilhistorikkEntry(
