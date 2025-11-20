@@ -8,6 +8,8 @@ import no.nav.tms.varsel.authority.Innhold
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+import java.util.Locale.getDefault
 
 data class DetaljertAdminVarsel(
     val type: Varseltype,
@@ -63,7 +65,7 @@ data class EksternVarslingArchiveCompatible(
         val opplysninger = mutableListOf<String>()
         opplysninger.addIf(sistOppdatert != null) {
             "Siste oppdatering: ${
-                sistOppdatert!!.dateTimeAndUtcTimesone()
+                sistOppdatert!!.dateTimeAndOsloTimesone()
             }"
         }
         opplysninger.addIf(sendtSomBatch != null) { "Sendt som batch" }
@@ -74,11 +76,11 @@ data class EksternVarslingArchiveCompatible(
                 feilhistorikk
                     .sortedBy { entry -> entry.tidspunkt }
                     .joinToString("\n", prefix = "$it:\n", postfix = "\n----------") { entry ->
-                    "${entry.tidspunkt.dateTimeAndUtcTimesone()}: ${entry.feilmelding}"
+                    "${entry.tidspunkt.dateTimeAndOsloTimesone()}: ${entry.feilmelding}"
                 }} else it
             }
         }
-        opplysninger.addIf(sisteStatus != null) { "Siste status ${sisteStatus!!.name}" }
+        opplysninger.addIf(sisteStatus != null) { "Siste status: ${sisteStatus!!.name.lowercase()}" }
         return opplysninger
     }
 
@@ -96,9 +98,7 @@ data class EksternVarslingArchiveCompatible(
             }
         }
 
-        private val dateTimeAndTimezoneFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy 'kl' HH:mm '(UTC'XXX')'")
-
-        private fun ZonedDateTime.dateTimeAndUtcTimesone(): String = withZoneSameInstant(ZoneId.of("Europe/Oslo"))
+        private fun ZonedDateTime.dateTimeAndOsloTimesone(): String = withZoneSameInstant(ZoneId.of("Europe/Oslo"))
             .format(DateTimeFormatter.ofPattern("dd.MM.yyyy 'kl' HH:mm '(UTC'XXX')'"))
     }
 }

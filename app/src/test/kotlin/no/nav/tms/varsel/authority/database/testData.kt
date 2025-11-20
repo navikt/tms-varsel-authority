@@ -110,6 +110,8 @@ data class ArkiverteDbVarsel(
     var eksternVarslingSistOppdatert: ZonedDateTime? = null,
 ) {
 
+    private var eksternVarslingSisteStatus: String?=null
+
     private val serializedKanalList = eksternVarslingKanaler.joinToString(
         prefix = "[",
         postfix = "]",
@@ -145,7 +147,6 @@ data class ArkiverteDbVarsel(
         require(nameSpace != null) { "nameSpace må være satt før current json kan genereres" }
         require(renotifikasjonSendt != null) { "renotifikasjonSendt må være satt før current json kan genereres" }
 
-
         return """
                   {
                     "type": "$type",
@@ -176,6 +177,7 @@ data class ArkiverteDbVarsel(
                       "sendt": $eksternVarslingSendt,
                       "kanaler": $serializedKanalList,
                       "sendtSomBatch": $sendSomBatch,
+                      "sisteStatus": "$eksternVarslingSisteStatus",
                       "sistOppdatert": ${
             eksternVarslingSistOppdatert?.serializeToDbFormat()?.let { "\"$it\"" } ?: "null"
         },
@@ -219,7 +221,8 @@ data class ArkiverteDbVarsel(
         nameSpace: String = "test-namespace",
         renotifikasjonSendt: Boolean = false,
         feilhistorikk: List<FeilhistorikkEntry> = emptyList(),
-        sistOppdatert: ZonedDateTime? = null
+        sistOppdatert: ZonedDateTime? = null,
+        sisteStatus: String? = null
     ) = apply {
         this.inaktiverDato = inaktiverDato
         this.inaktivertAv = inaktivertAv
@@ -227,6 +230,7 @@ data class ArkiverteDbVarsel(
         this.renotifikasjonSendt = renotifikasjonSendt
         this.feilhistorikk = feilhistorikk
         this.eksternVarslingSistOppdatert = sistOppdatert
+        this.eksternVarslingSisteStatus = sisteStatus
     }
 
     companion object {
