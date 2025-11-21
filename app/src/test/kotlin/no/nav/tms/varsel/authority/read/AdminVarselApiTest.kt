@@ -29,11 +29,12 @@ import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Companion.toZonedDateTimeUtc
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.ConfidentlityLevel.LEVEL4
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.ConfidentlityLevel.SUBSTANTIAL
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.LEVEL4
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.SUBSTANTIAL
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.varselApi
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -43,6 +44,7 @@ import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import kotlin.collections.forEach
 import kotlin.collections.toList
 
@@ -169,53 +171,50 @@ class AdminVarselApiTest {
             client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)
         varsler2025Response["feilendeVarsler"].toList() shouldHaveSize 0
 
-        varsler2025Response["varsler"].toList().apply {
-            size shouldBe 3
-            eachShouldBe("type", varsel.type.name.lowercase())
-            eachShouldBe("aktiv", false, JsonNode::asBoolean)
-            eachShouldBe("innhold.tekst", varsel.innhold.tekst)
-            eachShouldBe("innhold.link", varsel.innhold.link)
-            eachShouldBe("eksternVarsling.sendt", varsel.eksternVarslingStatus.sendt, JsonNode::asBoolean)
-            eachShouldBe(
-                "eksternVarsling.kanaler",
-                varsel.eksternVarslingStatus.kanaler
-            ) { toList().map { it.asText() } }
+        val alleFormatVarsel = varsler2025Response["varsler"].toList()
+        val legacyFormatVarsel = alleFormatVarsel.find { it["varselId"].asText() == arkivertLegacyVarsel.id }!!
+        val currentFormatVarsel = alleFormatVarsel.filter { it["varselId"].asText() != arkivertLegacyVarsel.id }
 
-            val legacyVarsel = find { it["varselId"].asText() == arkivertLegacyVarsel.id }
-            requireNotNull(legacyVarsel)
+        alleFormatVarsel.size shouldBe 3
 
+        alleFormatVarsel findElementsWithKey "type" shouldHaveValue varsel.type.name.lowercase()
+        alleFormatVarsel findElementsWithKey "innhold.tekst" shouldHaveValue varsel.innhold.tekst
+        alleFormatVarsel findElementsWithKey "innhold.link" shouldHaveValue varsel.innhold.link!!
+        alleFormatVarsel findElementsWithKey "eksternVarsling.sendt" shouldHaveValue varsel.eksternVarslingStatus.sendt
+        alleFormatVarsel findElementsWithKey "eksternVarsling.kanaler" shouldHaveValue varsel.eksternVarslingStatus.kanaler
+        alleFormatVarsel findElementsWithKey "aktiv" shouldHaveValue  varsel.aktiv
 
-            filter { it["varselId"].asText() != arkivertLegacyVarsel.id }.apply {
-                require(this.size == 2) { "Feil i filtrering av varsel, skal være 2 men er ${this.size}" }
-                eachShouldBe("produsertAv", "test-appnavn(test-namespace)", JsonNode::asText)
-                eachShouldBe(
-                    "tilgangstyring",
-                    "Idporten level of assurance ${varsel.sensitivitet.name.lowercase()}",
-                )
-                eachShouldBe(
-                    "eksternVarsling.tilleggsopplysninger[0]",
-                    "Siste oppdatering: 26.06.2025 kl 10:05 (UTC+02:00)",
-                )
-                eachShouldBe(
-                    "eksternVarsling.tilleggsopplysninger[1]",
-                    "Sendt som batch",
-                )
-                eachShouldBe(
-                    "eksternVarsling.tilleggsopplysninger[2]",
-                    "Re-notifikasjon sendt",
-                )
-                eachShouldBe(
-                    "eksternVarsling.tilleggsopplysninger[3]",
-                    """2 oppføringer i feilhistorikk:
+        legacyFormatVarsel["produsertAv"].asText() shouldBe "test-appnavn"
+        currentFormatVarsel findElementsWithKey "produsertAv" shouldHaveValue "test-appnavn(test-namespace)"
+
+        legacyFormatVarsel["tilgangstyring"].asText() shouldBe "Sikkerhetsnivå ${arkivertLegacyVarsel.confidentilality.sikkerhetsnivaa}"
+        currentFormatVarsel findElementsWithKey "tilgangstyring" shouldHaveValue "Idporten level of assurance ${varsel.sensitivitet.name.lowercase()}"
+
+        legacyFormatVarsel["tilleggsopplysninger"] shouldBe null
+        currentFormatVarsel.apply {
+            shouldHaveValue(
+                "eksternVarsling.tilleggsopplysninger[0]",
+                "Siste oppdatering: 26.06.2025 kl 10:05 (UTC+02:00)",
+            )
+            shouldHaveValue(
+                "eksternVarsling.tilleggsopplysninger[1]",
+                "Sendt som batch",
+            )
+            shouldHaveValue(
+                "eksternVarsling.tilleggsopplysninger[2]",
+                "Re-notifikasjon sendt",
+            )
+            shouldHaveValue(
+                "eksternVarsling.tilleggsopplysninger[3]",
+                """2 oppføringer i feilhistorikk:
                                 |25.06.2025 kl 08:53 (UTC+02:00): Første feilmelding
                                 |25.06.2025 kl 08:54 (UTC+02:00): Andre feilmelding
                                 |----------""".trimMargin(),
-                )
-                eachShouldBe(
-                    "eksternVarsling.tilleggsopplysninger[4]",
-                    "Siste status: ferdigstilt"
-                )
-            }
+            )
+            shouldHaveValue(
+                "eksternVarsling.tilleggsopplysninger[4]",
+                "Siste status: ferdigstilt"
+            )
         }
     }
 
@@ -306,6 +305,18 @@ class AdminVarselApiTest {
         varslerMayToDec2025.size shouldBe 3
     }
 
+    @Test
+    fun `Håndterer varierende grad av informasjon om inaktivering`(){
+
+        val varsel = dbVarsel( inaktivert = "01-11-2025".toOsloZonedDateTime(), inaktivertAv = VarselInaktivertKilde.Bruker )
+        val varselUtenKilde = dbVarsel( inaktivert = "01-11-2025".toOsloZonedDateTime(), inaktivertAv = VarselInaktivertKilde.Bruker )
+        val arkivertVarsel = ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel)
+        val arkivertVarselUtenKilde = ArkiverteDbVarsel.generateFromDatabaseVarsel(varselUtenKilde)
+        database.insertCurrentArkiverteVarsler(ident, arkivertVarsel, arkivertVarselUtenKilde)
+
+    }
+
+
     private fun testVarselApi(
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = testApplication {
@@ -342,7 +353,11 @@ class AdminVarselApiTest {
     }
 
     private fun String.toOsloZonedDateTime() =
-        LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay().atZone(ZoneId.of("Europe/Oslo"))
+        try {
+            LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay().atZone(ZoneId.of("Europe/Oslo"))
+        }catch (ex: DateTimeParseException) {
+            throw IllegalArgumentException("Failed to parse date string '$this'. Expected format is dd-MM-yyyy", ex)
+        }
 
     private val List<DatabaseVarsel>.ids
         get() = map { it.varselId }
@@ -377,15 +392,27 @@ fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg va
     }
 }
 
-private fun List<JsonNode>.eachShouldBe(
+private fun List<JsonNode>.shouldHaveValue(
     fieldName: String,
     expectedValue: String?,
 ) {
-    eachShouldBe(fieldName, expectedValue, JsonNode::asText)
+    shouldHaveValue(fieldName, expectedValue, JsonNode::asText)
 }
 
+infix fun List<JsonNode>.findElementsWithKey(key: String) = Pair(this, key)
+infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: String) {
+    this.first.shouldHaveValue(this.second, expectedValue)
+}
 
-private fun <T> List<JsonNode>.eachShouldBe(
+infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: Boolean) {
+    this.first.shouldHaveValue(this.second, expectedValue, JsonNode::asBoolean)
+}
+
+infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedList: List<String>) {
+    this.first.shouldHaveValue(this.second, expectedList) { toList().map { it.asText() } }
+}
+
+private fun <T> List<JsonNode>.shouldHaveValue(
     path: String,
     expectedValue: T,
     typeCast: JsonNode.() -> T

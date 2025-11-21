@@ -8,8 +8,6 @@ import no.nav.tms.varsel.authority.Innhold
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
-import java.util.Locale.getDefault
 
 data class DetaljertAdminVarsel(
     val type: Varseltype,

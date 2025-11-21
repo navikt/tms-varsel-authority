@@ -97,7 +97,7 @@ data class ArkiverteDbVarsel(
     val produsentApp: String = "testapp",
     val eksternVarslingSendt: Boolean = false,
     val eksternVarslingKanaler: List<String> = listOf("SMS", "EPOST"),
-    var confidentilality: ConfidentlityLevel,
+    var confidentilality: Confidentiality,
     var sendSomBatch: Boolean = false,
     var opprettet: ZonedDateTime = nowAtUtc().minusYears(1),
     var renotifikasjonSendt: Boolean? = null,
@@ -110,7 +110,7 @@ data class ArkiverteDbVarsel(
     var eksternVarslingSistOppdatert: ZonedDateTime? = null,
 ) {
 
-    private var eksternVarslingSisteStatus: String?=null
+    private var eksternVarslingSisteStatus: String= "ferdigstilt"
 
     private val serializedKanalList = eksternVarslingKanaler.joinToString(
         prefix = "[",
@@ -230,7 +230,7 @@ data class ArkiverteDbVarsel(
         this.renotifikasjonSendt = renotifikasjonSendt
         this.feilhistorikk = feilhistorikk
         this.eksternVarslingSistOppdatert = sistOppdatert
-        this.eksternVarslingSisteStatus = sisteStatus
+        this.eksternVarslingSisteStatus = sisteStatus?: this.eksternVarslingSisteStatus
     }
 
     companion object {
@@ -257,7 +257,7 @@ data class ArkiverteDbVarsel(
                 produsentApp = varsel.produsent.appnavn,
                 eksternVarslingSendt = varsel.eksternVarslingStatus?.sendt!!,
                 eksternVarslingKanaler = varsel.eksternVarslingStatus.kanaler,
-                confidentilality = ConfidentlityLevel.convertFromLoa(varsel.sensitivitet),
+                confidentilality = Confidentiality.convertFromLoa(varsel.sensitivitet),
                 sendSomBatch = varsel.eksternVarslingStatus.sendtSomBatch,
                 opprettet = varsel.opprettet,
                 renotifikasjonSendt = varsel.eksternVarslingStatus.renotifikasjonSendt,
@@ -275,14 +275,14 @@ data class ArkiverteDbVarsel(
             )
     }
 
-    enum class ConfidentlityLevel(val sikkerhetsnivaa: Int, val loa: String) {
+    enum class Confidentiality(val sikkerhetsnivaa: Int, val loa: String) {
         LEVEL3(3, "substantial"),
         LEVEL4(4, "high"),
         HIGH(4, "high"),
         SUBSTANTIAL(3, "substantial");
 
         companion object {
-            fun convertFromLoa(loa: Sensitivitet): ConfidentlityLevel = when (loa.name.lowercase()) {
+            fun convertFromLoa(loa: Sensitivitet): Confidentiality = when (loa.name.lowercase()) {
                 "high" -> LEVEL4
                 "substantial" -> LEVEL3
                 else -> throw IllegalArgumentException("Ukjent loa-nivå: $loa")
