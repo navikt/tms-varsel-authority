@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
@@ -115,7 +116,7 @@ internal class InaktiverVarselSubscriberTest {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
-            it.cause::class shouldBe InaktivertVarselMissingException::class
+            it.cause::class shouldBe InaktiverVarselSubscriber.InaktivertVarselMissingException::class
         }
 
         mockProducer.history()
@@ -123,6 +124,30 @@ internal class InaktiverVarselSubscriberTest {
             .map { objectMapper.readTree(it) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 0
+    }
+
+    @Test
+    fun `takler dårlig data på topic`() {
+        val varselId = randomUUID().toString()
+
+        val feilaktigEvent = """
+            {
+              "@event_name": "inaktiver",
+              "varselId": "$varselId",
+              "produsent": "ikke et objekt"
+            }
+        """.trimIndent()
+
+        shouldNotThrow<Exception> {
+            testBroadcaster.broadcastJson(feilaktigEvent)
+        }
+
+        testBroadcaster.history().findFailedOutcome(InaktiverVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe InaktiverVarselSubscriber.InaktiverVarselDeserializationException::class
+        }
     }
 
     private fun inaktiverVarsel(varselId: String) = """
@@ -139,6 +164,5 @@ internal class InaktiverVarselSubscriberTest {
         "version": "test"
     }
 }
-       
     """.trimIndent()
 }

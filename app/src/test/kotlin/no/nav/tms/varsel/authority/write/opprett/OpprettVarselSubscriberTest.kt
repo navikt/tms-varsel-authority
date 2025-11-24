@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.write.opprett
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -12,6 +13,7 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.shouldBeSameTime
+import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSubscriber
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
@@ -105,7 +107,7 @@ class OpprettVarselSubscriberTest {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
-            it.cause::class shouldBe OpprettVarselValidationException::class
+            it.cause::class shouldBe OpprettVarselSubscriber.OpprettVarselValidationException::class
         }
 
         mockProducer.history().size shouldBe 0
@@ -130,7 +132,7 @@ class OpprettVarselSubscriberTest {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
-            it.cause::class shouldBe DuplikatVarselException::class
+            it.cause::class shouldBe OpprettVarselSubscriber.DuplikatVarselException::class
         }
 
         mockProducer.history().size shouldBe 1
@@ -232,5 +234,52 @@ class OpprettVarselSubscriberTest {
             }
 
     }
+
+
+    @Test
+    fun `takler dårlig data på topic`() {
+        val varselId = randomUUID().toString()
+
+        val feilaktigEvent = """
+            {
+              "@event_name": "opprett",
+              "type": "innboks",
+              "varselId": "$varselId",
+              "ident": "01234567890",
+              "tekster": [
+                {
+                  "spraakkode": "nb",
+                  "tekst": "Test",
+                  "default": true
+                }
+              ],
+              "link": "https://www.nav.no/min-side",
+              "sensitivitet": "feil",
+              "eksternVarsling": {
+                "prefererteKanaler": [
+                  "Nix"
+                ]
+              },
+              "produsent": {
+                "cluster": "test",
+                "namespace": "test",
+                "appnavn": "test"
+              }
+            }
+        """.trimIndent()
+
+        shouldNotThrow<Exception> {
+            testBroadcaster.broadcastJson(feilaktigEvent)
+        }
+
+        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe OpprettVarselSubscriber.OpprettVarselDeserializationException::class
+        }
+    }
+
+
 }
 

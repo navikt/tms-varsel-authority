@@ -25,6 +25,6 @@
         <appender-ref ref="stdout_json"/>
     </root>
     <logger name="secureLog" level="INFO" additivity="false">
-        <appender-ref ref="stdout_json"/>
+        <appender-ref ref="secureLog"/>
     </logger>
 </configuration>

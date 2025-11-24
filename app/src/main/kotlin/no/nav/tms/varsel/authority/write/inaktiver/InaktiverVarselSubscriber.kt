@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.observability.traceVarsel
@@ -31,9 +32,10 @@ internal class InaktiverVarselSubscriber(
 
     override suspend fun receive(jsonMessage: JsonMessage) {
         traceVarsel(id = jsonMessage["varselId"].asText(), mapOf("action" to "inaktiver")) {
-            val inaktiverVarsel = objectMapper.treeToValue<InaktiverVarsel>(jsonMessage.json)
+
             log.info { "Inaktiver-event motatt" }
 
+            val inaktiverVarsel = deserialize(jsonMessage)
             val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
 
             varsel?.let {
@@ -71,6 +73,17 @@ internal class InaktiverVarselSubscriber(
         }
     }
 
+    private fun deserialize(jsonMessage: JsonMessage): InaktiverVarsel {
+        try {
+            return objectMapper.treeToValue<InaktiverVarsel>(jsonMessage.json)
+        } catch (e: JsonMappingException) {
+
+            log.error { "Feil ved deserialisering av inaktiver-event" }
+            securelog.error(e) { "Feil ved deserialisering av inaktiver-event [${jsonMessage.json}]" }
+
+            throw InaktiverVarselDeserializationException()
+        }
+    }
 
     fun mapMetadata(inaktiverVarsel: InaktiverVarsel): Map<String, Any> {
         val inaktiverEvent = mutableMapOf(
@@ -84,6 +97,7 @@ internal class InaktiverVarselSubscriber(
 
         return mapOf("inaktiver_event" to inaktiverEvent)
     }
-}
 
-class InaktivertVarselMissingException : MessageException("Fant ikke inaktivert varsel")
+    class InaktiverVarselDeserializationException: MessageException("Inaktiver-event har ikke riktig json-format")
+    class InaktivertVarselMissingException : MessageException("Fant ikke inaktivert varsel")
+}

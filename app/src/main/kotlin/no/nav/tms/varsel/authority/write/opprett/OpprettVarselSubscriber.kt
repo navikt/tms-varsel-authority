@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.opprett
 
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.kafka.application.JsonMessage
@@ -53,7 +54,8 @@ internal class OpprettVarselSubscriber(
             action = "opprett", varseltype = jsonMessage["type"].asText()
         ) {
             log.info { "Opprett-event motatt" }
-            objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
+
+            deserialize(jsonMessage)
                 .also { validate(it) }
                 .let {
                     DatabaseVarsel(
@@ -130,6 +132,18 @@ internal class OpprettVarselSubscriber(
         return mapOf("opprett_event" to opprettEvent)
     }
 
+    private fun deserialize(jsonMessage: JsonMessage): OpprettVarsel {
+        try {
+            return objectMapper.treeToValue<OpprettVarsel>(jsonMessage.json)
+        } catch (e: JsonMappingException) {
+
+            log.error { "Feil ved deserialisering av opprett-event" }
+            securelog.error(e) { "Feil ved deserialisering av opprett-event [${jsonMessage.json}]" }
+
+            throw OpprettVarselDeserializationException()
+        }
+    }
+
     private fun validate(opprettVarsel: OpprettVarsel) {
         try {
             OpprettVarselValidation.validate(opprettVarsel)
@@ -157,7 +171,8 @@ internal class OpprettVarselSubscriber(
     private fun eksterneTeksterErSpesifisert(eksternVarsling: EksternVarslingBestilling): Boolean {
         return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
     }
-}
 
-class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")
-class OpprettVarselValidationException: MessageException("Varsel består ikke validering")
+    class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")
+    class OpprettVarselDeserializationException: MessageException("Opprett-event har ikke riktig json-format")
+    class OpprettVarselValidationException: MessageException("Varsel består ikke validering")
+}

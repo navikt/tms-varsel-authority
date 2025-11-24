@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldBeNull
@@ -21,6 +22,7 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
+import java.util.UUID.randomUUID
 
 class EksternVarslingStatusOppdatertSubscriberTest {
 
@@ -437,5 +439,30 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             ?.let {
                 it.sisteStatus shouldBe EksternStatus.Feilet
             }
+    }
+
+    @Test
+    fun `takler dårlig data på topic`() {
+        val varselId = randomUUID().toString()
+
+        val feilaktigEvent = """
+            {
+                "@event_name": "eksternVarslingStatusOppdatert",
+                "status": "venter",
+                "varselId": "$varselId",
+                "tidspunkt": "aldri" 
+            }
+        """.trimIndent()
+
+        shouldNotThrow<Exception> {
+            testBroadcaster.broadcastJson(feilaktigEvent)
+        }
+
+        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe EksternVarslingStatusOppdatertSubscriber.StatusOppdatertDeserializationException::class
+        }
     }
 }
