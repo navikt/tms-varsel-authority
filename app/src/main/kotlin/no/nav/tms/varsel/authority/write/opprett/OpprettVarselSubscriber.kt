@@ -3,17 +3,18 @@ package no.nav.tms.varsel.authority.write.opprett
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
+import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.common.UniqueConstraintException
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.traceOpprettVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import org.postgresql.util.PSQLException
@@ -47,37 +48,31 @@ internal class OpprettVarselSubscriber(
     private val sourceTopic = "external"
 
 
-    override suspend fun receive(jsonMessage: JsonMessage) {
-        traceOpprettVarsel(
-            id = jsonMessage["varselId"].asText(),
-            initiatedBy = jsonMessage["produsent"]["namespace"].asText(),
-            action = "opprett", varseltype = jsonMessage["type"].asText()
-        ) {
-            log.info { "Opprett-event motatt" }
+    override suspend fun receive(jsonMessage: JsonMessage) = traceOpprettVarsel(jsonMessage) {
+        log.info { "Opprett-event motatt" }
 
-            deserialize(jsonMessage)
-                .also { validate(it) }
-                .let {
-                    DatabaseVarsel(
-                        aktiv = true,
-                        type = it.type,
-                        varselId = it.varselId,
-                        ident = it.ident,
-                        sensitivitet = it.sensitivitet,
-                        innhold = mapInnhold(it),
-                        produsent = mapProdusent(it),
-                        eksternVarslingBestilling = applyEksternVarslingDefaults(it),
-                        opprettet = nowAtUtc(),
-                        aktivFremTil = it.aktivFremTil,
-                        metadata = mapMetadata(it)
-                    )
-                }.let {
-                    aktiverVarsel(it)
-                }
-        }
+        deserialize(jsonMessage)
+            .also { validate(it) }
+            .let {
+                DatabaseVarsel(
+                    aktiv = true,
+                    type = it.type,
+                    varselId = it.varselId,
+                    ident = it.ident,
+                    sensitivitet = it.sensitivitet,
+                    innhold = mapInnhold(it),
+                    produsent = mapProdusent(it),
+                    eksternVarslingBestilling = applyEksternVarslingDefaults(it),
+                    opprettet = nowAtUtc(),
+                    aktivFremTil = it.aktivFremTil,
+                    metadata = mapMetadata(it)
+                )
+            }.let {
+                opprettVarsel(it)
+            }
     }
 
-    private fun aktiverVarsel(dbVarsel: DatabaseVarsel) {
+    private fun opprettVarsel(dbVarsel: DatabaseVarsel) {
         try {
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselOpprettet(dbVarsel)
@@ -170,6 +165,24 @@ internal class OpprettVarselSubscriber(
 
     private fun eksterneTeksterErSpesifisert(eksternVarsling: EksternVarslingBestilling): Boolean {
         return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
+    }
+
+    private fun traceOpprettVarsel(jsonMessage: JsonMessage, function: () -> Unit) {
+        // Guard mot feilaktig format inne i produsent-objektet
+        val produsent = jsonMessage["produsent"]["appnavn"]
+            ?.takeIf { !it.isMissingOrNull() }
+            ?.asText()
+            ?: "ukjent"
+
+        traceVarsel(
+            id = jsonMessage["varselId"].asText(),
+            extra = mapOf(
+                "action" to "opprett",
+                "initiated_by" to produsent,
+                "type" to jsonMessage["type"].asText()
+            ),
+            function = function
+        )
     }
 
     class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")

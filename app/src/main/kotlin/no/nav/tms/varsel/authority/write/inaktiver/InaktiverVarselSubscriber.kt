@@ -8,6 +8,7 @@ import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
+import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
@@ -26,50 +27,46 @@ internal class InaktiverVarselSubscriber(
     private val sourceTopic = "external"
     override fun subscribe(): Subscription = Subscription
         .forEvent("inaktiver")
-        .withFields("varselId","produsent")
+        .withFields("varselId", "produsent")
         .withOptionalFields("metadata")
 
 
-    override suspend fun receive(jsonMessage: JsonMessage) {
-        traceVarsel(id = jsonMessage["varselId"].asText(), mapOf("action" to "inaktiver")) {
+    override suspend fun receive(jsonMessage: JsonMessage) = traceInaktiverVarsel(jsonMessage) {
+        log.info { "Inaktiver-event mottatt" }
 
-            log.info { "Inaktiver-event motatt" }
+        val inaktiverVarsel = deserialize(jsonMessage)
+        val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
 
-            val inaktiverVarsel = deserialize(jsonMessage)
-            val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
+        varsel?.let {
 
-            varsel?.let {
-                MDC.put("initiated_by", varsel.produsent.namespace)
+            if (varsel.aktiv) {
+                varselRepository.inaktiverVarsel(
+                    varselId = varsel.varselId,
+                    kilde = VarselInaktivertKilde.Produsent,
+                    metadata = mapMetadata(inaktiverVarsel)
+                )
 
-                if (varsel.aktiv) {
-                    varselRepository.inaktiverVarsel(
-                        varselId = varsel.varselId,
-                        kilde = VarselInaktivertKilde.Produsent,
-                        metadata = mapMetadata(inaktiverVarsel)
-                    )
-
-                    VarselMetricsReporter.registerVarselInaktivert(
+                VarselMetricsReporter.registerVarselInaktivert(
+                    varseltype = varsel.type,
+                    produsent = varsel.produsent,
+                    kilde = VarselInaktivertKilde.Produsent,
+                    sourceTopic = sourceTopic
+                )
+                varselInaktivertProducer.varselInaktivert(
+                    VarselInaktivertHendelse(
                         varseltype = varsel.type,
+                        varselId = varsel.varselId,
                         produsent = varsel.produsent,
-                        kilde = VarselInaktivertKilde.Produsent,
-                        sourceTopic = sourceTopic
+                        kilde = VarselInaktivertKilde.Produsent
                     )
-                    varselInaktivertProducer.varselInaktivert(
-                        VarselInaktivertHendelse(
-                            varseltype = varsel.type,
-                            varselId = varsel.varselId,
-                            produsent = varsel.produsent,
-                            kilde = VarselInaktivertKilde.Produsent
-                        )
-                    )
-                    log.info { "Inaktiverte varsel etter event fra kafka" }
-                } else {
-                    log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
-                }
-            } ?: run {
-                log.warn { "Fant ikke varsel å inaktivere" }
-                throw InaktivertVarselMissingException()
+                )
+                log.info { "Inaktiverte varsel etter event fra kafka" }
+            } else {
+                log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
             }
+        } ?: run {
+            log.warn { "Fant ikke varsel å inaktivere" }
+            throw InaktivertVarselMissingException()
         }
     }
 
@@ -96,6 +93,23 @@ internal class InaktiverVarselSubscriber(
         }
 
         return mapOf("inaktiver_event" to inaktiverEvent)
+    }
+
+    private fun traceInaktiverVarsel(jsonMessage: JsonMessage, function: () -> Unit) {
+        // Guard mot feilaktig format inne i produsent-objektet
+        val produsent = jsonMessage["produsent"]["appnavn"]
+            ?.takeIf { !it.isMissingOrNull() }
+            ?.asText()
+            ?: "ukjent"
+
+        traceVarsel(
+            id = jsonMessage["varselId"].asText(),
+            extra = mapOf(
+                "action" to "inaktiver",
+                "initiated_by" to produsent
+            ),
+            function = function
+        )
     }
 
     class InaktiverVarselDeserializationException: MessageException("Inaktiver-event har ikke riktig json-format")
