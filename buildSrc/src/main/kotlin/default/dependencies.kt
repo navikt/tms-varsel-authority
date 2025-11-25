@@ -65,7 +65,7 @@ interface JunitPlatformDefaults: DependencyGroup {
 
 interface KafkaDefaults: DependencyGroup {
     override val groupId get() = "org.apache.kafka"
-    override val version get() = "3.9.0"
+    override val version get() = "4.1.1"
 
     val clients get() = dependency("kafka-clients")
     val kafka_2_12 get() = dependency("kafka_2.12")
@@ -226,7 +226,7 @@ interface TmsCommonLibDefaults: DependencyGroup {
 
 interface TmsKafkaToolsDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.kafka"
-    override val version get() = "2.1.6"
+    override val version get() = "2.2.1"
 
     val kafkaApplication get() = dependency("kafka-application")
 }

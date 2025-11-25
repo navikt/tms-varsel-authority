@@ -19,7 +19,7 @@ inline fun <reified T> Row.optionalJson(label: String, objectMapper: ObjectMappe
     return jsonString?.let { objectMapper.readValue(jsonString) }
 }
 
-fun Any?.toJsonb(objectMapper: ObjectMapper = defaultObjectMapper()): PGobject? {
+fun Any?.toJsonb(objectMapper: ObjectMapper): PGobject? {
     return if (this == null) {
         null
     } else {
