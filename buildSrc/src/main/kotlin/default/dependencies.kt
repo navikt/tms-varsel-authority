@@ -68,8 +68,6 @@ interface KafkaDefaults: DependencyGroup {
     override val version get() = "4.1.1"
 
     val clients get() = dependency("kafka-clients")
-    val kafka_2_12 get() = dependency("kafka_2.12")
-    val streams get() = dependency("kafka-streams")
 }
 
 interface KluentDefaults: DependencyGroup {
