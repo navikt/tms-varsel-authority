@@ -103,14 +103,15 @@ data class ArkiverteDbVarsel(
     var renotifikasjonSendt: Boolean? = null,
     var forstBehandlet: ZonedDateTime? = null,
     var inaktiverDato: ZonedDateTime? = null,
-    var inaktivertAv: String? = null,
+    var inaktivertAv: VarselInaktivertKilde? = null,
     var deaktivertPgaUtløptFrist: Boolean? = null,
     var nameSpace: String? = null,
     var feilhistorikk: List<FeilhistorikkEntry>? = null,
     var eksternVarslingSistOppdatert: ZonedDateTime? = null,
+    var aktiv: Boolean = false,
 ) {
 
-    private var eksternVarslingSisteStatus: String= "ferdigstilt"
+    private var eksternVarslingSisteStatus: String = "ferdigstilt"
 
     private val serializedKanalList = eksternVarslingKanaler.joinToString(
         prefix = "[",
@@ -125,11 +126,11 @@ data class ArkiverteDbVarsel(
                 {
                     "link": "$link",
                     "type": "$type",
-                    "aktiv": false,
+                    "aktiv": $aktiv,
                     "tekst": "$tekst",
                     "eventId": "$id",
                     "arkivert": "${arkivertDato.serializeToLegacyDbFormat()}",
-                    "fristUtlopt": false,
+                    "fristUtlopt": $deaktivertPgaUtløptFrist,
                     "produsentApp": "$produsentApp",
                     "fodselsnummer": "$ident",
                     "forstBehandlet": "${forstBehandlet!!.serializeToLegacyDbFormat()}",
@@ -142,15 +143,13 @@ data class ArkiverteDbVarsel(
 
 
     fun currentJsonFormat(): String {
-        require(inaktiverDato != null) { "inaktiverDato må være satt før current json kan genereres" }
-        require(inaktivertAv != null) { "inaktivertAv må være satt før current json kan genereres" }
         require(nameSpace != null) { "nameSpace må være satt før current json kan genereres" }
         require(renotifikasjonSendt != null) { "renotifikasjonSendt må være satt før current json kan genereres" }
 
         return """
                   {
                     "type": "$type",
-                    "aktiv": false,
+                    "aktiv": $aktiv,
                     "ident": "$ident",
                     "innhold": {
                       "link": "$link",
@@ -170,8 +169,8 @@ data class ArkiverteDbVarsel(
                       "cluster": "test-cluster",
                       "namespace": "$nameSpace"
                     },
-                    "inaktivert": "${inaktiverDato!!.serializeToDbFormat()}",
-                    "inaktivertAv": "$inaktivertAv",
+                    "inaktivert": ${inaktiverDato?.let { "\"${it.serializeToDbFormat()}\"" }},
+                    "inaktivertAv": ${inaktivertAv?.let { "\"${it.name}\"" }},
                     "sensitivitet": "${confidentilality.loa}",
                     "eksternVarslingStatus": {
                       "sendt": $eksternVarslingSendt,
@@ -217,7 +216,7 @@ data class ArkiverteDbVarsel(
 
     fun withCurrentProperties(
         inaktiverDato: ZonedDateTime = opprettet.plusDays(1),
-        inaktivertAv: String = "SYSTEM",
+        inaktivertAv: VarselInaktivertKilde = VarselInaktivertKilde.Frist,
         nameSpace: String = "test-namespace",
         renotifikasjonSendt: Boolean = false,
         feilhistorikk: List<FeilhistorikkEntry> = emptyList(),
@@ -230,7 +229,7 @@ data class ArkiverteDbVarsel(
         this.renotifikasjonSendt = renotifikasjonSendt
         this.feilhistorikk = feilhistorikk
         this.eksternVarslingSistOppdatert = sistOppdatert
-        this.eksternVarslingSisteStatus = sisteStatus?: this.eksternVarslingSisteStatus
+        this.eksternVarslingSisteStatus = sisteStatus ?: this.eksternVarslingSisteStatus
     }
 
     companion object {
@@ -246,7 +245,10 @@ data class ArkiverteDbVarsel(
         fun ZonedDateTime.serializeToLegacyDbFormat(): String? =
             this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
 
-        fun generateFromDatabaseVarsel(varsel: DatabaseVarsel, id: String = UUID.randomUUID().toString()) =
+        fun generateFromDatabaseVarsel(
+            varsel: DatabaseVarsel,
+            id: String = UUID.randomUUID().toString(),
+        ) =
             ArkiverteDbVarsel(
                 id = id,
                 ident = varsel.ident,
@@ -263,7 +265,8 @@ data class ArkiverteDbVarsel(
                 renotifikasjonSendt = varsel.eksternVarslingStatus.renotifikasjonSendt,
                 forstBehandlet = varsel.opprettet,
                 inaktiverDato = varsel.inaktivert,
-                inaktivertAv = varsel.inaktivertAv?.name,
+                inaktivertAv = varsel.inaktivertAv,
+                aktiv = varsel.inaktivert != null,
                 deaktivertPgaUtløptFrist = varsel.inaktivertAv == VarselInaktivertKilde.Frist,
                 nameSpace = varsel.produsent.namespace,
                 feilhistorikk = varsel.eksternVarslingStatus.feilhistorikk.map {

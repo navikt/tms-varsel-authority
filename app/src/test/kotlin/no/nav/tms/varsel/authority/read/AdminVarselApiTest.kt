@@ -29,6 +29,7 @@ import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Companion.toZonedDateTimeUtc
+import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.HIGH
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.LEVEL4
 import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.SUBSTANTIAL
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
@@ -38,6 +39,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.text.DateFormat
@@ -182,7 +184,7 @@ class AdminVarselApiTest {
         alleFormatVarsel findElementsWithKey "innhold.link" shouldHaveValue varsel.innhold.link!!
         alleFormatVarsel findElementsWithKey "eksternVarsling.sendt" shouldHaveValue varsel.eksternVarslingStatus.sendt
         alleFormatVarsel findElementsWithKey "eksternVarsling.kanaler" shouldHaveValue varsel.eksternVarslingStatus.kanaler
-        alleFormatVarsel findElementsWithKey "aktiv" shouldHaveValue  varsel.aktiv
+        alleFormatVarsel findElementsWithKey "aktiv" shouldHaveValue varsel.aktiv
 
         legacyFormatVarsel["produsertAv"].asText() shouldBe "test-appnavn"
         currentFormatVarsel findElementsWithKey "produsertAv" shouldHaveValue "test-appnavn(test-namespace)"
@@ -255,6 +257,7 @@ class AdminVarselApiTest {
 
     @Test
     fun `inkluderer arkiverte varsler for bruker i tidsperiode`() = testVarselApi {
+
         val varselAug2020 = ArkiverteDbVarsel(
             id = "legacyAug2020",
             ident = ident,
@@ -305,17 +308,136 @@ class AdminVarselApiTest {
         varslerMayToDec2025.size shouldBe 3
     }
 
-    @Test
-    fun `Håndterer varierende grad av informasjon om inaktivering`(){
+    @Nested
+    inner class InaktiveringsInfo {
+        @Test
+        fun `Håndterer varierende grad av informasjon om inaktivering`() = testVarselApi {
+            val testIdent = "09876543567865"
 
-        val varsel = dbVarsel( inaktivert = "01-11-2025".toOsloZonedDateTime(), inaktivertAv = VarselInaktivertKilde.Bruker )
-        val varselUtenKilde = dbVarsel( inaktivert = "01-11-2025".toOsloZonedDateTime(), inaktivertAv = VarselInaktivertKilde.Bruker )
-        val arkivertVarsel = ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel)
-        val arkivertVarselUtenKilde = ArkiverteDbVarsel.generateFromDatabaseVarsel(varselUtenKilde)
-        database.insertCurrentArkiverteVarsler(ident, arkivertVarsel, arkivertVarselUtenKilde)
+            val inaktivBeskjedMedKildeBruker =
+                dbVarsel(
+                    ident = testIdent,
+                    inaktivert = "01-11-2025".toOsloZonedDateTime().plusHours(10),
+                    inaktivertAv = VarselInaktivertKilde.Bruker,
+                    type = Beskjed,
+                    aktiv = false
+                )
 
+            val inaktivtTemplateArchiveVarsel =
+                ArkiverteDbVarsel.generateFromDatabaseVarsel(inaktivBeskjedMedKildeBruker)
+            val ikkeInaktivertVarsel = dbVarsel(ident = testIdent, type = Beskjed)
+            val beskjedUtenKilde =
+                dbVarsel(
+                    aktiv = false,
+                    ident = testIdent,
+                    inaktivert = "01-11-2025".toOsloZonedDateTime().plusHours(10),
+                    inaktivertAv = null
+                )
+            val arkivertOppgaveMedKildeProdusent = inaktivtTemplateArchiveVarsel
+                .copy(
+                    id = "arkivertOppgaveMedKildeProdusent",
+                    type = Oppgave.name,
+                    inaktivertAv = VarselInaktivertKilde.Produsent
+                )
+
+            val arkivertVarselMedKildeSystem =
+                inaktivtTemplateArchiveVarsel.copy(inaktivertAv = VarselInaktivertKilde.Frist)
+            val arkivertVarselUtenKilde = ArkiverteDbVarsel.generateFromDatabaseVarsel(beskjedUtenKilde)
+
+            val legacyBeskjedMedFristUtløptTrue = arkivertOppgaveMedKildeProdusent.copy(
+                id = "legacyMedFristUtløptTrue",
+                deaktivertPgaUtløptFrist = true,
+                inaktivertAv = null,
+                inaktiverDato = null,
+                type = Beskjed.name,
+                aktiv = false
+            )
+            val legacyOppgaveMedFristUtløptFalse =
+                arkivertOppgaveMedKildeProdusent.copy(
+                    id = "legacyOppgaveFristUtløptFalse",
+                    deaktivertPgaUtløptFrist = false,
+                    aktiv = false
+                )
+            val legacyInnboksUtenFristUtløpt =
+                legacyOppgaveMedFristUtløptFalse.copy(id = "legacyInnboksFristUtløptFalse", type = Innboks.name)
+            val legacyBeskjedUtenFristUtløpt =
+                legacyOppgaveMedFristUtløptFalse.copy(id = "legacyBeskjedFristUtløptFalse", type = Beskjed.name)
+
+            insertVarsel(inaktivBeskjedMedKildeBruker, beskjedUtenKilde, ikkeInaktivertVarsel)
+
+            database.insertCurrentArkiverteVarsler(
+                testIdent,
+                arkivertOppgaveMedKildeProdusent,
+                arkivertVarselUtenKilde,
+                arkivertVarselMedKildeSystem,
+            )
+            database.insertLegacyArkiverteVarsler(
+                testIdent,
+                legacyBeskjedMedFristUtløptTrue,
+                legacyOppgaveMedFristUtløptFalse,
+                legacyInnboksUtenFristUtløpt,
+                legacyBeskjedUtenFristUtløpt,
+            )
+
+            val varsler2025 =
+                client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
+
+            varsler2025.apply {
+                size shouldBe 10
+                inaktivertValue(inaktivBeskjedMedKildeBruker.varselId) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av bruker"
+                inaktivertValue(beskjedUtenKilde.varselId) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av ukjent kilde"
+                inaktivertValue(ikkeInaktivertVarsel.varselId) shouldBe "Ikke inaktivert"
+                inaktivertValue(arkivertOppgaveMedKildeProdusent.id) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av produsent"
+                inaktivertValue(legacyBeskjedMedFristUtløptTrue.id) shouldBe "av system (frist utløpt)"
+                inaktivertValue(legacyOppgaveMedFristUtløptFalse.id) shouldBe "av produsent"
+                inaktivertValue(legacyBeskjedUtenFristUtløpt.id) shouldBe "av bruker/produsent"
+                inaktivertValue(legacyInnboksUtenFristUtløpt.id) shouldBe "av system"
+            }
+        }
+
+        @Test
+        fun `Håndterer varsler som er arkiverte men ikkinaktive`() = testVarselApi {
+
+            val testIdent = "12345678910"
+            val aktivtArkivertVarsel = ArkiverteDbVarsel(
+                id = "arkiverteIkkeInaktivertVarsel",
+                ident = testIdent,
+                confidentilality = HIGH,
+                inaktiverDato = null,
+                inaktivertAv = null,
+                aktiv = true
+            )
+            val aktivtArkivertVarselLegacy = ArkiverteDbVarsel(
+                id = "arkiverteIkkeInaktivertVarsel",
+                ident = testIdent,
+                confidentilality = LEVEL4,
+                aktiv = true
+            )
+
+            database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel, aktivtArkivertVarselLegacy)
+            val varsler2025 =
+                client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
+
+            varsler2025.apply {
+                inaktivertValue(aktivtArkivertVarsel.id) shouldBe "Ikke inaktivert"
+                inaktivertValue(aktivtArkivertVarselLegacy.id) shouldBe "Ikke inaktivert"
+
+            }
+        }
     }
 
+    private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): JsonNode = get(path) {
+        headers.append("ident", ident)
+    }.let {
+        it.status shouldBe HttpStatusCode.OK
+        objectMapper.readTree(it.bodyAsText())
+    }
+
+    private fun insertVarsel(vararg varsler: DatabaseVarsel) {
+        varsler.forEach {
+            writeRepository.insertVarsel(it)
+        }
+    }
 
     private fun testVarselApi(
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
@@ -352,91 +474,90 @@ class AdminVarselApiTest {
         )
     }
 
-    private fun String.toOsloZonedDateTime() =
-        try {
-            LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay().atZone(ZoneId.of("Europe/Oslo"))
-        }catch (ex: DateTimeParseException) {
-            throw IllegalArgumentException("Failed to parse date string '$this'. Expected format is dd-MM-yyyy", ex)
+    companion object {
+        private fun List<JsonNode>.inaktivertValue(id: String): String {
+            return find { it["varselId"].asText() == id }.let {
+                require(it != null) { "Varsel med id $id ikke funnet" }
+                it
+            }["inaktivert"].asText()
         }
 
-    private val List<DatabaseVarsel>.ids
-        get() = map { it.varselId }
+        private fun String.toOsloZonedDateTime() =
+            try {
+                LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay()
+                    .atZone(ZoneId.of("Europe/Oslo"))
+            } catch (ex: DateTimeParseException) {
+                throw IllegalArgumentException(
+                    "Failed to parse date string '$this'. Expected format is dd-MM-yyyy",
+                    ex
+                )
+            }
 
-    private val List<JsonNode>.varselIds
-        get() = map { it["varselId"].asText() }
+        private val List<DatabaseVarsel>.ids
+            get() = map { it.varselId }
 
-    private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): JsonNode = get(path) {
-        headers.append("ident", ident)
-    }.let {
-        it.status shouldBe HttpStatusCode.OK
-        objectMapper.readTree(it.bodyAsText())
-    }
+        private val List<JsonNode>.varselIds
+            get() = map { it["varselId"].asText() }
 
-    private fun insertVarsel(vararg varsler: DatabaseVarsel) {
-        varsler.forEach {
-            writeRepository.insertVarsel(it)
+        fun LocalPostgresDatabase.insertLegacyArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+            varsler.forEach {
+                insertArkivertVarsel(ident, it.id, it.legacyJsonFormat())
+            }
         }
-    }
-}
 
+        fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+            varsler.forEach {
+                insertArkivertVarsel(ident, it.id, it.currentJsonFormat())
+            }
+        }
 
-fun LocalPostgresDatabase.insertLegacyArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
-    varsler.forEach {
-        insertArkivertVarsel(ident, it.id, it.legacyJsonFormat())
-    }
-}
+        private fun List<JsonNode>.shouldHaveValue(
+            fieldName: String,
+            expectedValue: String?,
+        ) {
+            shouldHaveValue(fieldName, expectedValue, JsonNode::asText)
+        }
 
-fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
-    varsler.forEach {
-        insertArkivertVarsel(ident, it.id, it.currentJsonFormat())
-    }
-}
+        infix fun List<JsonNode>.findElementsWithKey(key: String) = Pair(this, key)
+        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: String) {
+            this.first.shouldHaveValue(this.second, expectedValue)
+        }
 
-private fun List<JsonNode>.shouldHaveValue(
-    fieldName: String,
-    expectedValue: String?,
-) {
-    shouldHaveValue(fieldName, expectedValue, JsonNode::asText)
-}
+        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: Boolean) {
+            this.first.shouldHaveValue(this.second, expectedValue, JsonNode::asBoolean)
+        }
 
-infix fun List<JsonNode>.findElementsWithKey(key: String) = Pair(this, key)
-infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: String) {
-    this.first.shouldHaveValue(this.second, expectedValue)
-}
+        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedList: List<String>) {
+            this.first.shouldHaveValue(this.second, expectedList) { toList().map { it.asText() } }
+        }
 
-infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: Boolean) {
-    this.first.shouldHaveValue(this.second, expectedValue, JsonNode::asBoolean)
-}
-
-infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedList: List<String>) {
-    this.first.shouldHaveValue(this.second, expectedList) { toList().map { it.asText() } }
-}
-
-private fun <T> List<JsonNode>.shouldHaveValue(
-    path: String,
-    expectedValue: T,
-    typeCast: JsonNode.() -> T
-) {
-    forEach {
-        val keys = path.split(".", "[", "]").filter { fieldname -> fieldname.isNotEmpty() }.toMutableList()
-        withClue("$path in varsel with id ${it["varselId"].asText()} does not contain the expected value") {
-            var node = it.path(keys.removeFirst())
-            while (keys.isNotEmpty()) {
-                val key = keys.removeFirst()
-                node = key.toIntOrNull()?.let { index ->
-                    require(node.isArray)
-                    require(node.size() > index) {
-                        """$path in varsel with id ${it["varselId"].asText()} does not have enough elements in array, 
+        private fun <T> List<JsonNode>.shouldHaveValue(
+            path: String,
+            expectedValue: T,
+            typeCast: JsonNode.() -> T
+        ) {
+            forEach {
+                val keys = path.split(".", "[", "]").filter { fieldname -> fieldname.isNotEmpty() }.toMutableList()
+                withClue("$path in varsel with id ${it["varselId"].asText()} does not contain the expected value") {
+                    var node = it.path(keys.removeFirst())
+                    while (keys.isNotEmpty()) {
+                        val key = keys.removeFirst()
+                        node = key.toIntOrNull()?.let { index ->
+                            require(node.isArray)
+                            require(node.size() > index) {
+                                """$path in varsel with id ${it["varselId"].asText()} does not have enough elements in array, 
                             |expected value $expectedValue
                             |actual array was of size ${node.toList().size} with content content $node
                             """.trimIndent()
+                            }
+                            node[index]
+                        }
+                            ?: node[key]
                     }
-                    node[index]
+                    require(!node.isNull && !node.isMissingNode) { "$path in varsel with id ${it["varselId"].asText()} does not exist" }
+                    node.typeCast() shouldBe expectedValue
                 }
-                    ?: node[key]
             }
-            require(!node.isNull && !node.isMissingNode) { "$path in varsel with id ${it["varselId"].asText()} does not exist" }
-            node.typeCast() shouldBe expectedValue
         }
     }
 }

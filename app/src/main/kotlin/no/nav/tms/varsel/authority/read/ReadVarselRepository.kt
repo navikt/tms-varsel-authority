@@ -7,6 +7,7 @@ import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
+import no.nav.tms.varsel.authority.read.DetaljertAdminVarsel.Companion.resolveInaktivert
 
 private val log = KotlinLogging.logger { }
 
@@ -94,34 +95,39 @@ class ReadVarselRepository(private val database: Database) {
         val result = database.list {
             queryOf(
                 """
-                select varselid,
-                       coalesce((varsel ->> 'opprettet'), (varsel ->> 'forstBehandlet'))::timestamp with time zone as opprettet,
-                       varsel ->> 'type'                                                                           as type,
-                       false                                                                                       as aktiv,
-                       COALESCE(varsel -> 'innhold' ->> 'tekst', varsel ->> 'tekst')                               as tekst,
-                       COALESCE(varsel -> 'innhold' ->> 'link', varsel ->> 'link')                                 as link,
-                       varsel ->> 'sikkerhetsnivaa'                                                                as sikkerhetsnivaa,
-                       varsel ->> 'sensitivitet'                                                                   as sensitivitet,
-                       case
-                           when varsel -> 'produsent' is not null
-                               then concat(varsel -> 'produsent' ->> 'appnavn', '(', varsel -> 'produsent' ->> 'namespace', ')')
-                           else varsel ->> 'produsentApp'
-                           end                                                                                     as produsent,
-                       case
-                           when varsel -> 'eksternVarslingStatus' IS NOT NULL
-                               then (varsel -> 'eksternVarslingStatus')
-                           when (varsel -> 'eksternVarslingSendt' is not null) OR (varsel -> 'eksternVarslingKanaler' is not null)
-                               then json_build_object('sendt', varsel ->> 'eksternVarslingSendt', 'kanaler',
-                                                      varsel -> 'eksternVarslingKanaler')::jsonb
-                           end                                                                                     as eksternVarsling,
-                       case
-                           when varsel ->> 'inaktivert' is not null and varsel ->> 'inaktivertAv' is not null
-                               then concat(varsel ->> 'inaktivert', ' av ', varsel ->> 'inaktivertAv')
-                           when varsel ->> 'inaktivert' is not null
-                               then concat(varsel ->> 'inaktivert', ' av ukjent inaktiveringskilde')
-                           end                                                                                     as inaktivert,
-                       true                                                                                        as arkivert
-                from varsel_arkiv
+               select varselid,
+               jsonb_exists(varsel , 'forstBehandlet') as fromLegacyJson,
+               coalesce((varsel ->> 'opprettet'), (varsel ->> 'forstBehandlet'))::timestamp with time zone as opprettet,
+               varsel ->> 'type'                                                                           as type,
+               false                                                                                       as aktiv,
+               COALESCE(varsel -> 'innhold' ->> 'tekst', varsel ->> 'tekst')                               as tekst,
+               COALESCE(varsel -> 'innhold' ->> 'link', varsel ->> 'link')                                 as link,
+               varsel ->> 'sikkerhetsnivaa'                                                                as sikkerhetsnivaa,
+               varsel ->> 'sensitivitet'                                                                   as sensitivitet,
+               case
+                   when varsel -> 'produsent' is not null
+                       then concat(varsel -> 'produsent' ->> 'appnavn', '(', varsel -> 'produsent' ->> 'namespace', ')')
+                   else varsel ->> 'produsentApp'
+                   end                                                                                     as produsent,
+               case
+                   when varsel -> 'eksternVarslingStatus' IS NOT NULL
+                       then (varsel -> 'eksternVarslingStatus')
+                   when (varsel -> 'eksternVarslingSendt' is not null) OR (varsel -> 'eksternVarslingKanaler' is not null)
+                       then json_build_object('sendt', varsel ->> 'eksternVarslingSendt', 'kanaler',
+                                              varsel -> 'eksternVarslingKanaler')::jsonb
+                   end                                                                                     as eksternVarsling,
+        
+        
+               varsel ->> 'inaktivertAv'                                                                   as inaktivertAv,
+               
+               CASE
+                   WHEN varsel ->> 'inaktivert' IS NULL OR varsel ->> 'inaktivert' = '' OR varsel ->> 'inaktivert' = 'null'
+                        THEN NULL
+                   ELSE (varsel ->> 'inaktivert')::timestamp with time zone
+               END                                                                                         as inaktivert,
+               varsel ->> 'fristUtlopt'                                                                    as fristUtlopt,
+               true                                                                                        as arkivert
+        from varsel_arkiv
                 where ident = :ident
                     and (
                         coalesce((varsel ->> 'opprettet'), (varsel ->> 'forstBehandlet')) between :fom and :tom
@@ -129,22 +135,24 @@ class ReadVarselRepository(private val database: Database) {
                     )
                 union
                 select varselid,
-                       opprettet::timestamp with time zone,
-                       type,
-                       aktiv,
-                       innhold ->> 'tekst'                                                  as tekst,
-                       innhold ->> 'link'                                                   as link,
-                       NULL                                                                 as sikkerhetsnivaa,
-                       sensitivitet                                                         as sensitivitet,
-                       concat(produsent ->> 'appnavn', '(', produsent ->> 'namespace', ')') as produsent,
-                       eksternvarslingstatus                                                as eksternVarsling,
-                       case
-                           when inaktivert is not null and inaktivertav is not null
-                               then
-                               concat(inaktivert, ' av ', inaktivertav)
-                           end                                                              as inaktivert,
-                       false                                                                as arkivert
-                from varsel
+                   false                                                                as fromLegacyJson,
+                   opprettet::timestamp with time zone,
+                   type,
+                   aktiv,
+                   innhold ->> 'tekst'                                                  as tekst,
+                   innhold ->> 'link'                                                   as link,
+                   NULL                                                                 as sikkerhetsnivaa,
+                   sensitivitet                                                         as sensitivitet,
+                   concat(produsent ->> 'appnavn', '(', produsent ->> 'namespace', ')') as produsent,
+                   eksternvarslingstatus                                                as eksternVarsling,
+                   inaktivertav                                                         as inaktivertAv,
+                   CASE
+                       WHEN inaktivert IS NULL THEN NULL
+                       ELSE inaktivert::timestamp with time zone 
+                   END                                                                  as inaktivert,
+                   null                                                                 as fristUtlopt,
+                   false                                                                as arkivert
+               from varsel
                 where ident = :ident
                   and (opprettet between :fom and :tom or inaktivert between :fom and :tom)
                 order by opprettet desc;                
@@ -199,13 +207,18 @@ class ReadVarselRepository(private val database: Database) {
     }
 
     private fun toDetaljertAdminVarsel(): (Row) -> Pair<DetaljertAdminVarsel?, String?> = {
-
-        val readEksternVarsling: EksternVarslingArchiveCompatible? = it.optionalJson("eksternVarsling", objectMapper)
-        var adminVarsel: DetaljertAdminVarsel? = null
         var errorStringId: String? = null
+        var adminVarsel: DetaljertAdminVarsel? = null
+
         try {
+
+            val readEksternVarsling: EksternVarslingArchiveCompatible? =
+                it.optionalJson("eksternVarsling", objectMapper)
+
+            val varselType = it.string("type").let(::parseVarseltype)
+
             adminVarsel = DetaljertAdminVarsel(
-                type = it.string("type").let(::parseVarseltype),
+                type = varselType,
                 varselId = it.string("varselId"),
                 aktiv = it.boolean("aktiv"),
                 produsertAv = it.string("produsent"),
@@ -213,15 +226,18 @@ class ReadVarselRepository(private val database: Database) {
                 tilgangstyring = it.resolveTilgangstyring(),
                 eksternVarsling = readEksternVarsling?.toEksternVarslingInfo(),
                 opprettet = it.zonedDateTime("opprettet"),
-                inaktivert = it.stringOrNull("inaktivert") ?: "Ukjent",
+                inaktivert = it.resolveInaktivert(varselType),
                 arkivert = it.boolean("arkivert")
             )
         } catch (ex: Exception) {
-            log.warn { "Feil ved lesing av arkivert varsel med id: ${ex.message}" }
-            errorStringId = it.string("varselId")
+            log.warn { "Feil ved lesing av arkivert varsel med id: ${it.stringOrNull("varselId") ?: "Not serializable"}" }
+            errorStringId = it.stringOrNull("varselId") ?: "Not serializable"
         }
 
         Pair(adminVarsel, errorStringId)
     }
 
 }
+
+fun Row.booleanOrNull(columnLabel: String): Boolean? =
+    this.anyOrNull(columnLabel) as? Boolean

@@ -2,6 +2,9 @@ package no.nav.tms.varsel.authority.read
 
 import kotliquery.Row
 import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.varsel.action.Varseltype.Beskjed
+import no.nav.tms.varsel.action.Varseltype.Innboks
+import no.nav.tms.varsel.action.Varseltype.Oppgave
 import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.Innhold
@@ -18,7 +21,7 @@ data class DetaljertAdminVarsel(
     val innhold: Innhold,
     val eksternVarsling: EksternVarslingInfo?,
     val opprettet: ZonedDateTime,
-    val inaktivert: String,
+    val inaktivert: String?,
     val arkivert: Boolean,
 ) {
     companion object {
@@ -39,8 +42,35 @@ data class DetaljertAdminVarsel(
         val eksternVarslingTilleggsinformasjonDescription =
             "Hvorvidt ett varsel er sendt som batch, re-notifikasjon er sendt og feilhistorikk. Data for dette er kun tilgjengelig for nyere varsler"
         val inaktivertDescription =
-            "Årsak og tidspunkt for når varselet ble inaktivert, eller 'Ikke inaktivert' hvis varselet er aktivt. For eldre varsel kan dette feltet være tomt selv om varselet er inaktivt"
+            "Kilde og tidspunkt for når varselet ble inaktivert, eller 'Ikke inaktivert' hvis varselet er aktivt. For eldre varsel kan dette feltet være tomt selv om varselet er inaktivt"
         val arkivertDescription = "Om varselet er arkivert eller ikke"
+
+
+        fun Row.resolveInaktivert(varselType: Varseltype): String? {
+            val inaktivertAv = stringOrNull("inaktivertAv")
+            val inaktivertTidspunkt = zonedDateTimeOrNull("inaktivert")
+            val aktiv = this.boolean("aktiv")
+            val isLegacy = this.booleanOrNull("fromLegacyJson") ?: false
+            val fristUtløpt = this.stringOrNull("fristUtlopt").toBoolean()
+
+            return when {
+                !isLegacy -> {
+                    if (inaktivertAv == null && inaktivertTidspunkt == null)
+                        "Ikke inaktivert"
+                    else
+                        "${inaktivertTidspunkt?.dateTimeAndOsloTimesone() ?: ""} ${inaktivertAv?.let { "av ${inaktivertAv.lowercase()}" } ?: "av ukjent kilde"}"
+                }
+                aktiv -> "Ikke inaktivert"
+                fristUtløpt -> "av system (frist utløpt)"
+                varselType == Innboks -> "av system"
+                varselType == Beskjed -> "av bruker/produsent"
+                varselType == Oppgave -> "av produsent"
+                else -> {
+                    "av ukjent kilde"
+                }
+            }
+
+        }
     }
 }
 
@@ -71,11 +101,12 @@ data class EksternVarslingArchiveCompatible(
         opplysninger.addIf(feilhistorikk != null) {
             "${feilhistorikk!!.size} oppføringer i feilhistorikk".let {
                 if (feilhistorikk.isNotEmpty()) {
-                feilhistorikk
-                    .sortedBy { entry -> entry.tidspunkt }
-                    .joinToString("\n", prefix = "$it:\n", postfix = "\n----------") { entry ->
-                    "${entry.tidspunkt.dateTimeAndOsloTimesone()}: ${entry.feilmelding}"
-                }} else it
+                    feilhistorikk
+                        .sortedBy { entry -> entry.tidspunkt }
+                        .joinToString("\n", prefix = "$it:\n", postfix = "\n----------") { entry ->
+                            "${entry.tidspunkt.dateTimeAndOsloTimesone()}: ${entry.feilmelding}"
+                        }
+                } else it
             }
         }
         opplysninger.addIf(sisteStatus != null) { "Siste status: ${sisteStatus!!.name.lowercase()}" }
@@ -95,12 +126,11 @@ data class EksternVarslingArchiveCompatible(
                 this.add(stringproducer())
             }
         }
-
-        private fun ZonedDateTime.dateTimeAndOsloTimesone(): String = withZoneSameInstant(ZoneId.of("Europe/Oslo"))
-            .format(DateTimeFormatter.ofPattern("dd.MM.yyyy 'kl' HH:mm '(UTC'XXX')'"))
     }
 }
 
+private fun ZonedDateTime.dateTimeAndOsloTimesone(): String = withZoneSameInstant(ZoneId.of("Europe/Oslo"))
+    .format(DateTimeFormatter.ofPattern("dd.MM.yyyy 'kl' HH:mm '(UTC'XXX')'"))
 
 fun Row.resolveTilgangstyring(): String =
     intOrNull("sikkerhetsnivaa")?.let { "Sikkerhetsnivå $it" }
