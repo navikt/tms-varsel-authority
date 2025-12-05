@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
@@ -13,7 +14,6 @@ import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.slf4j.MDC
 
 internal class InaktiverVarselSubscriber(
     private val varselRepository: WriteVarselRepository,
@@ -21,7 +21,7 @@ internal class InaktiverVarselSubscriber(
 ) : Subscriber() {
 
     private val log = KotlinLogging.logger {}
-    private val securelog = KotlinLogging.logger("secureLog")
+    private val teamLog = TeamLogs.logger()
     private val objectMapper = defaultObjectMapper()
 
     private val sourceTopic = "external"
@@ -76,7 +76,7 @@ internal class InaktiverVarselSubscriber(
         } catch (e: JsonMappingException) {
 
             log.error { "Feil ved deserialisering av inaktiver-event" }
-            securelog.error(e) { "Feil ved deserialisering av inaktiver-event [${jsonMessage.json}]" }
+            teamLog.error(e) { "Feil ved deserialisering av inaktiver-event [${jsonMessage.json}]" }
 
             throw InaktiverVarselDeserializationException()
         }

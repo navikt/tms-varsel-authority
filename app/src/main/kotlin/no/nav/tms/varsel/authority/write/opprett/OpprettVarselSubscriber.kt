@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.write.opprett
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
@@ -43,13 +44,14 @@ internal class OpprettVarselSubscriber(
             "metadata"
         )
 
-    private val securelog = KotlinLogging.logger("secureLog")
+    private val teamLog = TeamLogs.logger()
     private val objectMapper = defaultObjectMapper()
     private val sourceTopic = "external"
 
 
     override suspend fun receive(jsonMessage: JsonMessage) = traceOpprettVarsel(jsonMessage) {
         log.info { "Opprett-event motatt" }
+        teamLog.info { "Opprett-event motatt: ${jsonMessage.json}" }
 
         deserialize(jsonMessage)
             .also { validate(it) }
@@ -133,7 +135,7 @@ internal class OpprettVarselSubscriber(
         } catch (e: JsonMappingException) {
 
             log.error { "Feil ved deserialisering av opprett-event" }
-            securelog.error(e) { "Feil ved deserialisering av opprett-event [${jsonMessage.json}]" }
+            teamLog.error(e) { "Feil ved deserialisering av opprett-event [${jsonMessage.json}]" }
 
             throw OpprettVarselDeserializationException()
         }
@@ -144,7 +146,7 @@ internal class OpprettVarselSubscriber(
             OpprettVarselValidation.validate(opprettVarsel)
         } catch (e: VarselValidationException) {
             log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
-            securelog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
+            teamLog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
 
             throw OpprettVarselValidationException()
         }
