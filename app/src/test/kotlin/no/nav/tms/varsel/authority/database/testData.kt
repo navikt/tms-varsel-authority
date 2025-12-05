@@ -266,7 +266,7 @@ data class ArkiverteDbVarsel(
                 forstBehandlet = varsel.opprettet,
                 inaktiverDato = varsel.inaktivert,
                 inaktivertAv = varsel.inaktivertAv,
-                aktiv = varsel.inaktivert != null,
+                aktiv = varsel.aktiv,
                 deaktivertPgaUtløptFrist = varsel.inaktivertAv == VarselInaktivertKilde.Frist,
                 nameSpace = varsel.produsent.namespace,
                 feilhistorikk = varsel.eksternVarslingStatus.feilhistorikk.map {
