@@ -8,6 +8,7 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -160,11 +161,11 @@ class AdminVarselApiTest {
                 sisteStatus = varsel.eksternVarslingStatus.sisteStatus?.name?.lowercase()
             )
         val arkivertLegacyVarsel =
-            ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel, "arkivertLegacyVarsel65")
-                .withLegacyProperties(
-                    forstBehandlet = varsel.opprettet,
-                    deaktivertPgaUtløptFrist = true,
-                )
+            ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel, "arkivertLegacyVarsel65").apply {
+                forstBehandlet = varsel.opprettet
+                deaktivertPgaUtløptFrist = true
+                aktiv = false
+            }
         database.insertCurrentArkiverteVarsler(testIdent, arkivertVarsel)
         database.insertLegacyArkiverteVarsler(testIdent, arkivertLegacyVarsel)
         insertVarsel(varsel)
@@ -312,7 +313,7 @@ class AdminVarselApiTest {
     inner class InaktiveringsInfo {
         @Test
         fun `Håndterer varierende grad av informasjon om inaktivering`() = testVarselApi {
-            val testIdent = "09876543567865"
+            val testIdent = "99876543567865"
 
             val inaktivBeskjedMedKildeBruker =
                 dbVarsel(
@@ -396,27 +397,33 @@ class AdminVarselApiTest {
         }
 
         @Test
-        fun `Håndterer varsler som er arkiverte men ikkinaktive`() = testVarselApi {
+        fun `Håndterer varsler som er arkiverte men ikke inaktive`() = testVarselApi {
 
-            val testIdent = "12345678910"
+            val testIdent = "1234560"
             val aktivtArkivertVarsel = ArkiverteDbVarsel(
+                opprettet = "09-08-2025".toOsloZonedDateTime(),
                 id = "arkiverteIkkeInaktivertVarsel",
                 ident = testIdent,
                 confidentilality = HIGH,
                 inaktiverDato = null,
                 inaktivertAv = null,
-                aktiv = true
+                aktiv = true,
+                nameSpace = "testspace",
+                renotifikasjonSendt = false
             )
             val aktivtArkivertVarselLegacy = ArkiverteDbVarsel(
-                id = "arkiverteIkkeInaktivertVarsel",
+                opprettet = "01-02-2021".toOsloZonedDateTime(),
+                id = "arkiverteIkkeInaktivertVarselLegacy",
                 ident = testIdent,
                 confidentilality = LEVEL4,
-                aktiv = true
+                aktiv = true,
+                deaktivertPgaUtløptFrist = false
             )
 
-            database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel, aktivtArkivertVarselLegacy)
+            database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel)
+            database.insertLegacyArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy)
             val varsler2025 =
-                client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
+                client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
 
             varsler2025.apply {
                 inaktivertValue(aktivtArkivertVarsel.id) shouldBe "Ikke inaktivert"
@@ -477,9 +484,10 @@ class AdminVarselApiTest {
     companion object {
         private fun List<JsonNode>.inaktivertValue(id: String): String {
             return find { it["varselId"].asText() == id }.let {
-                require(it != null) { "Varsel med id $id ikke funnet" }
-                it
-            }["inaktivert"].asText()
+                withClue( "Varsel med id $id ikke funnet"){
+                    it shouldNotBe null
+                }
+            }!!["inaktivert"].asText()
         }
 
         private fun String.toOsloZonedDateTime() =

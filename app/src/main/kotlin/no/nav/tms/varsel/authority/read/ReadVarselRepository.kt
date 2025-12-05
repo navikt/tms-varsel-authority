@@ -99,7 +99,7 @@ class ReadVarselRepository(private val database: Database) {
                jsonb_exists(varsel , 'forstBehandlet') as fromLegacyJson,
                coalesce((varsel ->> 'opprettet'), (varsel ->> 'forstBehandlet'))::timestamp with time zone as opprettet,
                varsel ->> 'type'                                                                           as type,
-               false                                                                                       as aktiv,
+               (varsel ->> 'aktiv')::boolean                                                                                      as aktiv,
                COALESCE(varsel -> 'innhold' ->> 'tekst', varsel ->> 'tekst')                               as tekst,
                COALESCE(varsel -> 'innhold' ->> 'link', varsel ->> 'link')                                 as link,
                varsel ->> 'sikkerhetsnivaa'                                                                as sikkerhetsnivaa,

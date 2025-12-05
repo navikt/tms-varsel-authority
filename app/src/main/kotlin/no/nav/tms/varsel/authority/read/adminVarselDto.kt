@@ -47,6 +47,7 @@ data class DetaljertAdminVarsel(
 
 
         fun Row.resolveInaktivert(varselType: Varseltype): String? {
+
             val inaktivertAv = stringOrNull("inaktivertAv")
             val inaktivertTidspunkt = zonedDateTimeOrNull("inaktivert")
             val aktiv = this.boolean("aktiv")
@@ -54,13 +55,13 @@ data class DetaljertAdminVarsel(
             val fristUtløpt = this.stringOrNull("fristUtlopt").toBoolean()
 
             return when {
+                aktiv -> "Ikke inaktivert"
                 !isLegacy -> {
                     if (inaktivertAv == null && inaktivertTidspunkt == null)
                         "Ikke inaktivert"
                     else
                         "${inaktivertTidspunkt?.dateTimeAndOsloTimesone() ?: ""} ${inaktivertAv?.let { "av ${inaktivertAv.lowercase()}" } ?: "av ukjent kilde"}"
                 }
-                aktiv -> "Ikke inaktivert"
                 fristUtløpt -> "av system (frist utløpt)"
                 varselType == Innboks -> "av system"
                 varselType == Beskjed -> "av bruker/produsent"
