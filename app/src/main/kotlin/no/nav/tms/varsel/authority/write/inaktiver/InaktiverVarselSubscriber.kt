@@ -21,7 +21,7 @@ internal class InaktiverVarselSubscriber(
 ) : Subscriber() {
 
     private val log = KotlinLogging.logger {}
-    private val teamLog = TeamLogs.logger()
+    private val teamLog = TeamLogs.logger(true)
     private val objectMapper = defaultObjectMapper()
 
     private val sourceTopic = "external"

@@ -213,7 +213,7 @@ interface TestContainersDefaults: DependencyGroup {
 
 interface TmsCommonLibDefaults: DependencyGroup {
     override val groupId get() = "no.nav.tms.common"
-    override val version get() = "5.1.0-beta"
+    override val version get() = "5.1.0-beta-3"
 
     val metrics get() = dependency("metrics")
     val observability get() = dependency("observability")
