@@ -11,7 +11,6 @@ import io.ktor.client.request.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
 import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
@@ -27,9 +26,12 @@ import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import java.text.DateFormat
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SaksbehandlerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
@@ -48,25 +50,31 @@ class SaksbehandlerVarselApiTest {
         LocalPostgresDatabase.cleanDb()
     }
 
-    @Test
-    fun `henter varsler for bruker`() = testVarselApi{  client ->
-        val annenIdent = "456"
+    @Nested
+    inner class AlleVarsler {
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
-        val oppgave = dbVarsel(type = Oppgave, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident)
-        val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
-        val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
-        val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
+        @Test
+        fun `henter varsler for bruker`() = testVarselApi { client ->
+            val annenIdent = "456"
 
-        insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
+            val beskjed = dbVarsel(type = Beskjed, ident = ident)
+            val oppgave = dbVarsel(type = Oppgave, ident = ident)
+            val innboks = dbVarsel(type = Innboks, ident = ident)
+            val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
+            val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
+            val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
 
-        val varsler = client.getVarsler("/varsel/detaljert/alle", ident)
+            insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
 
-        varsler.size shouldBe 3
-        varsler.shouldFind { it.varselId == beskjed.varselId } shouldMatch beskjed
-        varsler.shouldFind { it.varselId == oppgave.varselId } shouldMatch oppgave
-        varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
+            val varsler = client.getVarsler("/varsel/detaljert/alle", ident)
+
+            varsler.size shouldBe 3
+            varsler.shouldFind { it.varselId == beskjed.varselId } shouldMatch beskjed
+            varsler.shouldFind { it.varselId == oppgave.varselId } shouldMatch oppgave
+            varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
+        }
+
+
     }
 
     @Test
@@ -117,9 +125,10 @@ class SaksbehandlerVarselApiTest {
     }
 
     @Test
-    fun `godtar varsler der ekstern varsling er null`() = testVarselApi{  client ->
+    fun `godtar varsler der ekstern varsling er null`() = testVarselApi { client ->
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
+        val beskjed =
+            dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
 
         insertVarsel(beskjed)
 
@@ -147,9 +156,7 @@ class SaksbehandlerVarselApiTest {
 
     private fun List<DetaljertVarsel>.shouldFind(predicate: (DetaljertVarsel) -> Boolean): DetaljertVarsel {
         val varsel = find(predicate)
-
         varsel.shouldNotBeNull()
-
         return varsel
     }
 

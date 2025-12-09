@@ -10,19 +10,12 @@ import java.time.temporal.ChronoUnit
 
 object ZonedDateTimeHelper {
     fun nowAtUtc(): ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MILLIS)
+    fun nowInOsloUtc(): ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MILLIS)
+
 
     fun JsonNode.asZonedDateTime(): ZonedDateTime {
         return parseZonedDateTimeDefaultUtc(asText())
     }
-
-    fun JsonNode.asOptionalZonedDateTime(): ZonedDateTime? {
-        return takeIf(JsonNode::isTextual)
-            ?.asText()
-            ?.takeIf(String::isNotEmpty)
-            ?.let { parseZonedDateTimeDefaultUtc(it) }
-    }
-
-
 
     private fun parseZonedDateTimeDefaultUtc(dateTimeString: String): ZonedDateTime {
         return try {

@@ -63,7 +63,7 @@ class WriteVarselRepository(val database: Database) {
                     "opprettet" to dbVarsel.opprettet,
                     "aktivFremTil" to dbVarsel.aktivFremTil,
                     "inaktivert" to dbVarsel.inaktivert,
-                    "inaktivertAv" to dbVarsel.inaktivertAv,
+                    "inaktivertAv" to dbVarsel.inaktivertAv?.name,
                     "metadata" to dbVarsel.metadata.toJsonb(objectMapper)
                 )
             )
