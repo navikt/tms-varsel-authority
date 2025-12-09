@@ -44,7 +44,7 @@ internal class OpprettVarselSubscriber(
             "metadata"
         )
 
-    private val teamLog = TeamLogs.logger(true)
+    private val teamLog = TeamLogs.logger { }
     private val objectMapper = defaultObjectMapper()
     private val sourceTopic = "external"
 

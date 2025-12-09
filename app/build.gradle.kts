@@ -48,7 +48,7 @@ dependencies {
     implementation(JacksonDatatype.moduleKotlin)
     implementation(TmsCommonLib.utils)
     implementation(TmsCommonLib.kubernetes)
-    implementation(TmsCommonLib.logging)
+    implementation(TmsCommonLib.teamLogger)
     implementation(TmsCommonLib.metrics)
     implementation(TmsCommonLib.observability)
     implementation(TmsKafkaTools.kafkaApplication)
