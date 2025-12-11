@@ -10,14 +10,13 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
 import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.database.dbVarsel
+import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -53,8 +52,8 @@ class InaktiverVarselApiTest {
 
     @Test
     fun `inaktiverer varsel for admin`() = testVarselApi {client ->
-        val oppgave1 = dbVarsel(type = Varseltype.Oppgave, aktiv = true)
-        val oppgave2 = dbVarsel(type = Varseltype.Oppgave, aktiv = true)
+        val oppgave1 = TestVarsel(type = Varseltype.Oppgave, aktiv = true).dbVarsel()
+        val oppgave2 = TestVarsel(type = Varseltype.Oppgave, aktiv = true).dbVarsel()
 
         insertVarsel(oppgave1, oppgave2)
 
@@ -66,7 +65,7 @@ class InaktiverVarselApiTest {
 
     @Test
     fun `svarer med feilkode hvis varsel ikke finnes`() = testVarselApi { client ->
-        val beskjed = dbVarsel(type = Varseltype.Beskjed, aktiv = true)
+        val beskjed = TestVarsel(type = Varseltype.Beskjed, aktiv = true).dbVarsel()
 
         insertVarsel(beskjed)
 

@@ -1,10 +1,9 @@
 package no.nav.tms.varsel.authority.database
-
+import com.fasterxml.jackson.databind.JsonNode
 import no.nav.tms.varsel.action.*
-import no.nav.tms.varsel.action.EksternKanal.EPOST
-import no.nav.tms.varsel.action.EksternKanal.SMS
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowInOsloUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -13,37 +12,313 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 
-fun dbVarsel(
-    type: Varseltype = Varseltype.Beskjed,
-    varselId: String = UUID.randomUUID().toString(),
-    ident: String = "01234567890",
-    aktiv: Boolean = true,
-    sensitivitet: Sensitivitet = Sensitivitet.High,
-    innhold: Innhold = dbInnhold(),
-    produsent: DatabaseProdusent = dbProdusent(),
-    eksternVarslingBestilling: EksternVarslingBestilling? = dbEksternVarslingBestilling(),
-    eksternVarslingStatus: EksternVarslingStatus? = dbEksternVarslingStatus(),
-    opprettet: ZonedDateTime = nowAtUtc(),
-    aktivFremTil: ZonedDateTime? = nowAtUtc().plusDays(7),
-    inaktivert: ZonedDateTime? = null,
-    inaktivertAv: VarselInaktivertKilde? = null
-) = DatabaseVarsel(
-    type = type,
-    varselId = varselId,
-    ident = ident,
-    aktiv = aktiv,
-    sensitivitet = sensitivitet,
-    innhold = innhold,
-    produsent = produsent,
-    eksternVarslingBestilling = eksternVarslingBestilling,
-    eksternVarslingStatus = eksternVarslingStatus,
-    opprettet = opprettet,
-    aktivFremTil = aktivFremTil,
-    inaktivert = inaktivert,
-    inaktivertAv = inaktivertAv,
-)
+data class TestVarsel(
+    val type: Varseltype = Varseltype.Beskjed,
+    val varselId: String = UUID.randomUUID().toString(),
+    val ident: String = "01234567890",
+    val aktiv: Boolean = true,
+    val sensitivitet: Sensitivitet = Sensitivitet.High,
+    val innhold: Innhold = testInnhold(),
+    var produsent: DatabaseProdusent = DatabaseProdusent(
+        cluster = "testcluster",
+        namespace = "testnamespace",
+        appnavn = "testappnavn"
+    ),
+    var opprettet: ZonedDateTime = nowInOsloUtc().minusDays(1),
+    val aktivFremTil: ZonedDateTime? = nowAtUtc().plusDays(7),
+    var inaktivert: ZonedDateTime? = null,
+    var inaktivertAv: VarselInaktivertKilde? = null,
+) {
 
-fun dbInnhold(
+    var arkivertDato: ZonedDateTime? = null
+    var deaktivertPgaUtløptFrist: Boolean? = null
+    var eksternVarslingBestilling: EksternVarslingBestilling? = null
+    var eksternVarslingStatus: EksternVarslingStatus? = null
+
+    val produsentApp: String
+        get() = produsent.appnavn
+
+    val forstBehandlet: ZonedDateTime
+        get() = opprettet
+    val sikkerhetsnivaa: Int
+        get() = when (sensitivitet) {
+            Sensitivitet.Substantial -> 3
+            Sensitivitet.High -> 4
+        }
+
+    private fun serializedKanalList() = eksternVarslingStatus?.kanaler?.jsonList() ?: "[]"
+
+    fun dbVarsel(withEksternVarsling: Boolean = true): DatabaseVarsel {
+        if (withEksternVarsling) {
+            withEksternVarsling()
+        }
+        return DatabaseVarsel(
+            type = type,
+            varselId = varselId,
+            ident = ident,
+            aktiv = aktiv,
+            sensitivitet = sensitivitet,
+            innhold = innhold,
+            produsent = produsent,
+            eksternVarslingBestilling = eksternVarslingBestilling,
+            eksternVarslingStatus = eksternVarslingStatus,
+            opprettet = opprettet,
+            aktivFremTil = aktivFremTil,
+            inaktivert = inaktivert,
+            inaktivertAv = inaktivertAv
+        )
+    }
+
+    fun legacyJsonFormat(): String {
+        require(deaktivertPgaUtløptFrist != null) { "deaktivertPgaUtløptFrist må være satt før legacy json kan genereres" }
+        require(arkivertDato != null) { "arkivertDato må være satt for å produsere arkivjson" }
+        return """
+            {
+                "link": "${innhold.link}",
+                "type": "${type.name}",
+                "aktiv": $aktiv,
+                "tekst": "${innhold.tekst}",
+                "eventId": "$varselId",
+                "arkivert": "${arkivertDato!!.serializeToLegacyDbFormat()}",
+                "fristUtlopt": $deaktivertPgaUtløptFrist,
+                "produsentApp": "$produsentApp",
+                "fodselsnummer": "$ident",
+                "forstBehandlet": "${forstBehandlet.serializeToLegacyDbFormat()}",
+                "sikkerhetsnivaa": ${sikkerhetsnivaa},
+                "eksternVarslingSendt": ${eksternVarslingStatus?.sendt ?: false},
+                "eksternVarslingKanaler": ${serializedKanalList()}
+              }
+        """.trimIndent()
+    }
+
+    private fun Innhold.serializeForArchive() = """
+        {
+                      "link": "$link",
+                      "tekst": "$tekst",
+                      "tekster": ${
+        tekster.jsonList {
+            """       
+                          {
+                              "tekst": "${it.tekst}",
+                              "default": ${it.default},
+                              "spraakkode": "${it.spraakkode}"
+                          } """.trimIndent()
+        }
+    }
+        }
+    """.trimIndent()
+
+    fun currentJsonFormat(): String {
+        if (inaktivertAv != null && inaktivert == null) {
+            inaktivert = opprettet.plusHours(6)
+        }
+        return """
+                  {
+                    "type": "$type",
+                    "aktiv": $aktiv,
+                    "ident": "$ident",
+                    "innhold": ${innhold.serializeForArchive()},
+                    "varselId": "$varselId",
+                    "opprettet": "${opprettet.serializeToDbFormat()}",
+                    "produsent": {
+                      "appnavn": "$produsentApp",
+                      "cluster": "test-cluster",
+                      "namespace": "${produsent.namespace}"
+                    },
+                    "inaktivert": ${inaktivert?.let { "\"${it.serializeToDbFormat()}\"" }},
+                    "inaktivertAv": ${inaktivertAv?.let { "\"${it.name}\"" }},
+                    "sensitivitet": "${sensitivitet.name.lowercase()}",
+                    "eksternVarslingStatus": ${eksternVarslingStatus?.serializeForArchive()},
+                    "eksternVarslingBestilling": ${eksternVarslingBestilling?.serializeForArchive()}
+                  }
+            """.trimIndent()
+    }
+
+    fun withLegacyProperties(
+        arkivertDato: ZonedDateTime? = null,
+        utløptFrist: Boolean? = null,
+        sikkerhetsnivaa: Int? = null,
+        forstBehandlet: String? = null,
+    ): TestVarsel {
+        val nyArkivertDato = arkivertDato ?: this.arkivertDato ?: opprettet.plusDays(90)
+        val nyUtløptFrist = utløptFrist ?: this.deaktivertPgaUtløptFrist ?: false
+        val nySensitivitet = when (sikkerhetsnivaa) {
+            3 -> Sensitivitet.Substantial
+            4 -> Sensitivitet.High
+            null -> this.sensitivitet
+            else -> throw IllegalArgumentException("Ugyldig sikkerhetsnivaa: $sikkerhetsnivaa")
+        }
+        val nyOpprettetDato = forstBehandlet?.toZonedDateTimeUtc() ?: this.opprettet
+
+        return this.deepCopy(
+            sensitivitet = nySensitivitet,
+            opprettet = nyOpprettetDato
+        ).apply {
+            this.arkivertDato = nyArkivertDato
+            deaktivertPgaUtløptFrist = nyUtløptFrist
+        }
+    }
+
+
+    fun withEksternVarsling() = apply {
+        if (eksternVarslingStatus == null)
+            eksternVarslingStatus = defaultEksternVarslingStatus
+        if (eksternVarslingBestilling == null)
+            eksternVarslingBestilling = defaultEksternVarslingBestilling
+    }
+
+    fun deepCopy(): TestVarsel {
+        return TestVarsel(
+            type = this.type,
+            varselId = this.varselId,
+            ident = this.ident,
+            aktiv = this.aktiv,
+            sensitivitet = this.sensitivitet,
+            innhold = this.innhold.copy(
+                tekst = this.innhold.tekst,
+                link = this.innhold.link,
+                tekster = this.innhold.tekster.map { it.copy() }
+            ),
+            produsent = this.produsent.copy(),
+            opprettet = this.opprettet,
+            aktivFremTil = this.aktivFremTil,
+            inaktivert = this.inaktivert,
+            inaktivertAv = this.inaktivertAv
+        ).apply {
+            arkivertDato = this@TestVarsel.arkivertDato
+            deaktivertPgaUtløptFrist = this@TestVarsel.deaktivertPgaUtløptFrist
+            eksternVarslingBestilling = this@TestVarsel.eksternVarslingBestilling?.copy(
+                prefererteKanaler = this@TestVarsel.eksternVarslingBestilling?.prefererteKanaler?.toList()
+                    ?: emptyList(),
+                smsVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.smsVarslingstekst,
+                epostVarslingstittel = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstittel,
+                epostVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstekst
+            )
+            eksternVarslingStatus = this@TestVarsel.eksternVarslingStatus?.copy(
+                sendt = this@TestVarsel.eksternVarslingStatus?.sendt ?: false,
+                sendtSomBatch = this@TestVarsel.eksternVarslingStatus?.sendtSomBatch ?: false,
+                renotifikasjonSendt = this@TestVarsel.eksternVarslingStatus?.renotifikasjonSendt ?: false,
+                kanaler = this@TestVarsel.eksternVarslingStatus?.kanaler?.toList() ?: emptyList(),
+                feilhistorikk = this@TestVarsel.eksternVarslingStatus?.feilhistorikk?.map { it.copy() }
+                    ?: emptyList(),
+                sisteStatus = this@TestVarsel.eksternVarslingStatus?.sisteStatus,
+                sistOppdatert = this@TestVarsel.eksternVarslingStatus!!.sistOppdatert
+            )
+        }
+    }
+
+    fun deepCopy(
+        varselId: String = UUID.randomUUID().toString(),
+        type: Varseltype = this.type,
+        ident: String = this.ident,
+        aktiv: Boolean = this.aktiv,
+        sensitivitet: Sensitivitet = this.sensitivitet,
+        innhold: Innhold = this.innhold.copy(
+            tekst = this.innhold.tekst,
+            link = this.innhold.link,
+            tekster = this.innhold.tekster.map { it.copy() }
+        ),
+        produsent: DatabaseProdusent = this.produsent.copy(),
+        opprettet: ZonedDateTime = this.opprettet,
+        aktivFremTil: ZonedDateTime? = this.aktivFremTil,
+        inaktivert: ZonedDateTime? = this.inaktivert,
+        inaktivertAv: VarselInaktivertKilde? = this.inaktivertAv
+    ): TestVarsel {
+        return TestVarsel(
+            type = type,
+            varselId = varselId,
+            ident = ident,
+            aktiv = aktiv,
+            sensitivitet = sensitivitet,
+            innhold = innhold,
+            produsent = produsent,
+            opprettet = opprettet,
+            aktivFremTil = aktivFremTil,
+            inaktivert = inaktivert,
+            inaktivertAv = inaktivertAv
+        ).apply {
+            arkivertDato = this@TestVarsel.arkivertDato
+            deaktivertPgaUtløptFrist = this@TestVarsel.deaktivertPgaUtløptFrist
+            eksternVarslingBestilling = this@TestVarsel.eksternVarslingBestilling?.copy(
+                prefererteKanaler = this@TestVarsel.eksternVarslingBestilling?.prefererteKanaler?.toList()
+                    ?: emptyList(),
+                smsVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.smsVarslingstekst,
+                epostVarslingstittel = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstittel,
+                epostVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstekst
+            )
+            eksternVarslingStatus = this@TestVarsel.eksternVarslingStatus?.copy(
+                sendt = this@TestVarsel.eksternVarslingStatus?.sendt ?: false,
+                sendtSomBatch = this@TestVarsel.eksternVarslingStatus?.sendtSomBatch ?: false,
+                renotifikasjonSendt = this@TestVarsel.eksternVarslingStatus?.renotifikasjonSendt ?: false,
+                kanaler = this@TestVarsel.eksternVarslingStatus?.kanaler?.toList() ?: emptyList(),
+                feilhistorikk = this@TestVarsel.eksternVarslingStatus?.feilhistorikk?.map { it.copy() }
+                    ?: emptyList(),
+                sisteStatus = this@TestVarsel.eksternVarslingStatus?.sisteStatus,
+                sistOppdatert = this@TestVarsel.eksternVarslingStatus!!.sistOppdatert
+            )
+        }
+    }
+
+    companion object {
+        private val defaultEksternVarslingBestilling = EksternVarslingBestilling(
+            prefererteKanaler = listOf(EksternKanal.SMS),
+            smsVarslingstekst = "Dette er en SMS varseltekst",
+            epostVarslingstittel = "Dette er en epost varsel tittel",
+            epostVarslingstekst = "Dette er en epost varseltekst"
+        )
+
+        private val defaultEksternVarslingStatus = EksternVarslingStatus(
+            sendt = true,
+            sendtSomBatch = false,
+            renotifikasjonSendt = false,
+            kanaler = listOf("SMS"),
+            feilhistorikk = emptyList(),
+            sisteStatus = EksternStatus.Sendt,
+            sistOppdatert = nowInOsloUtc()
+        )
+
+        val List<TestVarsel>.ids
+            get() = map { it.varselId }
+        val List<JsonNode>.varselIds
+            get() = map { it["varselId"].asText() }
+    }
+}
+
+private fun <T> List<T>.jsonList(stringProducer: (T) -> String = { "\"$it\"" }) = joinToString(
+    prefix = "[",
+    postfix = "]",
+    separator = ","
+) { stringProducer(it) }
+
+private fun EksternVarslingStatus.serializeForArchive() =
+    """{
+      "sendt": $sendt,
+      "kanaler": ${kanaler.jsonList()},
+      "sendtSomBatch": ${sendtSomBatch},
+      "sisteStatus": ${sisteStatus?.let { "\"${it.name.lowercase()}\"" }},
+      "sistOppdatert": ${sistOppdatert.serializeToDbFormat().let { "\"$it\"" }},
+      "renotifikasjonSendt": $renotifikasjonSendt,
+      "feilhistorikk": ${
+        feilhistorikk.jsonList {
+            """{
+                "tidspunkt": "${it.tidspunkt.serializeToDbFormat()}",
+                "feilmelding": "${it.feilmelding}"
+                } """.trimIndent()
+        }
+    }
+     }
+    """.trimIndent()
+
+private fun EksternVarslingBestilling.serializeForArchive() = """
+        {
+                      "kanaler": ${prefererteKanaler.jsonList { "\"${it.name}\"" }},
+                      "smsVarslingstekst": "$smsVarslingstekst",
+                      "epostVarslingstittel": "$epostVarslingstittel",
+                      "epostVarslingstekst": "$epostVarslingstekst"
+                    }
+    """.trimIndent()
+
+fun testInnhold(
     tekst: String = "varseltekst",
     link: String? = "http://link",
     tekster: List<Tekst> = listOf(Tekst("nb", "varseltekst", false))
@@ -53,250 +328,11 @@ fun dbInnhold(
     tekster = tekster
 )
 
-fun dbProdusent(
-    cluster: String? = "cluster",
-    namespace: String = "namespace",
-    appnavn: String = "appnavn"
-) = DatabaseProdusent(
-    cluster = cluster,
-    namespace = namespace,
-    appnavn = appnavn
-)
+private fun ZonedDateTime.serializeToDbFormat(): String =
+    this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"))
 
-fun dbEksternVarslingBestilling(
-    prefererteKanaler: List<EksternKanal> = listOf(SMS, EPOST),
-    smsVarslingstekst: String? = "Sms-tekst",
-    epostVarslingstittel: String? = "Epost-tittel",
-    epostVarslingstekst: String? = "Epost-tekst"
-) = EksternVarslingBestilling(
-    prefererteKanaler = prefererteKanaler,
-    smsVarslingstekst = smsVarslingstekst,
-    epostVarslingstittel = epostVarslingstittel,
-    epostVarslingstekst = epostVarslingstekst
-)
+private fun ZonedDateTime.serializeToLegacyDbFormat(): String =
+    this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
 
-fun dbEksternVarslingStatus(
-    sendt: Boolean = true,
-    renotifikasjonSendt: Boolean = false,
-    kanaler: List<String> = listOf("SMS", "EPOST"),
-    sistOppdatert: ZonedDateTime = nowAtUtc()
-) = EksternVarslingStatus(
-    sendt = sendt,
-    renotifikasjonSendt = renotifikasjonSendt,
-    kanaler = kanaler,
-    sistOppdatert = sistOppdatert
-)
-
-data class ArkiverteDbVarsel(
-    val ident: String,
-    val link: String? = "https://tester.test",
-    val tekst: String = "Dette er ett testvarsel",
-    val type: String = "oppgave",
-    val id: String = UUID.randomUUID().toString(),
-    val arkivertDato: ZonedDateTime = nowAtUtc(),
-    val produsentApp: String = "testapp",
-    val eksternVarslingSendt: Boolean = false,
-    val eksternVarslingKanaler: List<String> = listOf("SMS", "EPOST"),
-    var confidentilality: Confidentiality,
-    var sendSomBatch: Boolean = false,
-    var opprettet: ZonedDateTime = nowAtUtc().minusYears(1),
-    var renotifikasjonSendt: Boolean? = null,
-    var forstBehandlet: ZonedDateTime? = null,
-    var inaktiverDato: ZonedDateTime? = null,
-    var inaktivertAv: VarselInaktivertKilde? = null,
-    var deaktivertPgaUtløptFrist: Boolean? = null,
-    var nameSpace: String? = null,
-    var feilhistorikk: List<FeilhistorikkEntry>? = null,
-    var eksternVarslingSistOppdatert: ZonedDateTime? = null,
-    var aktiv: Boolean = false,
-) {
-
-    private var eksternVarslingSisteStatus: String = "ferdigstilt"
-
-    private val serializedKanalList = eksternVarslingKanaler.joinToString(
-        prefix = "[",
-        postfix = "]",
-        separator = ","
-    ) { "\"$it\"" }
-
-    fun legacyJsonFormat(): String {
-        require(deaktivertPgaUtløptFrist != null) { "deaktivertPgaUtløptFrist må være satt før legacy json kan genereres" }
-        forstBehandlet = forstBehandlet.takeIf { it != null } ?: opprettet
-        return """
-                {
-                    "link": "$link",
-                    "type": "$type",
-                    "aktiv": $aktiv,
-                    "tekst": "$tekst",
-                    "eventId": "$id",
-                    "arkivert": "${arkivertDato.serializeToLegacyDbFormat()}",
-                    "fristUtlopt": $deaktivertPgaUtløptFrist,
-                    "produsentApp": "$produsentApp",
-                    "fodselsnummer": "$ident",
-                    "forstBehandlet": "${forstBehandlet!!.serializeToLegacyDbFormat()}",
-                    "sikkerhetsnivaa": ${confidentilality.sikkerhetsnivaa},
-                    "eksternVarslingSendt": $eksternVarslingSendt,
-                    "eksternVarslingKanaler": $serializedKanalList
-                  }
-            """.trimIndent()
-    }
-
-
-    fun currentJsonFormat(): String {
-        require(nameSpace != null) { "nameSpace må være satt før current json kan genereres" }
-        require(renotifikasjonSendt != null) { "renotifikasjonSendt må være satt før current json kan genereres" }
-
-        return """
-                  {
-                    "type": "$type",
-                    "aktiv": $aktiv,
-                    "ident": "$ident",
-                    "innhold": {
-                      "link": "$link",
-                      "tekst": "$tekst",
-                      "tekster": [
-                        {
-                          "tekst": "$tekst",
-                          "default": true,
-                          "spraakkode": "nb"
-                        }
-                      ]
-                    },
-                    "varselId": "$id",
-                    "opprettet": "${opprettet.serializeToDbFormat()}",
-                    "produsent": {
-                      "appnavn": "$produsentApp",
-                      "cluster": "test-cluster",
-                      "namespace": "$nameSpace"
-                    },
-                    "inaktivert": ${inaktiverDato?.let { "\"${it.serializeToDbFormat()}\"" }},
-                    "inaktivertAv": ${inaktivertAv?.let { "\"${it.name}\"" }},
-                    "sensitivitet": "${confidentilality.loa}",
-                    "eksternVarslingStatus": {
-                      "sendt": $eksternVarslingSendt,
-                      "kanaler": $serializedKanalList,
-                      "sendtSomBatch": $sendSomBatch,
-                      "sisteStatus": "$eksternVarslingSisteStatus",
-                      "sistOppdatert": ${
-            eksternVarslingSistOppdatert?.serializeToDbFormat()?.let { "\"$it\"" } ?: "null"
-        },
-                      "renotifikasjonSendt": $renotifikasjonSendt,
-                      "feilhistorikk": ${serializeFeilhistorikk()}
-                    },
-                    "eksternVarslingBestilling": {
-                      "kanBatches": false,
-                      "prefererteKanaler": [
-                        "SMS",
-                        "EPOST"
-                      ]
-                    }
-                  }
-            """.trimIndent()
-    }
-
-    private fun serializeFeilhistorikk(): String =
-        feilhistorikk?.joinToString(prefix = "[", postfix = "]", separator = ",") {
-            """
-                {
-                    "tidspunkt": "${it.tidspunkt.serializeToDbFormat()}",
-                    "feilmelding": "${it.feilmelding}"
-                }
-            """.trimIndent()
-        } ?: "[]"
-
-    fun withLegacyProperties(
-        forstBehandletStr: String? = null,
-        forstBehandlet: ZonedDateTime = nowAtUtc().minusYears(1),
-        deaktivertPgaUtløptFrist: Boolean? = false
-    ) = apply {
-        this.forstBehandlet = forstBehandletStr?.toZonedDateTimeUtc() ?: forstBehandlet
-        this.deaktivertPgaUtløptFrist = deaktivertPgaUtløptFrist
-    }
-
-
-    fun withCurrentProperties(
-        inaktiverDato: ZonedDateTime = opprettet.plusDays(1),
-        inaktivertAv: VarselInaktivertKilde = VarselInaktivertKilde.Frist,
-        nameSpace: String = "test-namespace",
-        renotifikasjonSendt: Boolean = false,
-        feilhistorikk: List<FeilhistorikkEntry> = emptyList(),
-        sistOppdatert: ZonedDateTime? = null,
-        sisteStatus: String? = null
-    ) = apply {
-        this.inaktiverDato = inaktiverDato
-        this.inaktivertAv = inaktivertAv
-        this.nameSpace = nameSpace
-        this.renotifikasjonSendt = renotifikasjonSendt
-        this.feilhistorikk = feilhistorikk
-        this.eksternVarslingSistOppdatert = sistOppdatert
-        this.eksternVarslingSisteStatus = sisteStatus ?: this.eksternVarslingSisteStatus
-    }
-
-    companion object {
-
-        fun String.toZonedDateTimeUtc(hour: Int = 9): ZonedDateTime =
-            LocalDate.parse(this)
-                .atTime(hour, 0)
-                .atZone(ZoneOffset.UTC)
-
-        fun ZonedDateTime.serializeToDbFormat(): String? =
-            this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"))
-
-        fun ZonedDateTime.serializeToLegacyDbFormat(): String? =
-            this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
-
-        fun generateFromDatabaseVarsel(
-            varsel: DatabaseVarsel,
-            id: String = UUID.randomUUID().toString(),
-        ) =
-            ArkiverteDbVarsel(
-                id = id,
-                ident = varsel.ident,
-                link = varsel.innhold.link!!,
-                tekst = varsel.innhold.tekst,
-                type = varsel.type.name,
-                arkivertDato = nowAtUtc(),
-                produsentApp = varsel.produsent.appnavn,
-                eksternVarslingSendt = varsel.eksternVarslingStatus?.sendt!!,
-                eksternVarslingKanaler = varsel.eksternVarslingStatus.kanaler,
-                confidentilality = Confidentiality.convertFromLoa(varsel.sensitivitet),
-                sendSomBatch = varsel.eksternVarslingStatus.sendtSomBatch,
-                opprettet = varsel.opprettet,
-                renotifikasjonSendt = varsel.eksternVarslingStatus.renotifikasjonSendt,
-                forstBehandlet = varsel.opprettet,
-                inaktiverDato = varsel.inaktivert,
-                inaktivertAv = varsel.inaktivertAv,
-                aktiv = varsel.aktiv,
-                deaktivertPgaUtløptFrist = varsel.inaktivertAv == VarselInaktivertKilde.Frist,
-                nameSpace = varsel.produsent.namespace,
-                feilhistorikk = varsel.eksternVarslingStatus.feilhistorikk.map {
-                    FeilhistorikkEntry(
-                        tidspunkt = it.tidspunkt,
-                        feilmelding = it.feilmelding
-                    )
-                }
-            )
-    }
-
-    enum class Confidentiality(val sikkerhetsnivaa: Int, val loa: String) {
-        LEVEL3(3, "substantial"),
-        LEVEL4(4, "high"),
-        HIGH(4, "high"),
-        SUBSTANTIAL(3, "substantial");
-
-        companion object {
-            fun convertFromLoa(loa: Sensitivitet): Confidentiality = when (loa.name.lowercase()) {
-                "high" -> LEVEL4
-                "substantial" -> LEVEL3
-                else -> throw IllegalArgumentException("Ukjent loa-nivå: $loa")
-            }
-        }
-    }
-
-    class FeilhistorikkEntry(
-        val tidspunkt: ZonedDateTime,
-        val feilmelding: String
-    )
-}
-
-
+fun String.toZonedDateTimeUtc(hour: Int = 9): ZonedDateTime =
+    LocalDate.parse(this).atTime(hour, 0).atZone(ZoneOffset.UTC)

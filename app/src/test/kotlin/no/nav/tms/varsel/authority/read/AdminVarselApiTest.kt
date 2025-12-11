@@ -1,41 +1,35 @@
 package no.nav.tms.varsel.authority.read
 
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.jackson.jackson
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
-import io.ktor.server.testing.testApplication
-import io.mockk.mockk
 import no.nav.tms.token.support.azure.validation.mock.azureMock
+import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Sensitivitet.Substantial
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.action.Varseltype.Innboks
 import no.nav.tms.varsel.action.Varseltype.Oppgave
 import no.nav.tms.varsel.authority.DatabaseProdusent
-import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Companion.toZonedDateTimeUtc
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.HIGH
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.LEVEL4
-import no.nav.tms.varsel.authority.database.ArkiverteDbVarsel.Confidentiality.SUBSTANTIAL
+import no.nav.tms.varsel.authority.read.JsonHelpers.findElementsWithKey
+import no.nav.tms.varsel.authority.read.JsonHelpers.shouldHaveValue
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.database.dbVarsel
-import no.nav.tms.varsel.authority.varselApi
+import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.database.TestVarsel.Companion.ids
+import no.nav.tms.varsel.authority.database.TestVarsel.Companion.varselIds
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
@@ -43,7 +37,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -61,14 +54,14 @@ class AdminVarselApiTest {
 
     private val endpoint = "/varsel/detaljert/alle/admin"
     val aktivtVarselOct2025 =
-        dbVarsel(
+        TestVarsel(
             type = Beskjed,
             opprettet = "12-10-2025".toOsloZonedDateTime(),
             ident = ident,
             varselId = "aktivOct2025"
         )
     val inaktivtVarselOct2025 =
-        dbVarsel(
+        TestVarsel(
             type = Beskjed,
             opprettet = "10-10-2025".toOsloZonedDateTime(),
             inaktivert = "10-10-2025".toOsloZonedDateTime(),
@@ -77,14 +70,14 @@ class AdminVarselApiTest {
             varselId = "inaktivOct2025"
         )
     val aktivtVarselJun2025 =
-        dbVarsel(
+        TestVarsel(
             type = Oppgave,
             ident = ident,
             opprettet = "23-06-2025".toOsloZonedDateTime(),
             varselId = "aktivJun2025"
         )
     val varselDec2024Inaktivert2025 =
-        dbVarsel(
+        TestVarsel(
             type = Oppgave,
             ident = ident,
             opprettet = "08-12-2024".toOsloZonedDateTime(),
@@ -93,7 +86,7 @@ class AdminVarselApiTest {
             varselId = "varselDec2024Inaktivert2025"
         )
     val inaktivtVarselMay2023 =
-        dbVarsel(
+        TestVarsel(
             type = Innboks,
             ident = ident,
             opprettet = "10-10-2023".toOsloZonedDateTime(),
@@ -103,7 +96,7 @@ class AdminVarselApiTest {
 
     @BeforeEach
     fun addVarslerToDb() {
-        insertVarsel(
+        writeRepository.insertTestVarsel(
             aktivtVarselJun2025,
             inaktivtVarselMay2023,
             aktivtVarselOct2025,
@@ -118,9 +111,9 @@ class AdminVarselApiTest {
     }
 
     @Test
-    fun `Serialiserer varsel på alle format`() = testVarselApi {
+    fun `Serialiserer varsel på alle format`() = testVarselApi(userIdent = "789") {
         val testIdent = "789"
-        val varsel = dbVarsel(
+        val varselData = TestVarsel(
             opprettet = "23-06-2025".toOsloZonedDateTime().plusHours(11),
             varselId = "varsel1234",
             ident = testIdent,
@@ -130,7 +123,8 @@ class AdminVarselApiTest {
                 cluster = "test-cluster",
                 namespace = "test-namespace",
                 appnavn = "test-appnavn"
-            ),
+            )
+        ).apply {
             eksternVarslingStatus = aktivtVarselJun2025.eksternVarslingStatus?.copy(
                 renotifikasjonSendt = true,
                 sistOppdatert = "26-06-2025".toOsloZonedDateTime().plusHours(10).plusMinutes(5),
@@ -146,52 +140,41 @@ class AdminVarselApiTest {
                     ),
                 )
             )
+        }
+        val arkivertVarsel = varselData.deepCopy(varselId = "arkivertVarsel")
+
+        val arkivertLegacyVarsel = varselData.deepCopy(
+            varselId = "arkivertLegacyVarsel65",
+            aktiv = false
+        ).withLegacyProperties(
+            utløptFrist = true
         )
-        val arkivertVarsel = ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel, "arkivertVarsel65")
-            .withCurrentProperties(
-                nameSpace = varsel.produsent.namespace,
-                renotifikasjonSendt = varsel.eksternVarslingStatus!!.renotifikasjonSendt,
-                sistOppdatert = varsel.eksternVarslingStatus.sistOppdatert,
-                feilhistorikk = varsel.eksternVarslingStatus.feilhistorikk.map {
-                    ArkiverteDbVarsel.FeilhistorikkEntry(
-                        feilmelding = it.feilmelding,
-                        tidspunkt = it.tidspunkt
-                    )
-                },
-                sisteStatus = varsel.eksternVarslingStatus.sisteStatus?.name?.lowercase()
-            )
-        val arkivertLegacyVarsel =
-            ArkiverteDbVarsel.generateFromDatabaseVarsel(varsel, "arkivertLegacyVarsel65").apply {
-                forstBehandlet = varsel.opprettet
-                deaktivertPgaUtløptFrist = true
-                aktiv = false
-            }
         database.insertCurrentArkiverteVarsler(testIdent, arkivertVarsel)
         database.insertLegacyArkiverteVarsler(testIdent, arkivertLegacyVarsel)
-        insertVarsel(varsel)
+        writeRepository.insertTestVarsel(varselData)
 
         val varsler2025Response =
             client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)
-        varsler2025Response["feilendeVarsler"].toList() shouldHaveSize 0
+        varsler2025Response["feilendeVarsler"].map { it.asText() } shouldBe emptyList()
 
         val alleFormatVarsel = varsler2025Response["varsler"].toList()
-        val legacyFormatVarsel = alleFormatVarsel.find { it["varselId"].asText() == arkivertLegacyVarsel.id }!!
-        val currentFormatVarsel = alleFormatVarsel.filter { it["varselId"].asText() != arkivertLegacyVarsel.id }
+        val legacyFormatVarsel = alleFormatVarsel.find { it["varselId"].asText() == arkivertLegacyVarsel.varselId }!!
+        val currentFormatVarsel = alleFormatVarsel.filter { it["varselId"].asText() != arkivertLegacyVarsel.varselId }
 
         alleFormatVarsel.size shouldBe 3
 
-        alleFormatVarsel findElementsWithKey "type" shouldHaveValue varsel.type.name.lowercase()
-        alleFormatVarsel findElementsWithKey "innhold.tekst" shouldHaveValue varsel.innhold.tekst
-        alleFormatVarsel findElementsWithKey "innhold.link" shouldHaveValue varsel.innhold.link!!
-        alleFormatVarsel findElementsWithKey "eksternVarsling.sendt" shouldHaveValue varsel.eksternVarslingStatus.sendt
-        alleFormatVarsel findElementsWithKey "eksternVarsling.kanaler" shouldHaveValue varsel.eksternVarslingStatus.kanaler
-        alleFormatVarsel findElementsWithKey "aktiv" shouldHaveValue varsel.aktiv
+        alleFormatVarsel findElementsWithKey "type" shouldHaveValue varselData.type.name.lowercase()
+        alleFormatVarsel findElementsWithKey "innhold.tekst" shouldHaveValue varselData.innhold.tekst
+        alleFormatVarsel findElementsWithKey "innhold.link" shouldHaveValue varselData.innhold.link!!
+        alleFormatVarsel findElementsWithKey "eksternVarsling.sendt" shouldHaveValue varselData.eksternVarslingStatus!!.sendt
+        alleFormatVarsel findElementsWithKey "eksternVarsling.kanaler" shouldHaveValue varselData.eksternVarslingStatus!!.kanaler
+        alleFormatVarsel findElementsWithKey "aktiv" shouldHaveValue varselData.aktiv
 
         legacyFormatVarsel["produsertAv"].asText() shouldBe "test-appnavn"
         currentFormatVarsel findElementsWithKey "produsertAv" shouldHaveValue "test-appnavn(test-namespace)"
 
-        legacyFormatVarsel["tilgangstyring"].asText() shouldBe "Sikkerhetsnivå ${arkivertLegacyVarsel.confidentilality.sikkerhetsnivaa}"
-        currentFormatVarsel findElementsWithKey "tilgangstyring" shouldHaveValue "Idporten level of assurance ${varsel.sensitivitet.name.lowercase()}"
+        legacyFormatVarsel["tilgangstyring"].asText() shouldBe "Sikkerhetsnivå ${arkivertLegacyVarsel.sikkerhetsnivaa}"
+        currentFormatVarsel findElementsWithKey "tilgangstyring" shouldHaveValue "Idporten level of assurance ${varselData.sensitivitet.name.lowercase()}"
 
         legacyFormatVarsel["tilleggsopplysninger"] shouldBe null
         currentFormatVarsel.apply {
@@ -259,19 +242,25 @@ class AdminVarselApiTest {
     @Test
     fun `inkluderer arkiverte varsler for bruker i tidsperiode`() = testVarselApi {
 
-        val varselAug2020 = ArkiverteDbVarsel(
-            id = "legacyAug2020",
+        val legacyVarselAug2020 = TestVarsel(
+            varselId = "legacyAug2020",
             ident = ident,
-            confidentilality = LEVEL4,
-        ).withLegacyProperties(forstBehandletStr = "2020-08-10")
-        val legacyJsonFeb2023 =
-            varselAug2020.copy(id = "legacyFeb2023", forstBehandlet = "2023-02-18".toZonedDateTimeUtc())
+        ).withLegacyProperties(
+            sikkerhetsnivaa = 4,
+            forstBehandlet = "2020-08-10"
+        )
 
-        val varselJsonJan2025 = ArkiverteDbVarsel(
-            id = "arkivertJan2025",
+        val legacyJsonFeb2023 =
+            legacyVarselAug2020.deepCopy(
+                varselId = "legacyFeb2023",
+            ).withLegacyProperties(forstBehandlet = "2023-02-18")
+
+        val varselJsonJan2025 = TestVarsel(
+            varselId = "varselJsonJan2025",
             ident = ident,
-            confidentilality = SUBSTANTIAL
-        ).withCurrentProperties()
+            sensitivitet = Substantial,
+            opprettet = "15-01-2025".toOsloZonedDateTime()
+        )
 
         val uventetVarselformatId = "uventetVarselFormat"
         val uventetVarselFormat = """
@@ -285,7 +274,7 @@ class AdminVarselApiTest {
                     }
                 """.trimIndent()
 
-        database.insertLegacyArkiverteVarsler(ident, legacyJsonFeb2023, varselAug2020)
+        database.insertLegacyArkiverteVarsler(ident, legacyJsonFeb2023, legacyVarselAug2020)
         database.insertCurrentArkiverteVarsler(ident, varselJsonJan2025)
         database.insertArkivertVarsel(
             ident = ident,
@@ -306,7 +295,11 @@ class AdminVarselApiTest {
 
         val varslerMayToDec2025 =
             client.getVarslerAsJson("$endpoint?fom=2025-05-01&tom=2025-12-31", ident)["varsler"].toList()
-        varslerMayToDec2025.size shouldBe 3
+        varslerMayToDec2025.varselIds shouldContainOnly listOf(
+            aktivtVarselJun2025,
+            aktivtVarselOct2025,
+            inaktivtVarselOct2025
+        ).ids
     }
 
     @Nested
@@ -316,55 +309,60 @@ class AdminVarselApiTest {
             val testIdent = "99876543567865"
 
             val inaktivBeskjedMedKildeBruker =
-                dbVarsel(
+                TestVarsel(
                     ident = testIdent,
                     inaktivert = "01-11-2025".toOsloZonedDateTime().plusHours(10),
                     inaktivertAv = VarselInaktivertKilde.Bruker,
                     type = Beskjed,
                     aktiv = false
-                )
+                ).withEksternVarsling()
 
-            val inaktivtTemplateArchiveVarsel =
-                ArkiverteDbVarsel.generateFromDatabaseVarsel(inaktivBeskjedMedKildeBruker)
-            val ikkeInaktivertVarsel = dbVarsel(ident = testIdent, type = Beskjed)
+            val ikkeInaktivertVarsel = TestVarsel(ident = testIdent, type = Beskjed)
             val beskjedUtenKilde =
-                dbVarsel(
+                TestVarsel(
                     aktiv = false,
                     ident = testIdent,
                     inaktivert = "01-11-2025".toOsloZonedDateTime().plusHours(10),
                     inaktivertAv = null
                 )
-            val arkivertOppgaveMedKildeProdusent = inaktivtTemplateArchiveVarsel
-                .copy(
-                    id = "arkivertOppgaveMedKildeProdusent",
-                    type = Oppgave.name,
+            val arkivertOppgaveMedKildeProdusent = inaktivBeskjedMedKildeBruker
+                .deepCopy(
+                    varselId = "arkivertOppgaveMedKildeProdusent",
+                    type = Oppgave,
                     inaktivertAv = VarselInaktivertKilde.Produsent
                 )
 
-            val arkivertVarselMedKildeSystem =
-                inaktivtTemplateArchiveVarsel.copy(inaktivertAv = VarselInaktivertKilde.Frist)
-            val arkivertVarselUtenKilde = ArkiverteDbVarsel.generateFromDatabaseVarsel(beskjedUtenKilde)
-
-            val legacyBeskjedMedFristUtløptTrue = arkivertOppgaveMedKildeProdusent.copy(
-                id = "legacyMedFristUtløptTrue",
-                deaktivertPgaUtløptFrist = true,
-                inaktivertAv = null,
-                inaktiverDato = null,
-                type = Beskjed.name,
-                aktiv = false
-            )
-            val legacyOppgaveMedFristUtløptFalse =
-                arkivertOppgaveMedKildeProdusent.copy(
-                    id = "legacyOppgaveFristUtløptFalse",
-                    deaktivertPgaUtløptFrist = false,
-                    aktiv = false
+            val arkivertVarselMedKildeSystem = inaktivBeskjedMedKildeBruker
+                .deepCopy(
+                    varselId = "arkivertVarselMedKildeSystem",
+                    inaktivertAv = VarselInaktivertKilde.Frist
                 )
-            val legacyInnboksUtenFristUtløpt =
-                legacyOppgaveMedFristUtløptFalse.copy(id = "legacyInnboksFristUtløptFalse", type = Innboks.name)
-            val legacyBeskjedUtenFristUtløpt =
-                legacyOppgaveMedFristUtløptFalse.copy(id = "legacyBeskjedFristUtløptFalse", type = Beskjed.name)
+            val arkivertVarselUtenKilde = beskjedUtenKilde.deepCopy(varselId = "arkivertVarselUtenKilde")
 
-            insertVarsel(inaktivBeskjedMedKildeBruker, beskjedUtenKilde, ikkeInaktivertVarsel)
+            val legacyBeskjedMedFristUtløptTrue = arkivertOppgaveMedKildeProdusent.deepCopy(
+                varselId = "legacyMedFristUtløptTrue",
+                inaktivertAv = null,
+                inaktivert = null,
+                type = Beskjed,
+                aktiv = false
+            ).withLegacyProperties(utløptFrist = true)
+
+            val legacyOppgaveMedFristUtløptFalse =
+                arkivertOppgaveMedKildeProdusent.deepCopy(
+                    varselId = "legacyOppgaveFristUtløptFalse",
+                    aktiv = false
+                ).withLegacyProperties(utløptFrist = false)
+
+            val legacyInnboksUtenFristUtløpt =
+                legacyOppgaveMedFristUtløptFalse.deepCopy(varselId = "legacyInnboksFristUtløptFalse", type = Innboks)
+            val legacyBeskjedUtenFristUtløpt =
+                legacyOppgaveMedFristUtløptFalse.deepCopy(varselId = "legacyBeskjedFristUtløptFalse", type = Beskjed)
+
+            writeRepository.insertTestVarsel(
+                inaktivBeskjedMedKildeBruker,
+                beskjedUtenKilde,
+                ikkeInaktivertVarsel
+            )
 
             database.insertCurrentArkiverteVarsler(
                 testIdent,
@@ -388,11 +386,11 @@ class AdminVarselApiTest {
                 inaktivertValue(inaktivBeskjedMedKildeBruker.varselId) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av bruker"
                 inaktivertValue(beskjedUtenKilde.varselId) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av ukjent kilde"
                 inaktivertValue(ikkeInaktivertVarsel.varselId) shouldBe "Ikke inaktivert"
-                inaktivertValue(arkivertOppgaveMedKildeProdusent.id) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av produsent"
-                inaktivertValue(legacyBeskjedMedFristUtløptTrue.id) shouldBe "av system (frist utløpt)"
-                inaktivertValue(legacyOppgaveMedFristUtløptFalse.id) shouldBe "av produsent"
-                inaktivertValue(legacyBeskjedUtenFristUtløpt.id) shouldBe "av bruker/produsent"
-                inaktivertValue(legacyInnboksUtenFristUtløpt.id) shouldBe "av system"
+                inaktivertValue(arkivertOppgaveMedKildeProdusent.varselId) shouldBe "01.11.2025 kl 10:00 (UTC+01:00) av produsent"
+                inaktivertValue(legacyBeskjedMedFristUtløptTrue.varselId) shouldBe "av system (frist utløpt)"
+                inaktivertValue(legacyOppgaveMedFristUtløptFalse.varselId) shouldBe "av produsent"
+                inaktivertValue(legacyBeskjedUtenFristUtløpt.varselId) shouldBe "av bruker/produsent"
+                inaktivertValue(legacyInnboksUtenFristUtløpt.varselId) shouldBe "av system"
             }
         }
 
@@ -400,24 +398,23 @@ class AdminVarselApiTest {
         fun `Håndterer varsler som er arkiverte men ikke inaktive`() = testVarselApi {
 
             val testIdent = "1234560"
-            val aktivtArkivertVarsel = ArkiverteDbVarsel(
+            val aktivtArkivertVarsel = TestVarsel(
                 opprettet = "09-08-2025".toOsloZonedDateTime(),
-                id = "arkiverteIkkeInaktivertVarsel",
+                varselId = "arkiverteIkkeInaktivertVarsel",
                 ident = testIdent,
-                confidentilality = HIGH,
-                inaktiverDato = null,
+                sensitivitet = Sensitivitet.High,
+                inaktivert = null,
                 inaktivertAv = null,
                 aktiv = true,
-                nameSpace = "testspace",
-                renotifikasjonSendt = false
             )
-            val aktivtArkivertVarselLegacy = ArkiverteDbVarsel(
+            val aktivtArkivertVarselLegacy = TestVarsel(
                 opprettet = "01-02-2021".toOsloZonedDateTime(),
-                id = "arkiverteIkkeInaktivertVarselLegacy",
+                varselId = "arkiverteIkkeInaktivertVarselLegacy",
                 ident = testIdent,
-                confidentilality = LEVEL4,
                 aktiv = true,
-                deaktivertPgaUtløptFrist = false
+            ).withLegacyProperties(
+                sikkerhetsnivaa = 4,
+                utløptFrist = false
             )
 
             database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel)
@@ -426,8 +423,8 @@ class AdminVarselApiTest {
                 client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
 
             varsler2025.apply {
-                inaktivertValue(aktivtArkivertVarsel.id) shouldBe "Ikke inaktivert"
-                inaktivertValue(aktivtArkivertVarselLegacy.id) shouldBe "Ikke inaktivert"
+                inaktivertValue(aktivtArkivertVarsel.varselId) shouldBe "Ikke inaktivert"
+                inaktivertValue(aktivtArkivertVarselLegacy.varselId) shouldBe "Ikke inaktivert"
 
             }
         }
@@ -440,51 +437,10 @@ class AdminVarselApiTest {
         objectMapper.readTree(it.bodyAsText())
     }
 
-    private fun insertVarsel(vararg varsler: DatabaseVarsel) {
-        varsler.forEach {
-            writeRepository.insertVarsel(it)
-        }
-    }
-
-    private fun testVarselApi(
-        block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
-    ) = testApplication {
-
-        application {
-            varselApi(
-                readRepository,
-                mockk(),
-                installAuthenticatorsFunction = {
-                    authentication {
-                        tokenXMock {
-                            setAsDefault = true
-                        }
-                        azureMock {
-                            setAsDefault = false
-                            alwaysAuthenticated = true
-                        }
-                    }
-                }
-            )
-        }
-
-        this.block(
-            client.config {
-                install(ContentNegotiation) {
-                    jackson {
-                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        registerModule(JavaTimeModule())
-                        dateFormat = DateFormat.getDateTimeInstance()
-                    }
-                }
-            }
-        )
-    }
-
     companion object {
         private fun List<JsonNode>.inaktivertValue(id: String): String {
             return find { it["varselId"].asText() == id }.let {
-                withClue( "Varsel med id $id ikke funnet"){
+                withClue("Varsel med id $id ikke funnet") {
                     it shouldNotBe null
                 }
             }!!["inaktivert"].asText()
@@ -501,71 +457,36 @@ class AdminVarselApiTest {
                 )
             }
 
-        private val List<DatabaseVarsel>.ids
-            get() = map { it.varselId }
-
-        private val List<JsonNode>.varselIds
-            get() = map { it["varselId"].asText() }
-
-        fun LocalPostgresDatabase.insertLegacyArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+        fun LocalPostgresDatabase.insertLegacyArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
             varsler.forEach {
-                insertArkivertVarsel(ident, it.id, it.legacyJsonFormat())
+                insertArkivertVarsel(ident, it.varselId, it.legacyJsonFormat())
             }
         }
 
-        fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg varsler: ArkiverteDbVarsel) {
+        fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
             varsler.forEach {
-                insertArkivertVarsel(ident, it.id, it.currentJsonFormat())
-            }
-        }
-
-        private fun List<JsonNode>.shouldHaveValue(
-            fieldName: String,
-            expectedValue: String?,
-        ) {
-            shouldHaveValue(fieldName, expectedValue, JsonNode::asText)
-        }
-
-        infix fun List<JsonNode>.findElementsWithKey(key: String) = Pair(this, key)
-        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: String) {
-            this.first.shouldHaveValue(this.second, expectedValue)
-        }
-
-        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedValue: Boolean) {
-            this.first.shouldHaveValue(this.second, expectedValue, JsonNode::asBoolean)
-        }
-
-        infix fun Pair<List<JsonNode>, String>.shouldHaveValue(expectedList: List<String>) {
-            this.first.shouldHaveValue(this.second, expectedList) { toList().map { it.asText() } }
-        }
-
-        private fun <T> List<JsonNode>.shouldHaveValue(
-            path: String,
-            expectedValue: T,
-            typeCast: JsonNode.() -> T
-        ) {
-            forEach {
-                val keys = path.split(".", "[", "]").filter { fieldname -> fieldname.isNotEmpty() }.toMutableList()
-                withClue("$path in varsel with id ${it["varselId"].asText()} does not contain the expected value") {
-                    var node = it.path(keys.removeFirst())
-                    while (keys.isNotEmpty()) {
-                        val key = keys.removeFirst()
-                        node = key.toIntOrNull()?.let { index ->
-                            require(node.isArray)
-                            require(node.size() > index) {
-                                """$path in varsel with id ${it["varselId"].asText()} does not have enough elements in array, 
-                            |expected value $expectedValue
-                            |actual array was of size ${node.toList().size} with content content $node
-                            """.trimIndent()
-                            }
-                            node[index]
-                        }
-                            ?: node[key]
-                    }
-                    require(!node.isNull && !node.isMissingNode) { "$path in varsel with id ${it["varselId"].asText()} does not exist" }
-                    node.typeCast() shouldBe expectedValue
-                }
+                insertArkivertVarsel(ident, it.varselId, it.currentJsonFormat())
             }
         }
     }
+    private fun testVarselApi(
+        userIdent: String = ident,
+        block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
+    ) = baseTestApplication(
+        userIdent = userIdent,
+        userLoa = LevelOfAssurance.HIGH,
+        readVarselRepository = readRepository,
+        authentication = {
+            authentication {
+                tokenXMock {
+                    setAsDefault = true
+                }
+                azureMock {
+                    setAsDefault = false
+                    alwaysAuthenticated = true
+                }
+            }
+        },
+        block=block
+    )
 }

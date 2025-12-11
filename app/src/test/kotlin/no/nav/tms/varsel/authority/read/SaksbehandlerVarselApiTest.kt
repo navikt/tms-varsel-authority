@@ -1,14 +1,9 @@
 package no.nav.tms.varsel.authority.read
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.utils.io.*
@@ -17,8 +12,9 @@ import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.database.dbVarsel
-import no.nav.tms.varsel.authority.varselApi
+import no.nav.tms.varsel.authority.read.Matchers.shouldFind
+import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
+import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -28,7 +24,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.text.DateFormat
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SaksbehandlerVarselApiTest {
@@ -60,12 +55,12 @@ class SaksbehandlerVarselApiTest {
         fun `henter varsler for bruker`() = testVarselApi { client ->
             val annenIdent = "456"
 
-            val beskjed = dbVarsel(type = Beskjed, ident = ident)
-            val oppgave = dbVarsel(type = Oppgave, ident = ident)
-            val innboks = dbVarsel(type = Innboks, ident = ident)
-            val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
-            val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
-            val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
+            val beskjed = TestVarsel(type = Beskjed, ident = ident).dbVarsel()
+            val oppgave = TestVarsel(type = Oppgave, ident = ident).dbVarsel()
+            val innboks = TestVarsel(type = Innboks, ident = ident).dbVarsel()
+            val annenBeskjed = TestVarsel(type = Beskjed, ident = annenIdent).dbVarsel()
+            val annenOppgave = TestVarsel(type = Oppgave, ident = annenIdent).dbVarsel()
+            val annenInnboks = TestVarsel(type = Innboks, ident = annenIdent).dbVarsel()
 
             insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
 
@@ -82,9 +77,9 @@ class SaksbehandlerVarselApiTest {
 
     @Test
     fun `henter varsler av type`() = testVarselApi { client ->
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
-        val oppgave = dbVarsel(type = Oppgave, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident)
+        val beskjed = TestVarsel(type = Beskjed, ident = ident).dbVarsel()
+        val oppgave = TestVarsel(type = Oppgave, ident = ident).dbVarsel()
+        val innboks = TestVarsel(type = Innboks, ident = ident).dbVarsel()
 
         insertVarsel(beskjed, oppgave, innboks)
 
@@ -106,8 +101,8 @@ class SaksbehandlerVarselApiTest {
 
     @Test
     fun `henter aktive og inaktive varsler`() = testVarselApi { client ->
-        val aktivBeskjed = dbVarsel(type = Beskjed, ident = ident, aktiv = true)
-        val inaktivBeskjed = dbVarsel(type = Beskjed, ident = ident, aktiv = false)
+        val aktivBeskjed = TestVarsel(type = Beskjed, ident = ident, aktiv = true).dbVarsel()
+        val inaktivBeskjed = TestVarsel(type = Beskjed, ident = ident, aktiv = false).dbVarsel()
 
         insertVarsel(aktivBeskjed, inaktivBeskjed)
 
@@ -131,7 +126,7 @@ class SaksbehandlerVarselApiTest {
     fun `godtar varsler der ekstern varsling er null`() = testVarselApi { client ->
 
         val beskjed =
-            dbVarsel(type = Beskjed, ident = ident, eksternVarslingStatus = null, eksternVarslingBestilling = null)
+            TestVarsel(type = Beskjed, ident = ident).dbVarsel(withEksternVarsling = false)
 
         insertVarsel(beskjed)
 
@@ -157,25 +152,7 @@ class SaksbehandlerVarselApiTest {
         headers.append("ident", ident)
     }.body()
 
-    private fun List<DetaljertVarsel>.shouldFind(predicate: (DetaljertVarsel) -> Boolean): DetaljertVarsel {
-        val varsel = find(predicate)
-        varsel.shouldNotBeNull()
-        return varsel
-    }
 
-    private infix fun DetaljertVarsel.shouldMatch(dbVarsel: DatabaseVarsel) {
-        type shouldBe dbVarsel.type
-        varselId shouldBe dbVarsel.varselId
-        aktiv shouldBe dbVarsel.aktiv
-        produsent shouldBe dbVarsel.produsent
-        sensitivitet shouldBe dbVarsel.sensitivitet
-        innhold shouldBe dbVarsel.innhold
-        eksternVarsling shouldBe dbVarsel.eksternVarslingStatus
-        opprettet shouldBe dbVarsel.opprettet
-        aktivFremTil shouldBe dbVarsel.aktivFremTil
-        inaktivert shouldBe dbVarsel.inaktivert
-        inaktivertAv shouldBe dbVarsel.inaktivertAv
-    }
 
     private fun insertVarsel(vararg varsler: DatabaseVarsel) {
         varsler.forEach {
@@ -186,37 +163,19 @@ class SaksbehandlerVarselApiTest {
     @KtorDsl
     private fun testVarselApi(
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
-    ) = testApplication {
-
-        application {
-            varselApi(
-                readRepository,
-                varselInaktiverer,
-                installAuthenticatorsFunction = {
-                    authentication {
-                        tokenXMock {
-                            setAsDefault = true
-                        }
-                        azureMock {
-                            setAsDefault = false
-                            alwaysAuthenticated = true
-                        }
-                    }
+    ) = baseTestApplication(
+        readVarselRepository = readRepository,
+        authentication = {
+            authentication {
+                tokenXMock {
+                    setAsDefault = true
                 }
-            )
-        }
-
-        this.block(
-            client.config {
-                install(ContentNegotiation) {
-                    jackson {
-                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        registerModule(JavaTimeModule())
-                        dateFormat = DateFormat.getDateTimeInstance()
-                    }
+                azureMock {
+                    setAsDefault = false
+                    alwaysAuthenticated = true
                 }
             }
-        )
-    }
+        },
+        block = block
+    )
 }
-
