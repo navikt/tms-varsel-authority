@@ -306,7 +306,7 @@ class AdminVarselApiTest {
     inner class InaktiveringsInfo {
         @Test
         fun `Håndterer varierende grad av informasjon om inaktivering`() = testVarselApi {
-            val testIdent = "99876543567865"
+            val testIdent = "99876543565"
 
             val inaktivBeskjedMedKildeBruker =
                 TestVarsel(
