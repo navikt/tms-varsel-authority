@@ -1,6 +1,5 @@
 package no.nav.tms.varsel.authority.read
 
-import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -11,9 +10,7 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import no.nav.tms.varsel.authority.write.inaktiver.Timerange
 
 fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 
@@ -29,18 +26,6 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 
     get("/varsel/detaljert/alle") {
         fetchVarslerAndRespond(ident = call.request.identHeader)
-    }
-    get("/varsel/detaljert/alle/admin") {
-        VarselMetricsReporter.registerVarselHentet(
-            source = Source.ADMIN,
-            varseltype = null
-        )
-        call.respond(
-            readRepository.getAlleVarselForUserIncludeArchived(
-                ident = call.request.identHeader,
-                timeRange = call.timeRange()
-            )
-        )
     }
 
     get("/varsel/detaljert/aktive") {
@@ -89,18 +74,3 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 }
 
 private val ApplicationRequest.identHeader get() = headers["ident"] ?: throw BadRequestException("Mangler ident-header")
-
-class Timerange(fomQueryParam: String, tomQueryParam: String) {
-    val fom = LocalDate.parse(fomQueryParam, formatter).atStartOfDay(ZoneId.of("Europe/Oslo"))
-    val tom = LocalDate.parse(tomQueryParam, formatter).atStartOfDay(ZoneId.of("Europe/Oslo"))
-
-    companion object {
-        private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    }
-}
-
-private fun ApplicationCall.timeRange(): Timerange =
-    Timerange(
-        fomQueryParam = this.request.queryParameters["fom"] ?: throw BadRequestException("fom parameter må være satt"),
-        tomQueryParam = this.request.queryParameters["tom"] ?: throw BadRequestException("tom parameter må være satt")
-    )

@@ -5,7 +5,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -13,23 +15,27 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
+import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.action.Varseltype.Innboks
 import no.nav.tms.varsel.action.Varseltype.Oppgave
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
+import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.read.JsonHelpers.findElementsWithKey
 import no.nav.tms.varsel.authority.read.JsonHelpers.shouldHaveValue
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.database.TestVarsel.Companion.ids
 import no.nav.tms.varsel.authority.database.TestVarsel.Companion.varselIds
+import no.nav.tms.varsel.authority.read.Matchers.shouldHaveField
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
@@ -39,6 +45,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import kotlin.collections.forEach
@@ -52,7 +59,7 @@ class AdminVarselApiTest {
     private val writeRepository = WriteVarselRepository(database)
     private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).registerModule(JavaTimeModule())
 
-    private val endpoint = "/varsel/detaljert/alle/admin"
+    private val endpoint = "/varsel/admin/alle"
     val aktivtVarselOct2025 =
         TestVarsel(
             type = Beskjed,
@@ -111,7 +118,32 @@ class AdminVarselApiTest {
     }
 
     @Test
-    fun `Serialiserer varsel på alle format`() = testVarselApi(userIdent = "789") {
+    fun `inkluderer varsel-felt beskrivelser`() = testVarselApi {
+        val varsler2025Response =
+            client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)
+        varsler2025Response shouldHaveField "fieldDescription"
+        varsler2025Response["fieldDescription"].apply {
+            this shouldHaveField "type"
+            this shouldHaveField "varselId"
+            this shouldHaveField "aktiv"
+            this shouldHaveField "produsertAv"
+            this shouldHaveField "tilgangstyring"
+            this shouldHaveField "tekst"
+            this shouldHaveField "lenke"
+            this shouldHaveField "eksternVarsling"
+            this["eksternVarsling"].apply {
+                this shouldHaveField "sendt"
+                this shouldHaveField "kanaler"
+                this shouldHaveField "tilleggsopplysninger"
+            }
+            this shouldHaveField "opprettet"
+            this shouldHaveField "inaktivert"
+            this shouldHaveField "arkivert"
+        }
+    }
+
+    @Test
+    fun `Serialiserer varsel på alle format`() = testVarselApi {
         val testIdent = "789"
         val varselData = TestVarsel(
             opprettet = "23-06-2025".toOsloZonedDateTime().plusHours(11),
@@ -469,6 +501,7 @@ class AdminVarselApiTest {
             }
         }
     }
+
     private fun testVarselApi(
         userIdent: String = ident,
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
@@ -487,6 +520,6 @@ class AdminVarselApiTest {
                 }
             }
         },
-        block=block
+        block = block
     )
 }

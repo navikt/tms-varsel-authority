@@ -7,6 +7,7 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.jackson.jackson
@@ -15,6 +16,7 @@ import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
+import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
@@ -175,6 +177,14 @@ object Matchers {
         aktivFremTil shouldBe dbVarsel.aktivFremTil
         inaktivert shouldBe dbVarsel.inaktivert
         inaktivertAv shouldBe dbVarsel.inaktivertAv
+    }
+
+    infix fun JsonNode.shouldHaveField(string: String) {
+        val existingFields = this.fields().asSequence().map { it.key }
+
+        withClue("response should contain the field $string") {
+            this[string].isMissingOrNull() shouldNotBe true
+        }
     }
 
 }

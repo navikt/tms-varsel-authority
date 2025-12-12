@@ -12,6 +12,34 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
+object FieldDescription {
+    val type = "Type varsel, kan være beskjed, oppgave eller melding"
+    val varselId = "Unik identifikator for varselet"
+    val aktiv =
+        "Om varselet er aktivt, altså ligger under aktive varsler i varselbjelle menyen, eller inaktivt"
+    val produsertAv =
+        "Hvilken applikasjon som har produsert varselet. Inkluderer også team for nyere varsler"
+    val tilgangstyring =
+        """Hvilken sensitivtet varselet har blitt gitt. Kan være sikkerhetsnivå eller idporten level of assurance(loa). 
+                |Dette vil påvirke muligheten for å se innhold i varsel. 
+                |Hvis bruker logger inn med en annen metode enn BankId(f.eks minID) skjules teksten for varsler på sikkerhetsnivå 4 og loa high """.trimMargin()
+    val tekst = "Teksten i varslet som vises på NAVs innloggede sider"
+    val eksternVarsling = mapOf(
+        "sendt" to "Hvorvidt en sms/epost har blitt sendt til bruker i sammenheng med varselt",
+        "kanaler" to "Hvilken kanal varslet ble send på, enten sms eller epost",
+        "tilleggsopplysninger" to "Annen informasjon vi har som sms-en/ eposten som ble sendt. Hvor mye informasjon avhenger av alder på varslet "
+    )
+    val lenke = "Lenke som brukeren blir sendt til når de klikker på varselet"
+    val eksternVarslingSend = "Hvorvidt ett eksternt varsel (SMS/EPOST) har blitt sendt"
+    val eksternVarslingKanaler = "Hvilke kanaler det eksterne varselet er sendt på"
+    val eksternVarslingTilleggsinformasjon =
+        "Hvorvidt ett varsel er sendt som batch, re-notifikasjon er sendt og feilhistorikk. Data for dette er kun tilgjengelig for nyere varsler"
+    val inaktivert =
+        "Kilde og tidspunkt for når varselet ble inaktivert, eller 'Ikke inaktivert' hvis varselet er aktivt. For eldre varsel kan dette feltet være tomt selv om varselet er inaktivt"
+    val arkivert = "Om varselet er arkivert eller ikke"
+    val opprettet = "Dato for oppretting av varslet"
+}
+
 data class DetaljertAdminVarsel(
     val type: Varseltype,
     val varselId: String,
@@ -25,26 +53,6 @@ data class DetaljertAdminVarsel(
     val arkivert: Boolean,
 ) {
     companion object {
-        val typeDescription = "Type varsel, kan være beskjed, oppgave eller melding"
-        val varselIdDescription = "Unik identifikator for varselet"
-        val aktivDescription =
-            "Om varselet er aktivt, altså ligger under aktive varsler i varselbjelle menyen, eller inaktivt"
-        val produsertAvDescription =
-            "Hvilken applikasjon som har produsert varselet. Inkluderer også team for nyere varsler"
-        val tilgangstyringDescription =
-            """Hvilken sensitivtet varselet har blitt gitt. Kan være sikkerhetsnivå eller idporten level of assurance(loa). 
-                |Dette vil påvirke muligheten for å se innhold i varsel. 
-                |Hvis bruker logger inn med en annen metode enn BankId(f.eks minID) skjules teksten for varsler på sikkerhetsnivå 4 og loa high """.trimMargin()
-        val tekstDescription = "Teksten i varslet som vises på NAVs innloggede sider"
-        val lenkeDescription = "Lenke som brukeren blir sendt til når de klikker på varselet"
-        val eksternVarslingSendDescription = "Hvorvidt ett eksternt varsel (SMS/EPOST) har blitt sendt"
-        val eksternVarslingKanalerDescription = "Hvilke kanaler det eksterne varselet er sendt på"
-        val eksternVarslingTilleggsinformasjonDescription =
-            "Hvorvidt ett varsel er sendt som batch, re-notifikasjon er sendt og feilhistorikk. Data for dette er kun tilgjengelig for nyere varsler"
-        val inaktivertDescription =
-            "Kilde og tidspunkt for når varselet ble inaktivert, eller 'Ikke inaktivert' hvis varselet er aktivt. For eldre varsel kan dette feltet være tomt selv om varselet er inaktivt"
-        val arkivertDescription = "Om varselet er arkivert eller ikke"
-
 
         fun Row.resolveInaktivert(varselType: Varseltype): String? {
 
@@ -62,6 +70,7 @@ data class DetaljertAdminVarsel(
                     else
                         "${inaktivertTidspunkt?.dateTimeAndOsloTimesone() ?: ""} ${inaktivertAv?.let { "av ${inaktivertAv.lowercase()}" } ?: "av ukjent kilde"}"
                 }
+
                 fristUtløpt -> "av system (frist utløpt)"
                 varselType == Innboks -> "av system"
                 varselType == Beskjed -> "av bruker/produsent"
@@ -141,18 +150,5 @@ class ArchivedAndCurrentVarsler(
     val varsler: List<DetaljertAdminVarsel>,
     val feilendeVarsler: List<String>,
 ) {
-    val fieldDescriptions: Map<String, String> = mapOf(
-        "type" to DetaljertAdminVarsel.typeDescription,
-        "varselId" to DetaljertAdminVarsel.varselIdDescription,
-        "aktiv" to DetaljertAdminVarsel.aktivDescription,
-        "produsertAv" to DetaljertAdminVarsel.produsertAvDescription,
-        "tilgangstyring" to DetaljertAdminVarsel.tilgangstyringDescription,
-        "innhold.tekst" to DetaljertAdminVarsel.tekstDescription,
-        "innhold.link" to DetaljertAdminVarsel.lenkeDescription,
-        "eksternVarsling.sendt" to DetaljertAdminVarsel.eksternVarslingSendDescription,
-        "eksternVarsling.kanaler" to DetaljertAdminVarsel.eksternVarslingKanalerDescription,
-        "eksternVarsling.tilleggsooplysninger" to DetaljertAdminVarsel.eksternVarslingTilleggsinformasjonDescription,
-        "inaktivert" to DetaljertAdminVarsel.inaktivertDescription,
-        "arkivert" to DetaljertAdminVarsel.arkivertDescription,
-    )
+    val fieldDescription = FieldDescription
 }

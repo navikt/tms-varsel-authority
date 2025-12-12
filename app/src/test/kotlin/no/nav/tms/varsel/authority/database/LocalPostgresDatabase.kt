@@ -52,7 +52,7 @@ class LocalPostgresDatabase private constructor() : Database {
             .let { assert(it.migrationsExecuted == expectedMigrations) }
     }
 
-    fun insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
+    fun  insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
         instance.update {
             queryOf(
                 """
