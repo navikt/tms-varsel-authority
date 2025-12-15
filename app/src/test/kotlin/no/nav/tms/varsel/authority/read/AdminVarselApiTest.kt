@@ -1,34 +1,35 @@
 package no.nav.tms.varsel.authority.read
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
-import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.serialization.jackson.jackson
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
-import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
-import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.action.Varseltype.Innboks
 import no.nav.tms.varsel.action.Varseltype.Oppgave
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
-import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.read.JsonHelpers.findElementsWithKey
 import no.nav.tms.varsel.authority.read.JsonHelpers.shouldHaveValue
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
@@ -43,9 +44,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import kotlin.collections.forEach
@@ -119,8 +120,9 @@ class AdminVarselApiTest {
 
     @Test
     fun `inkluderer varsel-felt beskrivelser`() = testVarselApi {
+
         val varsler2025Response =
-            client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2025-01-01", tom = "2025-12-31")
         varsler2025Response shouldHaveField "fieldDescription"
         varsler2025Response["fieldDescription"].apply {
             this shouldHaveField "type"
@@ -186,7 +188,7 @@ class AdminVarselApiTest {
         writeRepository.insertTestVarsel(varselData)
 
         val varsler2025Response =
-            client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)
+            jsonClient.postVarslerAsJson(ident = testIdent, fom = "2025-01-01", tom = "2025-12-31")
         varsler2025Response["feilendeVarsler"].map { it.asText() } shouldBe emptyList()
 
         val alleFormatVarsel = varsler2025Response["varsler"].toList()
@@ -240,7 +242,7 @@ class AdminVarselApiTest {
     fun `henter alle varsel for bruker i tidsperiode`() = testVarselApi {
 
         val varsler2025 =
-            client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2025-01-01", tom = "2025-12-31")["varsler"].toList()
 
         varsler2025.varselIds shouldContainOnly listOf(
             aktivtVarselJun2025,
@@ -250,7 +252,7 @@ class AdminVarselApiTest {
         ).ids
 
         val varsler2023til20205 =
-            client.getVarslerAsJson("$endpoint?fom=2023-01-01&tom=2025-12-31", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2023-01-01", tom = "2025-12-31")["varsler"].toList()
         varsler2023til20205.varselIds shouldContainOnly listOf(
             aktivtVarselJun2025,
             inaktivtVarselMay2023,
@@ -260,14 +262,14 @@ class AdminVarselApiTest {
         ).ids
 
         val varslerBefore2025 =
-            client.getVarslerAsJson("${endpoint}?fom=2023-01-01&tom=2024-12-31", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2023-01-01", tom = "2024-12-31")["varsler"].toList()
         varslerBefore2025.varselIds shouldContainOnly listOf(
             varselDec2024Inaktivert2025,
             inaktivtVarselMay2023
         ).ids
 
         val varselOpprettetFørMenAktivEtter =
-            client.getVarslerAsJson("${endpoint}?fom=2025-01-01&tom=2025-06-22", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2025-01-01", tom = "2025-06-22")["varsler"].toList()
         varselOpprettetFørMenAktivEtter.varselIds shouldContainOnly listOf(varselDec2024Inaktivert2025).ids
     }
 
@@ -315,18 +317,18 @@ class AdminVarselApiTest {
         )
 
         val varsler2020til20205 =
-            client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", ident)
+            jsonClient.postVarslerAsJson(ident, fom = "2020-01-01", tom = "2025-12-31")
         varsler2020til20205["varsler"].toList().size shouldBe 8
         varsler2020til20205["feilendeVarsler"].toList().map {
             it.asText()
         } shouldContainOnly listOf(uventetVarselformatId)
 
         val varsler2023til2025 =
-            client.getVarslerAsJson("$endpoint?fom=2023-02-01&tom=2025-12-31", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2023-02-01", tom = "2025-12-31")["varsler"].toList()
         varsler2023til2025.size shouldBe 7
 
         val varslerMayToDec2025 =
-            client.getVarslerAsJson("$endpoint?fom=2025-05-01&tom=2025-12-31", ident)["varsler"].toList()
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2025-05-01", tom = "2025-12-31")["varsler"].toList()
         varslerMayToDec2025.varselIds shouldContainOnly listOf(
             aktivtVarselJun2025,
             aktivtVarselOct2025,
@@ -411,7 +413,7 @@ class AdminVarselApiTest {
             )
 
             val varsler2025 =
-                client.getVarslerAsJson("$endpoint?fom=2025-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
+                jsonClient.postVarslerAsJson(ident = testIdent, fom = "2025-01-01", tom = "2025-12-31")["varsler"].toList()
 
             varsler2025.apply {
                 size shouldBe 10
@@ -422,7 +424,7 @@ class AdminVarselApiTest {
                 inaktivertValue(legacyBeskjedMedFristUtløptTrue.varselId) shouldBe "av system (frist utløpt)"
                 inaktivertValue(legacyOppgaveMedFristUtløptFalse.varselId) shouldBe "av produsent"
                 inaktivertValue(legacyBeskjedUtenFristUtløpt.varselId) shouldBe "av bruker/produsent"
-                inaktivertValue(legacyInnboksUtenFristUtløpt.varselId) shouldBe "av system"
+                inaktivertValue(legacyInnboksUtenFristUtløpt.varselId) shouldBe "av produsent"
             }
         }
 
@@ -452,7 +454,11 @@ class AdminVarselApiTest {
             database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel)
             database.insertLegacyArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy)
             val varsler2025 =
-                client.getVarslerAsJson("$endpoint?fom=2020-01-01&tom=2025-12-31", testIdent)["varsler"].toList()
+                jsonClient.postVarslerAsJson(
+                    ident = testIdent,
+                    fom = "2020-01-01",
+                    tom = "2025-12-31"
+                )["varsler"].toList()
 
             varsler2025.apply {
                 inaktivertValue(aktivtArkivertVarsel.varselId) shouldBe "Ikke inaktivert"
@@ -462,13 +468,16 @@ class AdminVarselApiTest {
         }
     }
 
-    private suspend fun HttpClient.getVarslerAsJson(path: String, ident: String): JsonNode = get(path) {
-        headers.append("ident", ident)
-    }.let {
-        it.status shouldBe HttpStatusCode.OK
-        objectMapper.readTree(it.bodyAsText())
-    }
+    private suspend fun HttpClient.postVarslerAsJson(ident: String, fom: String, tom: String): JsonNode =
+        post(endpoint) {
+            contentType(ContentType.Application.Json)
+            setBody(AlleVarslerRequest(ident, fom, tom))
+        }.let {
+            it.status shouldBe HttpStatusCode.OK
+            objectMapper.readTree(it.bodyAsText())
+        }
 
+    private data class AlleVarslerRequest(val ident: String, val fom: String, val tom: String)
     companion object {
         private fun List<JsonNode>.inaktivertValue(id: String): String {
             return find { it["varselId"].asText() == id }.let {
@@ -522,4 +531,15 @@ class AdminVarselApiTest {
         },
         block = block
     )
+}
+
+val ApplicationTestBuilder.jsonClient
+get() = createClient {
+    install(ContentNegotiation) {
+        jackson {
+            configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            registerModule(JavaTimeModule())
+            dateFormat = DateFormat.getDateTimeInstance()
+        }
+    }
 }

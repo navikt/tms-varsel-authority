@@ -167,46 +167,6 @@ data class TestVarsel(
             eksternVarslingBestilling = defaultEksternVarslingBestilling
     }
 
-    fun deepCopy(): TestVarsel {
-        return TestVarsel(
-            type = this.type,
-            varselId = this.varselId,
-            ident = this.ident,
-            aktiv = this.aktiv,
-            sensitivitet = this.sensitivitet,
-            innhold = this.innhold.copy(
-                tekst = this.innhold.tekst,
-                link = this.innhold.link,
-                tekster = this.innhold.tekster.map { it.copy() }
-            ),
-            produsent = this.produsent.copy(),
-            opprettet = this.opprettet,
-            aktivFremTil = this.aktivFremTil,
-            inaktivert = this.inaktivert,
-            inaktivertAv = this.inaktivertAv
-        ).apply {
-            arkivertDato = this@TestVarsel.arkivertDato
-            deaktivertPgaUtløptFrist = this@TestVarsel.deaktivertPgaUtløptFrist
-            eksternVarslingBestilling = this@TestVarsel.eksternVarslingBestilling?.copy(
-                prefererteKanaler = this@TestVarsel.eksternVarslingBestilling?.prefererteKanaler?.toList()
-                    ?: emptyList(),
-                smsVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.smsVarslingstekst,
-                epostVarslingstittel = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstittel,
-                epostVarslingstekst = this@TestVarsel.eksternVarslingBestilling?.epostVarslingstekst
-            )
-            eksternVarslingStatus = this@TestVarsel.eksternVarslingStatus?.copy(
-                sendt = this@TestVarsel.eksternVarslingStatus?.sendt ?: false,
-                sendtSomBatch = this@TestVarsel.eksternVarslingStatus?.sendtSomBatch ?: false,
-                renotifikasjonSendt = this@TestVarsel.eksternVarslingStatus?.renotifikasjonSendt ?: false,
-                kanaler = this@TestVarsel.eksternVarslingStatus?.kanaler?.toList() ?: emptyList(),
-                feilhistorikk = this@TestVarsel.eksternVarslingStatus?.feilhistorikk?.map { it.copy() }
-                    ?: emptyList(),
-                sisteStatus = this@TestVarsel.eksternVarslingStatus?.sisteStatus,
-                sistOppdatert = this@TestVarsel.eksternVarslingStatus!!.sistOppdatert
-            )
-        }
-    }
-
     fun deepCopy(
         varselId: String = UUID.randomUUID().toString(),
         type: Varseltype = this.type,

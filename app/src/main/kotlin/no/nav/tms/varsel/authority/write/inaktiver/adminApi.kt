@@ -25,15 +25,16 @@ fun Route.adminApi(
         call.respond(HttpStatusCode.OK)
     }
 
-    get("/varsel/admin/alle") {
+    post("/varsel/admin/alle") {
         VarselMetricsReporter.registerVarselHentet(
             source = Source.ADMIN,
             varseltype = null
         )
+        val request = call.receive<AlleVarslerRequest>()
         call.respond(
             readRepository.getAlleVarselForUserIncludeArchived(
-                ident = call.request.identHeader,
-                timeRange = call.timeRange()
+                ident = request.ident,
+                timeRange = request.timeRange()
             )
         )
     }
@@ -63,3 +64,7 @@ private fun ApplicationCall.timeRange(): Timerange =
         fomQueryParam = this.request.queryParameters["fom"] ?: throw BadRequestException("fom parameter må være satt"),
         tomQueryParam = this.request.queryParameters["tom"] ?: throw BadRequestException("tom parameter må være satt")
     )
+
+data class AlleVarslerRequest(val ident: String, val fom: String, val tom: String){
+    fun timeRange() = Timerange(fom,tom)
+}

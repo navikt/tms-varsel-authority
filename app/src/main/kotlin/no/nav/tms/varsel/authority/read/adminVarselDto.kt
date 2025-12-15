@@ -72,7 +72,7 @@ data class DetaljertAdminVarsel(
                 }
 
                 fristUtløpt -> "av system (frist utløpt)"
-                varselType == Innboks -> "av system"
+                varselType == Innboks -> "av produsent"
                 varselType == Beskjed -> "av bruker/produsent"
                 varselType == Oppgave -> "av produsent"
                 else -> {
