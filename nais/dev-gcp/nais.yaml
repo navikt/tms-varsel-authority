@@ -17,8 +17,6 @@ spec:
   prometheus:
     enabled: true
     path: /metrics
-  secureLogs:
-    enabled: true
   observability:
     autoInstrumentation:
       enabled: true
@@ -65,6 +63,10 @@ spec:
         - application: tms-event-api
         - application: tms-varsel-api
         - application: tms-varsel-admin
+    outbound:
+      rules:
+        - application: logging
+          namespace: nais-system
   env:
     - name: ARCHIVING_THRESHOLD
       value: "365"

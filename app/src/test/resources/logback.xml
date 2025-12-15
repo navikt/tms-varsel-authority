@@ -1,8 +1,7 @@
-<configuration debug="true">
+<configuration>
     <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
-    <property name="loggingPattern"
-              value="%d [%-5level] [%thread] %logger{5} %replace(- [%X{consumerId}, %X{callId}, %X{userId}] ){'- \[, , \] ',''}- %m%n"/>
+    <include resource="test/team-logs-for-test.xml"/>
 
     <appender name="stdout_json" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
@@ -11,7 +10,4 @@
     <root level="INFO">
         <appender-ref ref="stdout_json"/>
     </root>
-    <logger name="secureLog" level="INFO" additivity="false">
-        <appender-ref ref="stout_json"/>
-    </logger>
 </configuration>

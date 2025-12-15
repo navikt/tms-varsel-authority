@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.write.eksternvarsling
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
@@ -18,7 +19,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
 ) : Subscriber() {
 
     private val log = KotlinLogging.logger { }
-    private val securelog = KotlinLogging.logger("secureLog")
+    private val teamLog = TeamLogs.logger { }
 
     private val objectMapper = defaultObjectMapper()
 
@@ -47,7 +48,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
         } catch (e: JsonMappingException) {
 
             log.error { "Feil ved deserialisering av eksternVarslingOppdatert-event" }
-            securelog.error(e) { "Feil ved deserialisering av eksternVarslingOppdatert-event [${jsonMessage.json}]" }
+            teamLog.error(e) { "Feil ved deserialisering av eksternVarslingOppdatert-event [${jsonMessage.json}]" }
 
             throw StatusOppdatertDeserializationException()
         }
