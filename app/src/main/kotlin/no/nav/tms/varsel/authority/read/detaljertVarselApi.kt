@@ -1,27 +1,27 @@
 package no.nav.tms.varsel.authority.read
 
-import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.write.inaktiver.Timerange
 
 fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 
     suspend fun RoutingContext.fetchVarslerAndRespond(
         ident: String,
         type: Varseltype? = null,
-        aktiv: Boolean? = null
+        aktiv: Boolean? = null,
+        timeRange: Timerange? = null
     ) = withContext(Dispatchers.IO) {
-        VarselMetricsReporter.registerVarselHentet(type,Source.SAKSBEHANDLER)
-        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv))
+        VarselMetricsReporter.registerVarselHentet(type, Source.SAKSBEHANDLER)
+        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange = timeRange))
     }
 
     get("/varsel/detaljert/alle") {

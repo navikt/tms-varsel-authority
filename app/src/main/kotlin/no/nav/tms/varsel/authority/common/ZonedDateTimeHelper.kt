@@ -15,15 +15,6 @@ object ZonedDateTimeHelper {
         return parseZonedDateTimeDefaultUtc(asText())
     }
 
-    fun JsonNode.asOptionalZonedDateTime(): ZonedDateTime? {
-        return takeIf(JsonNode::isTextual)
-            ?.asText()
-            ?.takeIf(String::isNotEmpty)
-            ?.let { parseZonedDateTimeDefaultUtc(it) }
-    }
-
-
-
     private fun parseZonedDateTimeDefaultUtc(dateTimeString: String): ZonedDateTime {
         return try {
             return ZonedDateTime.parse(dateTimeString)

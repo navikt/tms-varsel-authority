@@ -92,7 +92,7 @@ fun Application.varselApi(
             varselSammendragApi(readVarselRepository)
         }
         authenticate(AzureAuthenticator.name) {
-            inaktiverVarselApi(varselInaktiverer)
+            adminApi(varselInaktiverer, readVarselRepository)
             detaljertVarselApi(readVarselRepository)
         }
     }

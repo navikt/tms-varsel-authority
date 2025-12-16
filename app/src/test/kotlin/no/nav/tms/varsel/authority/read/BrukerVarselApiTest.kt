@@ -1,24 +1,14 @@
 package no.nav.tms.varsel.authority.read
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.collections.shouldContainAll
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.jackson.*
-import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
 import io.ktor.utils.io.*
-import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
-import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.Sensitivitet.High
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
 import no.nav.tms.varsel.action.Tekst
@@ -26,18 +16,17 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.database.dbInnhold
-import no.nav.tms.varsel.authority.database.dbVarsel
 import no.nav.tms.varsel.authority.mockProducer
-import no.nav.tms.varsel.authority.varselApi
+import org.junit.jupiter.api.AfterEach
+
+import no.nav.tms.varsel.authority.read.Matchers.shouldFind
+import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
+import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.database.testInnhold
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import java.text.DateFormat
 
 class BrukerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
@@ -58,15 +47,15 @@ class BrukerVarselApiTest {
     }
 
     @Test
-    fun `henter varsler for bruker`() = testVarselApi(userIdent = ident) {  client ->
+    fun `henter varsler for bruker`() = testVarselApi(userIdent = ident) { client ->
         val annenIdent = "456"
 
-        val beskjed = dbVarsel(type = Beskjed, ident = ident, innhold = Innhold("Tekst uten lenke", null))
-        val oppgave = dbVarsel(type = Oppgave, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident)
-        val annenBeskjed = dbVarsel(type = Beskjed, ident = annenIdent)
-        val annenOppgave = dbVarsel(type = Oppgave, ident = annenIdent)
-        val annenInnboks = dbVarsel(type = Innboks, ident = annenIdent)
+        val beskjed = TestVarsel(type = Beskjed, ident = ident, innhold = Innhold("Tekst uten lenke", null)).dbVarsel()
+        val oppgave = TestVarsel(type = Oppgave, ident = ident).dbVarsel()
+        val innboks = TestVarsel(type = Innboks, ident = ident).dbVarsel()
+        val annenBeskjed = TestVarsel(type = Beskjed, ident = annenIdent).dbVarsel()
+        val annenOppgave = TestVarsel(type = Oppgave, ident = annenIdent).dbVarsel()
+        val annenInnboks = TestVarsel(type = Innboks, ident = annenIdent).dbVarsel()
 
         insertVarsel(beskjed, oppgave, innboks, annenBeskjed, annenOppgave, annenInnboks)
 
@@ -80,9 +69,9 @@ class BrukerVarselApiTest {
 
     @Test
     fun `henter varsler av type`() = testVarselApi(userIdent = ident) { client ->
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
-        val oppgave = dbVarsel(type = Oppgave, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident)
+        val beskjed = TestVarsel(type = Beskjed, ident = ident).dbVarsel()
+        val oppgave = TestVarsel(type = Oppgave, ident = ident).dbVarsel()
+        val innboks = TestVarsel(type = Innboks, ident = ident).dbVarsel()
 
         insertVarsel(beskjed, oppgave, innboks)
 
@@ -104,8 +93,8 @@ class BrukerVarselApiTest {
 
     @Test
     fun `henter aktive og inaktive varsler`() = testVarselApi(userIdent = ident) { client ->
-        val aktivBeskjed = dbVarsel(type = Beskjed, ident = ident, aktiv = true)
-        val inaktivBeskjed = dbVarsel(type = Beskjed, ident = ident, aktiv = false)
+        val aktivBeskjed = TestVarsel(type = Beskjed, ident = ident, aktiv = true).dbVarsel()
+        val inaktivBeskjed = TestVarsel(type = Beskjed, ident = ident, aktiv = false).dbVarsel()
 
         insertVarsel(aktivBeskjed, inaktivBeskjed)
 
@@ -127,11 +116,11 @@ class BrukerVarselApiTest {
 
     @Test
     fun `maskerer innhold i varsel hvis bruker har for lav loa`() = testVarselApi(
-            userIdent = ident,
-            userLoa = LevelOfAssurance.SUBSTANTIAL
+        userIdent = ident,
+        userLoa = LevelOfAssurance.SUBSTANTIAL
     ) { client ->
-        val varsel = dbVarsel(type = Beskjed, ident = ident, sensitivitet = Substantial)
-        val sensitivtVarsel = dbVarsel(type = Beskjed, ident = ident, sensitivitet = High)
+        val varsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = Substantial).dbVarsel()
+        val sensitivtVarsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = High).dbVarsel()
 
         insertVarsel(varsel, sensitivtVarsel)
 
@@ -148,7 +137,7 @@ class BrukerVarselApiTest {
             it.varselId shouldBe sensitivtVarsel.varselId
             it.aktiv shouldBe sensitivtVarsel.aktiv
             it.eksternVarslingSendt shouldBe sensitivtVarsel.eksternVarslingStatus!!.sendt
-            it.eksternVarslingKanaler shouldBe sensitivtVarsel.eksternVarslingStatus!!.kanaler
+            it.eksternVarslingKanaler shouldBe sensitivtVarsel.eksternVarslingStatus.kanaler
             it.opprettet shouldBe sensitivtVarsel.opprettet
             it.aktivFremTil shouldBe sensitivtVarsel.aktivFremTil
             it.inaktivert shouldBe sensitivtVarsel.inaktivert
@@ -157,7 +146,7 @@ class BrukerVarselApiTest {
 
     @Test
     fun `godttar varsler uten ekstern varsling`() = testVarselApi(userIdent = ident) { client ->
-        val beskjed = dbVarsel(type = Beskjed, ident = ident, eksternVarslingBestilling = null, eksternVarslingStatus = null)
+        val beskjed = TestVarsel(type = Beskjed, ident = ident).dbVarsel(withEksternVarsling = false)
 
         insertVarsel(beskjed)
 
@@ -180,10 +169,10 @@ class BrukerVarselApiTest {
 
     @Test
     fun `henter varsler baser på query params`() = testVarselApi(userIdent = ident) { client ->
-        val beskjed = dbVarsel(type = Beskjed, ident = ident)
-        val innboks = dbVarsel(type = Innboks, ident = ident, aktiv = false)
-        val oppgave1 = dbVarsel(type = Oppgave, ident = ident)
-        val oppgave2 = dbVarsel(type = Oppgave, ident = ident, aktiv = false)
+        val beskjed = TestVarsel(type = Beskjed, ident = ident).dbVarsel()
+        val innboks = TestVarsel(type = Innboks, ident = ident, aktiv = false).dbVarsel()
+        val oppgave1 = TestVarsel(type = Oppgave, ident = ident).dbVarsel()
+        val oppgave2 = TestVarsel(type = Oppgave, ident = ident, aktiv = false).dbVarsel()
 
         insertVarsel(beskjed, innboks, oppgave1, oppgave2)
 
@@ -208,17 +197,17 @@ class BrukerVarselApiTest {
 
     @Test
     fun `henter tekst med preferert språk`() = testVarselApi(userIdent = ident) { client ->
-        val dbBeskjed = dbVarsel(
+        val dbBeskjed = TestVarsel(
             type = Beskjed,
             ident = ident,
-            innhold = dbInnhold(
+            innhold = testInnhold(
                 tekster = listOf(
                     Tekst("nb", "Norsk tekst", true),
                     Tekst("en", "Engelsk tekst", false),
                     Tekst("es", "Spansk tekst", false),
                 )
             )
-        )
+        ).dbVarsel()
 
         insertVarsel(dbBeskjed)
 
@@ -240,16 +229,16 @@ class BrukerVarselApiTest {
 
     @Test
     fun `henter tekst med default språk hvis ønsket språk ikke finnes`() = testVarselApi(userIdent = ident) { client ->
-        val dbOppgave = dbVarsel(
+        val dbOppgave = TestVarsel(
             type = Oppgave,
             ident = ident,
-            innhold = dbInnhold(
+            innhold = testInnhold(
                 tekster = listOf(
                     Tekst("en", "Engelsk tekst", true),
                     Tekst("es", "Spansk tekst", false),
                 )
             )
-        )
+        ).dbVarsel()
 
         insertVarsel(dbOppgave)
 
@@ -261,15 +250,15 @@ class BrukerVarselApiTest {
 
     @Test
     fun `bruker nb som default språkkode for eldre varsler`() = testVarselApi(userIdent = ident) { client ->
-        val dbInnboks = dbVarsel(
+        val dbInnboks = TestVarsel(
             type = Innboks,
             aktiv = false,
             ident = ident,
-            innhold = dbInnhold(
+            innhold = testInnhold(
                 tekst = "Norsk tekst uten språkkode",
                 tekster = emptyList()
             )
-        )
+        ).dbVarsel()
 
         insertVarsel(dbInnboks)
 
@@ -280,38 +269,8 @@ class BrukerVarselApiTest {
     }
 
 
-
     private suspend fun HttpClient.getVarsler(path: String): List<Varselsammendrag> = get(path).body()
 
-    private fun List<Varselsammendrag>.shouldFind(predicate: (Varselsammendrag) -> Boolean): Varselsammendrag {
-        val varsel = find(predicate)
-
-        varsel.shouldNotBeNull()
-
-        return varsel
-    }
-
-    private infix fun Varselsammendrag.shouldMatch(dbVarsel: DatabaseVarsel) {
-        type shouldBe dbVarsel.type
-        varselId shouldBe dbVarsel.varselId
-        aktiv shouldBe dbVarsel.aktiv
-        innhold shouldMatch dbVarsel.innhold
-        eksternVarslingSendt shouldBe dbVarsel.eksternVarslingStatus!!.sendt
-        eksternVarslingKanaler shouldBe dbVarsel.eksternVarslingStatus!!.kanaler
-        opprettet shouldBe dbVarsel.opprettet
-        aktivFremTil shouldBe dbVarsel.aktivFremTil
-        inaktivert shouldBe dbVarsel.inaktivert
-    }
-
-    private infix fun Innholdsammendrag?.shouldMatch(innhold: Innhold) {
-        if (this == null) {
-            return
-        }
-
-        tekst shouldBeIn (innhold.tekster.map { it.tekst } + innhold.tekst)
-        spraakkode shouldBeIn (innhold.tekster.map { it.spraakkode } + "nb")
-        link shouldBe innhold.link
-    }
 
     private fun insertVarsel(vararg varsler: DatabaseVarsel) {
         varsler.forEach {
@@ -324,39 +283,11 @@ class BrukerVarselApiTest {
         userIdent: String = ident,
         userLoa: LevelOfAssurance = LevelOfAssurance.HIGH,
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
-    ) = testApplication {
-
-        application {
-            varselApi(
-                readRepository,
-                varselInaktiverer,
-                installAuthenticatorsFunction = {
-                    authentication {
-                        tokenXMock {
-                            setAsDefault = true
-                            alwaysAuthenticated = true
-                            staticUserPid = userIdent
-                            staticLevelOfAssurance = userLoa
-                        }
-                        azureMock {
-                            setAsDefault = false
-                        }
-                    }
-                }
-            )
-        }
-
-        this.block(
-            client.config {
-                install(ContentNegotiation) {
-                    jackson {
-                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        registerModule(JavaTimeModule())
-                        dateFormat = DateFormat.getDateTimeInstance()
-                    }
-                }
-            }
-        )
-    }
+    ) = baseTestApplication(
+        userIdent = userIdent,
+        userLoa = userLoa,
+        readVarselRepository = readRepository,
+        varselInaktiverer = varselInaktiverer,
+        block = block,
+    )
 }
-
