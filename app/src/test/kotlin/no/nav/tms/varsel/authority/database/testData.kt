@@ -3,12 +3,12 @@ import com.fasterxml.jackson.databind.JsonNode
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowInOsloUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 
@@ -294,5 +294,7 @@ private fun ZonedDateTime.serializeToDbFormat(): String =
 private fun ZonedDateTime.serializeToLegacyDbFormat(): String =
     this.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
 
-fun String.toZonedDateTimeUtc(hour: Int = 9): ZonedDateTime =
+private fun String.toZonedDateTimeUtc(hour: Int = 9): ZonedDateTime =
     LocalDate.parse(this).atTime(hour, 0).atZone(ZoneOffset.UTC)
+
+private fun nowInOsloUtc(): ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MILLIS)
