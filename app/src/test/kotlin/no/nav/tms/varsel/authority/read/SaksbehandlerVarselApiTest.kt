@@ -15,11 +15,10 @@ import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -29,17 +28,12 @@ import org.junit.jupiter.api.TestInstance
 class SaksbehandlerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
-    private val varselInaktiverer = VarselInaktiverer(writeRepository, inaktivertProducer)
 
     private val ident = "123"
 
@@ -71,8 +65,6 @@ class SaksbehandlerVarselApiTest {
             varsler.shouldFind { it.varselId == oppgave.varselId } shouldMatch oppgave
             varsler.shouldFind { it.varselId == innboks.varselId } shouldMatch innboks
         }
-
-
     }
 
     @Test

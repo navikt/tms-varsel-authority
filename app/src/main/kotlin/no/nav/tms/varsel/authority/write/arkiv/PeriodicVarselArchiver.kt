@@ -1,9 +1,9 @@
 package no.nav.tms.varsel.authority.write.arkiv
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tms.common.kubernetes.PodLeaderElection
+import no.nav.tms.common.util.scheduling.PeriodicJob
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.common.PeriodicJob
-import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import java.time.Duration
 

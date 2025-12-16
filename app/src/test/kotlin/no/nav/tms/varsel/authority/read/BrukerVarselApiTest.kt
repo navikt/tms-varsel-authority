@@ -16,6 +16,9 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.mockProducer
+import org.junit.jupiter.api.AfterEach
+
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
@@ -23,19 +26,12 @@ import no.nav.tms.varsel.authority.database.testInnhold
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 
 class BrukerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 
@@ -51,7 +47,7 @@ class BrukerVarselApiTest {
     }
 
     @Test
-    fun `henter varsler for bruker`() = testVarselApi(userIdent = ident) {  client ->
+    fun `henter varsler for bruker`() = testVarselApi(userIdent = ident) { client ->
         val annenIdent = "456"
 
         val beskjed = TestVarsel(type = Beskjed, ident = ident, innhold = Innhold("Tekst uten lenke", null)).dbVarsel()
@@ -120,8 +116,8 @@ class BrukerVarselApiTest {
 
     @Test
     fun `maskerer innhold i varsel hvis bruker har for lav loa`() = testVarselApi(
-            userIdent = ident,
-            userLoa = LevelOfAssurance.SUBSTANTIAL
+        userIdent = ident,
+        userLoa = LevelOfAssurance.SUBSTANTIAL
     ) { client ->
         val varsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = Substantial).dbVarsel()
         val sensitivtVarsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = High).dbVarsel()
@@ -273,7 +269,6 @@ class BrukerVarselApiTest {
     }
 
 
-
     private suspend fun HttpClient.getVarsler(path: String): List<Varselsammendrag> = get(path).body()
 
 
@@ -293,6 +288,6 @@ class BrukerVarselApiTest {
         userLoa = userLoa,
         readVarselRepository = readRepository,
         varselInaktiverer = varselInaktiverer,
-        block=block,
+        block = block,
     )
 }

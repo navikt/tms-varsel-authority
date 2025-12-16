@@ -14,15 +14,15 @@ import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
@@ -31,11 +31,7 @@ import java.util.*
 class InaktiverBeskjedApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 
@@ -49,6 +45,7 @@ class InaktiverBeskjedApiTest {
     @AfterEach
     fun deleteData() {
         LocalPostgresDatabase.cleanDb()
+        mockProducer.clear()
     }
 
     @Test
@@ -102,6 +99,24 @@ class InaktiverBeskjedApiTest {
         val response = client.inaktiverBeskjed(varselId = "bad id")
 
         response.status shouldBe HttpStatusCode.Forbidden
+    }
+
+
+    @Test
+    fun `ignorerer dobbel inaktivering av samme varsel`() = testVarselApi(userIdent = ident) {client ->
+        val beskjed1 = TestVarsel(type = Beskjed, ident = ident, aktiv = true).dbVarsel()
+
+        insertVarsel(beskjed1)
+
+        val response1 = client.inaktiverBeskjed(beskjed1.varselId)
+        val response2 = client.inaktiverBeskjed(beskjed1.varselId)
+
+        getDbVarsel(beskjed1.varselId).aktiv shouldBe false
+
+        response1.status shouldBe HttpStatusCode.OK
+        response2.status shouldBe HttpStatusCode.OK
+
+        mockProducer.history().size shouldBe 1
     }
 
     private suspend fun HttpClient.inaktiverBeskjed(varselId: String) =

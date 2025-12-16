@@ -2,28 +2,24 @@ package no.nav.tms.varsel.authority.write.inaktiver
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 internal class InaktiverVarselSubscriberTest {
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
     private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
@@ -120,7 +116,7 @@ internal class InaktiverVarselSubscriberTest {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
-            it.cause::class shouldBe InaktivertVarselMissingException::class
+            it.cause::class shouldBe InaktiverVarselSubscriber.InaktivertVarselMissingException::class
         }
 
         mockProducer.history()
@@ -128,6 +124,30 @@ internal class InaktiverVarselSubscriberTest {
             .map { objectMapper.readTree(it) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 0
+    }
+
+    @Test
+    fun `takler dårlig data på topic`() {
+        val varselId = randomUUID().toString()
+
+        val feilaktigEvent = """
+            {
+              "@event_name": "inaktiver",
+              "varselId": "$varselId",
+              "produsent": "ikke et objekt"
+            }
+        """.trimIndent()
+
+        shouldNotThrow<Exception> {
+            testBroadcaster.broadcastJson(feilaktigEvent)
+        }
+
+        testBroadcaster.history().findFailedOutcome(InaktiverVarselSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe InaktiverVarselSubscriber.InaktiverVarselDeserializationException::class
+        }
     }
 
     private fun inaktiverVarsel(varselId: String) = """
@@ -144,6 +164,5 @@ internal class InaktiverVarselSubscriberTest {
         "version": "test"
     }
 }
-       
     """.trimIndent()
 }

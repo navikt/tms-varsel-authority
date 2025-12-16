@@ -1,18 +1,17 @@
 package no.nav.tms.varsel.authority.write.expiry
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.tms.varsel.authority.common.PeriodicJob
+import no.nav.tms.common.util.scheduling.PeriodicJob
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
-import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import java.time.Duration
 
 class PeriodicExpiredVarselProcessor(
     private val expiredVarselRepository: ExpiredVarselRepository,
     private val varselInaktivertProducer: VarselInaktivertProducer,
-    private val leaderElection: PodLeaderElection,
+    private val leaderElection: no.nav.tms.common.kubernetes.PodLeaderElection,
     interval: Duration = Duration.ofMinutes(1)
 ) : PeriodicJob(interval) {
 

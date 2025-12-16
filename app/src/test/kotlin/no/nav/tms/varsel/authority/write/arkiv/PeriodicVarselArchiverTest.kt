@@ -8,18 +8,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotliquery.queryOf
+import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.config.PodLeaderElection
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,11 +33,7 @@ internal class PeriodicVarselArchiverTest {
 
     private val testRepository = ArchiveTestRepository(database)
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val arkivertProducer = VarselArkivertProducer(mockProducer ,"testTopic")
     private val gammelBeskjed =
@@ -124,7 +118,7 @@ internal class PeriodicVarselArchiverTest {
     }
 
     @Test
-    fun `does nothing when not leader`() = runBlocking {
+    fun `does nothing when not leader`() = runBlocking<Unit> {
         coEvery { leaderElection.isLeader() } returns false
 
         val archiver = PeriodicVarselArchiver(

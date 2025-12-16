@@ -17,11 +17,10 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.text.DateFormat
@@ -30,11 +29,7 @@ import java.util.*
 class InaktiverVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 

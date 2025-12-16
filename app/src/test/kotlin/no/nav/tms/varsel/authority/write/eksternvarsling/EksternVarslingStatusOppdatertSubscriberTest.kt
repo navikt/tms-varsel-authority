@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldBeNull
@@ -11,6 +12,7 @@ import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselNotFoundException
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -20,17 +22,14 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.*
+import java.util.UUID.randomUUID
 
 class EksternVarslingStatusOppdatertSubscriberTest {
 
     private val database = LocalPostgresDatabase.cleanDb()
     private val varselRepository = WriteVarselRepository(database)
 
-    private val mockProducer = MockProducer(
-        false,
-        StringSerializer(),
-        StringSerializer()
-    )
+    private val mockProducer = mockProducer()
 
     private val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     private val eksternVarslingStatusUpdater =
@@ -440,5 +439,30 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             ?.let {
                 it.sisteStatus shouldBe EksternStatus.Feilet
             }
+    }
+
+    @Test
+    fun `takler dårlig data på topic`() {
+        val varselId = randomUUID().toString()
+
+        val feilaktigEvent = """
+            {
+                "@event_name": "eksternVarslingStatusOppdatert",
+                "status": "venter",
+                "varselId": "$varselId",
+                "tidspunkt": "aldri" 
+            }
+        """.trimIndent()
+
+        shouldNotThrow<Exception> {
+            testBroadcaster.broadcastJson(feilaktigEvent)
+        }
+
+        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+            it["varselId"].asText() == varselId
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe EksternVarslingStatusOppdatertSubscriber.StatusOppdatertDeserializationException::class
+        }
     }
 }

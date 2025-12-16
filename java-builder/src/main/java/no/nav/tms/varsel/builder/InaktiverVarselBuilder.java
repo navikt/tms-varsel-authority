@@ -18,7 +18,7 @@ public class InaktiverVarselBuilder {
         .addModule(new JavaTimeModule())
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         .build()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     private String varselId;
     private Produsent produsent;
 
