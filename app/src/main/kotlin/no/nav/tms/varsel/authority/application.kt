@@ -71,6 +71,7 @@ fun main() {
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
     val varselInaktiverer = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
+
     KafkaApplication.build {
         kafkaConfig {
             groupId = environment.kafkaConsumerGroupId
