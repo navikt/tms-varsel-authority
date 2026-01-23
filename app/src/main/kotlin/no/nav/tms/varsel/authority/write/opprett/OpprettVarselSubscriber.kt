@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.observability.traceVarsel
+import no.nav.tms.common.postgres.UniqueConstraintException
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
@@ -14,7 +15,6 @@ import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
-import no.nav.tms.varsel.authority.common.UniqueConstraintException
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
