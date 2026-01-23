@@ -71,11 +71,6 @@ fun baseTestApplication(
     )
 }
 
-
-fun WriteVarselRepository.insertTestVarsel(vararg varsler: TestVarsel) {
-    varsler.forEach { insertVarsel(it.dbVarsel()) }
-}
-
 object JsonHelpers {
 
     fun List<JsonNode>.shouldHaveValue(

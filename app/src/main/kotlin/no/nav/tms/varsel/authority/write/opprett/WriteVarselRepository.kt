@@ -2,6 +2,10 @@ package no.nav.tms.varsel.authority.write.opprett
 
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.common.postgres.JsonbHelper.json
+import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
+import no.nav.tms.common.postgres.JsonbHelper.toJsonb
+import no.nav.tms.common.postgres.PostgresDatabase
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.common.*
@@ -9,13 +13,11 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
-class WriteVarselRepository(val database: Database) {
-
-    private val objectMapper = defaultObjectMapper()
+class WriteVarselRepository(val database: PostgresDatabase) {
 
     fun insertVarsel(dbVarsel: DatabaseVarsel) {
 
-        database.insert {
+        database.update {
             queryOf(
                 """
                     insert into varsel(
@@ -55,16 +57,16 @@ class WriteVarselRepository(val database: Database) {
                     "varselId" to dbVarsel.varselId,
                     "ident" to dbVarsel.ident,
                     "sensitivitet" to dbVarsel.sensitivitet.name.lowercase(),
-                    "innhold" to dbVarsel.innhold.toJsonb(objectMapper),
-                    "produsent" to dbVarsel.produsent.toJsonb(objectMapper),
-                    "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(objectMapper),
-                    "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(objectMapper),
+                    "innhold" to dbVarsel.innhold.toJsonb(),
+                    "produsent" to dbVarsel.produsent.toJsonb(),
+                    "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(),
+                    "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(),
                     "aktiv" to dbVarsel.aktiv,
                     "opprettet" to dbVarsel.opprettet,
                     "aktivFremTil" to dbVarsel.aktivFremTil,
                     "inaktivert" to dbVarsel.inaktivert,
                     "inaktivertAv" to dbVarsel.inaktivertAv?.name,
-                    "metadata" to dbVarsel.metadata.toJsonb(objectMapper)
+                    "metadata" to dbVarsel.metadata.toJsonb()
                 )
             )
         }
@@ -77,7 +79,6 @@ class WriteVarselRepository(val database: Database) {
                 mapOf("varselId" to varselId)
             )
                 .map(toDbVarsel())
-                .asSingle
         }
     }
 
@@ -96,14 +97,14 @@ class WriteVarselRepository(val database: Database) {
                     "varselId" to varselId,
                     "kilde" to kilde.lowercaseName,
                     "tidspunkt" to nowAtUtc(),
-                    "metadata" to metadata.toJsonb(objectMapper)
+                    "metadata" to metadata.toJsonb()
                 )
             )
         }
     }
 
     private fun toDbVarsel(): (Row) -> DatabaseVarsel = { row ->
-        val varselInnhold: Innhold = row.json("innhold", objectMapper)
+        val varselInnhold: Innhold = row.json("innhold")
 
         DatabaseVarsel(
             type = row.string("type").let(::parseVarseltype),
@@ -113,13 +114,13 @@ class WriteVarselRepository(val database: Database) {
             sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
             innhold = varselInnhold,
             produsent = row.json("produsent"),
-            eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
-            eksternVarslingStatus = row.optionalJson("eksternVarslingStatus", objectMapper),
+            eksternVarslingBestilling = row.jsonOrNull("eksternVarslingBestilling"),
+            eksternVarslingStatus = row.jsonOrNull("eksternVarslingStatus"),
             opprettet = row.zonedDateTime("opprettet"),
             inaktivert = row.zonedDateTimeOrNull("inaktivert"),
             inaktivertAv = row.stringOrNull("inaktivertAv")?.let { VarselInaktivertKilde.from(it) },
             aktivFremTil = row.zonedDateTimeOrNull("aktivFremTil"),
-            metadata = row.optionalJson("metadata")
+            metadata = row.jsonOrNull("metadata")
         )
     }
 }

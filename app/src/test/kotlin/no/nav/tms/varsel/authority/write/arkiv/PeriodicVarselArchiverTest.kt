@@ -165,7 +165,6 @@ internal class PeriodicVarselArchiverTest {
         return database.singleOrNull {
             queryOf("select count(*) as antall from varsel")
                 .map { it.int("antall") }
-                .asSingle
         }?: 0
     }
 

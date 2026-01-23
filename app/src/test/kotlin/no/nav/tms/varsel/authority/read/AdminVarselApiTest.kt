@@ -19,6 +19,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
+import kotliquery.queryOf
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
@@ -104,7 +105,7 @@ class AdminVarselApiTest {
 
     @BeforeEach
     fun addVarslerToDb() {
-        writeRepository.insertTestVarsel(
+        insertTestVarsel(
             aktivtVarselJun2025,
             inaktivtVarselMay2023,
             aktivtVarselOct2025,
@@ -183,9 +184,9 @@ class AdminVarselApiTest {
         ).withLegacyProperties(
             utløptFrist = true
         )
-        database.insertCurrentArkiverteVarsler(testIdent, arkivertVarsel)
-        database.insertLegacyArkiverteVarsler(testIdent, arkivertLegacyVarsel)
-        writeRepository.insertTestVarsel(varselData)
+        insertCurrentArkiverteVarsler(testIdent, arkivertVarsel)
+        insertLegacyArkiverteVarsler(testIdent, arkivertLegacyVarsel)
+        insertTestVarsel(varselData)
 
         val varsler2025Response =
             jsonClient.postVarslerAsJson(ident = testIdent, fom = "2025-01-01", tom = "2025-12-31")
@@ -308,9 +309,9 @@ class AdminVarselApiTest {
                     }
                 """.trimIndent()
 
-        database.insertLegacyArkiverteVarsler(ident, legacyJsonFeb2023, legacyVarselAug2020)
-        database.insertCurrentArkiverteVarsler(ident, varselJsonJan2025)
-        database.insertArkivertVarsel(
+        insertLegacyArkiverteVarsler(ident, legacyJsonFeb2023, legacyVarselAug2020)
+        insertCurrentArkiverteVarsler(ident, varselJsonJan2025)
+        insertArkivertVarsel(
             ident = ident,
             varselId = uventetVarselformatId,
             jsonBlob = uventetVarselFormat
@@ -392,19 +393,19 @@ class AdminVarselApiTest {
             val legacyBeskjedUtenFristUtløpt =
                 legacyOppgaveMedFristUtløptFalse.deepCopy(varselId = "legacyBeskjedFristUtløptFalse", type = Beskjed)
 
-            writeRepository.insertTestVarsel(
+            insertTestVarsel(
                 inaktivBeskjedMedKildeBruker,
                 beskjedUtenKilde,
                 ikkeInaktivertVarsel
             )
 
-            database.insertCurrentArkiverteVarsler(
+            insertCurrentArkiverteVarsler(
                 testIdent,
                 arkivertOppgaveMedKildeProdusent,
                 arkivertVarselUtenKilde,
                 arkivertVarselMedKildeSystem,
             )
-            database.insertLegacyArkiverteVarsler(
+            insertLegacyArkiverteVarsler(
                 testIdent,
                 legacyBeskjedMedFristUtløptTrue,
                 legacyOppgaveMedFristUtløptFalse,
@@ -413,7 +414,7 @@ class AdminVarselApiTest {
             )
 
             val varsler2025 =
-                jsonClient.postVarslerAsJson(ident = testIdent, fom = "2025-01-01", tom = "2025-12-31")["varsler"].toList()
+                jsonClient.postVarslerAsJson(ident = testIdent, fom = "2025-01-01", tom = "2026-12-31")["varsler"].toList()
 
             varsler2025.apply {
                 size shouldBe 10
@@ -451,8 +452,8 @@ class AdminVarselApiTest {
                 utløptFrist = false
             )
 
-            database.insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel)
-            database.insertLegacyArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy)
+            insertCurrentArkiverteVarsler(testIdent, aktivtArkivertVarsel)
+            insertLegacyArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy)
             val varsler2025 =
                 jsonClient.postVarslerAsJson(
                     ident = testIdent,
@@ -478,36 +479,56 @@ class AdminVarselApiTest {
         }
 
     private data class AlleVarslerRequest(val ident: String, val fom: String, val tom: String)
-    companion object {
-        private fun List<JsonNode>.inaktivertValue(id: String): String {
-            return find { it["varselId"].asText() == id }.let {
-                withClue("Varsel med id $id ikke funnet") {
-                    it shouldNotBe null
-                }
-            }!!["inaktivert"].asText()
+
+    private fun List<JsonNode>.inaktivertValue(id: String): String {
+        return find { it["varselId"].asText() == id }.let {
+            withClue("Varsel med id $id ikke funnet") {
+                it shouldNotBe null
+            }
+        }!!["inaktivert"].asText()
+    }
+
+    private fun String.toOsloZonedDateTime() =
+        try {
+            LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay()
+                .atZone(ZoneId.of("Europe/Oslo"))
+        } catch (ex: DateTimeParseException) {
+            throw IllegalArgumentException(
+                "Failed to parse date string '$this'. Expected format is dd-MM-yyyy",
+                ex
+            )
         }
 
-        private fun String.toOsloZonedDateTime() =
-            try {
-                LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay()
-                    .atZone(ZoneId.of("Europe/Oslo"))
-            } catch (ex: DateTimeParseException) {
-                throw IllegalArgumentException(
-                    "Failed to parse date string '$this'. Expected format is dd-MM-yyyy",
-                    ex
+    private fun insertLegacyArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
+        varsler.forEach {
+            insertArkivertVarsel(ident, it.varselId, it.legacyJsonFormat())
+        }
+    }
+
+    private fun insertCurrentArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
+        varsler.forEach {
+            insertArkivertVarsel(ident, it.varselId, it.currentJsonFormat())
+        }
+    }
+
+
+    fun insertTestVarsel(vararg varsler: TestVarsel) {
+        varsler.forEach { writeRepository.insertVarsel(it.dbVarsel()) }
+    }
+
+    private fun insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
+        database.update {
+            queryOf(
+                """
+                insert into varsel_arkiv(varselId, ident, varsel, arkivert)
+                values (:varselId, :ident, :varsel::jsonb, now())
+                """,
+                mapOf(
+                    "varselId" to varselId,
+                    "ident" to ident,
+                    "varsel" to jsonBlob
                 )
-            }
-
-        fun LocalPostgresDatabase.insertLegacyArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
-            varsler.forEach {
-                insertArkivertVarsel(ident, it.varselId, it.legacyJsonFormat())
-            }
-        }
-
-        fun LocalPostgresDatabase.insertCurrentArkiverteVarsler(ident: String, vararg varsler: TestVarsel) {
-            varsler.forEach {
-                insertArkivertVarsel(ident, it.varselId, it.currentJsonFormat())
-            }
+            )
         }
     }
 

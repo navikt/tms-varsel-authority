@@ -49,6 +49,7 @@ dependencies {
     implementation(TmsCommonLib.kubernetes)
     implementation(TmsCommonLib.metrics)
     implementation(TmsCommonLib.observability)
+    implementation(TmsCommonLib.postgres)
     implementation(TmsCommonLib.teamLogger)
     implementation(TmsCommonLib.utils)
     implementation(TmsKafkaTools.kafkaApplication)
