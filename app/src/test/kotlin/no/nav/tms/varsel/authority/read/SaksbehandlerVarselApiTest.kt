@@ -28,10 +28,6 @@ import org.junit.jupiter.api.TestInstance
 class SaksbehandlerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = mockProducer()
-
-    private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
-
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
 

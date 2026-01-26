@@ -2,11 +2,9 @@ package no.nav.tms.varsel.authority
 
 import kotlinx.coroutines.runBlocking
 import no.nav.tms.common.kubernetes.PodLeaderElection
+import no.nav.tms.common.postgres.Postgres
 import no.nav.tms.kafka.application.KafkaApplication
-import no.nav.tms.varsel.authority.common.Database
 import no.nav.tms.varsel.authority.config.Environment
-import no.nav.tms.varsel.authority.config.Flyway
-import no.nav.tms.varsel.authority.config.PostgresDatabase
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
@@ -26,17 +24,12 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.serialization.StringSerializer
+import org.flywaydb.core.Flyway
 import java.util.*
 
 fun main() {
     val environment = Environment()
-    val database: Database = PostgresDatabase(environment)
-
-    startKafkaApplication(environment, database)
-}
-
-private fun startKafkaApplication(environment: Environment, database: Database) {
-
+    val database = Postgres.connectToJdbcUrl(environment.jdbcUrl)
     val varselRepository = WriteVarselRepository(database)
 
     val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
@@ -78,6 +71,7 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
     val readVarselRepository = ReadVarselRepository(database)
     val writeVarselRepository = WriteVarselRepository(database)
     val varselInaktiverer = VarselInaktiverer(writeVarselRepository, varselInaktivertProducer)
+
     KafkaApplication.build {
         kafkaConfig {
             groupId = environment.kafkaConsumerGroupId
@@ -101,8 +95,15 @@ private fun startKafkaApplication(environment: Environment, database: Database) 
                 eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
             )
         )
+
         onStartup {
-            Flyway.runFlywayMigrations(environment)
+            Flyway.configure()
+                .dataSource(database.dataSource)
+                .load()
+                .migrate()
+        }
+
+        onReady {
             periodicExpiredVarselProcessor.start()
             varselArchiver.start()
         }

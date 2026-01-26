@@ -2,17 +2,18 @@ package no.nav.tms.varsel.authority.write.arkiv
 
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.common.postgres.JsonbHelper.json
+import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
+import no.nav.tms.common.postgres.JsonbHelper.toJsonb
+import no.nav.tms.common.postgres.PostgresDatabase
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import java.time.ZonedDateTime
 
-class VarselArkivRepository(private val database: Database) {
-
-    private val objectMapper = defaultObjectMapper()
+class VarselArkivRepository(private val database: PostgresDatabase) {
 
     fun archiveOldVarsler(dateThreshold: ZonedDateTime): List<ArkivVarsel> {
 
@@ -32,12 +33,11 @@ class VarselArkivRepository(private val database: Database) {
                 "select * from varsel where opprettet < :threshold",
                 mapOf("threshold" to dateThreshold)
             ).map(toArchiveVarsel())
-            .asList
         }
     }
 
     private fun insertArkivVarsler(varsler: List<ArkivVarsel>) {
-        database.batch(
+        database.batchUpdate(
             """
                 insert into varsel_arkiv(varselId, ident, varsel, arkivert)
                 values(:varselId, :ident, :varsel, :arkivert)
@@ -47,7 +47,7 @@ class VarselArkivRepository(private val database: Database) {
                 mapOf(
                     "varselId" to it.varselId,
                     "ident" to it.ident,
-                    "varsel" to it.toJsonb(objectMapper),
+                    "varsel" to it.toJsonb(),
                     "arkivert" to nowAtUtc(),
                 )
             }
@@ -75,8 +75,8 @@ class VarselArkivRepository(private val database: Database) {
             sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
             innhold = row.json("innhold"),
             produsent = row.json("produsent"),
-            eksternVarslingBestilling = row.optionalJson("eksternVarslingBestilling", objectMapper),
-            eksternVarslingStatus = row.optionalJson("eksternVarslingStatus", objectMapper),
+            eksternVarslingBestilling = row.jsonOrNull("eksternVarslingBestilling"),
+            eksternVarslingStatus = row.jsonOrNull("eksternVarslingStatus"),
             opprettet = row.zonedDateTime("opprettet"),
             inaktivert = row.zonedDateTimeOrNull("inaktivert"),
             inaktivertAv = row.stringOrNull("inaktivertAv")?.let { VarselInaktivertKilde.from(it) }

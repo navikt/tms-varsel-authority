@@ -4,9 +4,7 @@ import no.nav.tms.common.util.config.IntEnvVar.getEnvVarAsInt
 import no.nav.tms.common.util.config.StringEnvVar.getEnvVar
 
 data class Environment(
-    val dbUser: String = getEnvVar("DB_USERNAME"),
-    val dbPassword: String = getEnvVar("DB_PASSWORD"),
-    val dbUrl: String = getDbUrl(),
+    val jdbcUrl: String = jdbcUrl(),
     val archivingThresholdDays: Int = getEnvVarAsInt("ARCHIVING_THRESHOLD"),
     val kafkaBrokers: String = getEnvVar("KAFKA_BROKERS"),
     val kafkaTruststorePath: String = getEnvVar("KAFKA_TRUSTSTORE_PATH"),
@@ -17,14 +15,11 @@ data class Environment(
     val publicVarselTopic: String = "min-side.aapen-brukervarsel-v1"
 )
 
-fun getDbUrl(): String {
+private fun jdbcUrl(): String {
     val host: String = getEnvVar("DB_HOST")
-    val port: String = getEnvVar("DB_PORT")
     val name: String = getEnvVar("DB_DATABASE")
+    val user: String = getEnvVar("DB_USERNAME")
+    val password: String = getEnvVar("DB_PASSWORD")
 
-    return if (host.endsWith(":$port")) {
-        "jdbc:postgresql://${host}/$name"
-    } else {
-        "jdbc:postgresql://${host}:${port}/${name}"
-    }
+    return "jdbc:postgresql://${host}/$name?user=$user&password=$password"
 }

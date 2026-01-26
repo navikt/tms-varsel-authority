@@ -3,8 +3,10 @@ package no.nav.tms.varsel.authority.read
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotliquery.Row
 import kotliquery.queryOf
+import no.nav.tms.common.postgres.JsonbHelper.json
+import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
+import no.nav.tms.common.postgres.PostgresDatabase
 import no.nav.tms.varsel.authority.common.*
-import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.read.DetaljertAdminVarsel.Companion.resolveInaktivert
@@ -12,8 +14,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.Timerange
 
 private val log = KotlinLogging.logger { }
 
-class ReadVarselRepository(private val database: Database) {
-    private val objectMapper = defaultObjectMapper()
+class ReadVarselRepository(private val database: PostgresDatabase) {
 
     fun getVarselSammendragForUser(
         ident: String,
@@ -42,7 +43,6 @@ class ReadVarselRepository(private val database: Database) {
                 mapOf("ident" to ident, "type" to type?.name?.lowercase(), "aktiv" to aktiv)
             )
                 .map(toVarselsammendrag())
-                .asList
         }
     }
 
@@ -81,7 +81,6 @@ class ReadVarselRepository(private val database: Database) {
                 )
             )
                 .map(toDetaljertVarsel())
-                .asList
         }
     }
 
@@ -161,7 +160,7 @@ class ReadVarselRepository(private val database: Database) {
                 mapOf(
                     "ident" to ident, "fom" to timeRange.fom, "tom" to timeRange.tom
                 )
-            ).map(toDetaljertAdminVarsel()).asList
+            ).map(toDetaljertAdminVarsel())
         }
         for ((adminVarsel, errorStringId) in result) {
             if (adminVarsel != null) {
@@ -181,10 +180,10 @@ class ReadVarselRepository(private val database: Database) {
             type = it.string("type").let(::parseVarseltype),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
-            innhold = it.json("innhold", objectMapper),
+            innhold = it.json("innhold"),
             sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
-            eksternVarslingKanaler = it.optionalJson("eksternVarslingKanaler", objectMapper) ?: emptyList(),
+            eksternVarslingKanaler = it.jsonOrNull("eksternVarslingKanaler") ?: emptyList(),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTimeOrNull("inaktivert")
@@ -196,10 +195,10 @@ class ReadVarselRepository(private val database: Database) {
             type = it.string("type").let(::parseVarseltype),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
-            produsent = it.json("produsent", objectMapper),
-            innhold = it.json("innhold", objectMapper),
+            produsent = it.json("produsent"),
+            innhold = it.json("innhold"),
             sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
-            eksternVarsling = it.optionalJson("eksternVarslingStatus", objectMapper),
+            eksternVarsling = it.jsonOrNull("eksternVarslingStatus"),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
             inaktivert = it.zonedDateTimeOrNull("inaktivert"),
@@ -214,7 +213,7 @@ class ReadVarselRepository(private val database: Database) {
         try {
 
             val readEksternVarsling: EksternVarslingArchiveCompatible? =
-                it.optionalJson("eksternVarsling", objectMapper)
+                it.jsonOrNull("eksternVarsling")
 
             val varselType = it.string("type").let(::parseVarseltype)
 

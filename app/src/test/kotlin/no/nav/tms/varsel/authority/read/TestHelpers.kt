@@ -71,11 +71,6 @@ fun baseTestApplication(
     )
 }
 
-
-fun WriteVarselRepository.insertTestVarsel(vararg varsler: TestVarsel) {
-    varsler.forEach { insertVarsel(it.dbVarsel()) }
-}
-
 object JsonHelpers {
 
     fun List<JsonNode>.shouldHaveValue(
@@ -180,8 +175,6 @@ object Matchers {
     }
 
     infix fun JsonNode.shouldHaveField(string: String) {
-        val existingFields = this.fields().asSequence().map { it.key }
-
         withClue("response should contain the field $string") {
             this[string].isMissingOrNull() shouldNotBe true
         }
