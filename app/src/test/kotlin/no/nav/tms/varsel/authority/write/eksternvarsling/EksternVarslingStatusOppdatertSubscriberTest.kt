@@ -11,25 +11,19 @@ import io.mockk.mockk
 import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.EksternStatus
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.mockProducer
-import no.nav.tms.varsel.authority.write.inaktiver.VarselNotFoundException
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
-import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
 import java.util.UUID.randomUUID
 
 class EksternVarslingStatusOppdatertSubscriberTest {
 
     private val database = LocalPostgresDatabase.cleanDb()
     private val varselRepository = WriteVarselRepository(database)
-
-    private val mockProducer = mockProducer()
 
     private val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     private val eksternVarslingStatusUpdater =
@@ -51,7 +45,6 @@ class EksternVarslingStatusOppdatertSubscriberTest {
     @BeforeEach
     fun resetDb() {
         database.update { queryOf("delete from varsel") }
-        mockProducer.clear()
         testBroadcaster.clearHistory()
     }
 
@@ -60,7 +53,8 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         val kanal = "EPOST"
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
+        val tidspunkt = ZonedDateTimeHelper.nowAtUtc()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val oppdatertEvent = eksternVarslingOppdatert(
@@ -69,7 +63,8 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             kanal = kanal,
             renotifikasjon = false,
             batch = false,
-            feilmelding = null
+            feilmelding = null,
+            tidspunkt = tidspunkt
         )
 
         testBroadcaster.broadcastJson(varselEvent)
@@ -85,12 +80,12 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.sendt shouldBe true
             it.renotifikasjonSendt shouldBe false
             it.sendtSomBatch shouldBe false
+            it.sendtTidspunkt shouldBe tidspunkt
             it.sisteStatus shouldBe EksternStatus.Sendt
 
             it.kanaler shouldContain kanal
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
@@ -99,7 +94,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         val feilmelding1 = "noe har feilet"
         val feilmelding2 = "noe har feilet igjen"
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val varslingFeilet1 = eksternVarslingOppdatert(
@@ -141,13 +136,12 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.feilhistorikk[1].feilmelding shouldBe feilmelding2
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `ignorerer hendelser for andre statuser`() {
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val bestiltEvent = eksternVarslingOppdatert(
@@ -189,13 +183,13 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.ignored shouldBe 4
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `lagrer info om revarsling`() {
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
+        val tidspunkt = ZonedDateTimeHelper.nowAtUtc()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val oppdatertEvent = eksternVarslingOppdatert(
@@ -204,7 +198,8 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             kanal = "EPOST",
             renotifikasjon = true,
             batch = false,
-            feilmelding = null
+            feilmelding = null,
+            tidspunkt = tidspunkt
         )
 
         testBroadcaster.broadcastJson(varselEvent)
@@ -220,15 +215,62 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.sendt shouldBe true
             it.renotifikasjonSendt shouldBe true
             it.sendtSomBatch shouldBe false
+            it.renotifikasjonTidspunkt shouldBe tidspunkt
         }
 
-        mockProducer.history().size shouldBe 0
+    }
+
+    @Test
+    fun `ivaretar riktig tidspunkt for varsling og revarsling`() {
+
+        val varselId = randomUUID().toString()
+        val tidspunktForstVarslet = ZonedDateTimeHelper.nowAtUtc().minusDays(8)
+        val tidspunktRevarslet = ZonedDateTimeHelper.nowAtUtc(). minusDays(7)
+
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
+        val sendtEvent = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            kanal = "EPOST",
+            renotifikasjon = false,
+            batch = false,
+            feilmelding = null,
+            tidspunkt = tidspunktForstVarslet
+        )
+        val revarsletEvent = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            kanal = "EPOST",
+            renotifikasjon = true,
+            batch = false,
+            feilmelding = null,
+            tidspunkt = tidspunktRevarslet
+        )
+
+        testBroadcaster.broadcastJson(varselEvent)
+        testBroadcaster.broadcastJson(sendtEvent)
+        testBroadcaster.broadcastJson(revarsletEvent)
+
+        val dbVarsel = varselRepository.getVarsel(varselId)
+
+        dbVarsel?.eksternVarslingStatus shouldNotBe null
+
+        dbVarsel?.eksternVarslingStatus?.let {
+            it shouldNotBe null
+
+            it.sendt shouldBe true
+            it.sendtTidspunkt shouldBe tidspunktForstVarslet
+
+            it.renotifikasjonSendt shouldBe true
+            it.renotifikasjonTidspunkt shouldBe tidspunktRevarslet
+        }
+
     }
 
     @Test
     fun `lagrer info om ekstern varsling ble sendt som del av batch`() {
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val oppdatertEvent = eksternVarslingOppdatert(
@@ -254,14 +296,12 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.renotifikasjonSendt shouldBe false
             it.sendtSomBatch shouldBe true
         }
-
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `gjør ingenting hvis varselId er ukjent`() {
 
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val event = eksternVarslingOppdatert(
             varselId = varselId,
@@ -281,12 +321,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.cause::class shouldBe UpdatedVarselMissingException::class
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `er idempotent ved innlesing av flere statuser for samme varsel`() {
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val sendtEvent = eksternVarslingOppdatert(
@@ -334,12 +373,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.kanaler shouldContainAll listOf("SMS", "EPOST")
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `ignorerer duplikate feil`() {
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val feilet1 = eksternVarslingOppdatert(
@@ -375,12 +413,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.feilhistorikk.size shouldBe 2
         }
 
-        mockProducer.history().size shouldBe 0
     }
 
     @Test
     fun `lagrer info om siste status`() {
-        val varselId = UUID.randomUUID().toString()
+        val varselId = randomUUID().toString()
 
         val varselEvent = opprettVarselEvent("beskjed", varselId)
         val venter = eksternVarslingOppdatert(

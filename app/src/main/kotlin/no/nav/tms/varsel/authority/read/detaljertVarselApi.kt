@@ -21,6 +21,7 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
         timeRange: Timerange? = null
     ) = withContext(Dispatchers.IO) {
         VarselMetricsReporter.registerVarselHentet(type, Source.SAKSBEHANDLER)
+
         call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange = timeRange))
     }
 

@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority.read
 
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -9,8 +10,17 @@ import io.ktor.server.testing.*
 import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.varsel.action.EksternVarslingBestilling
+import no.nav.tms.varsel.action.Produsent
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Tekst
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.*
+import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.EksternVarslingStatus
+import no.nav.tms.varsel.authority.Innhold
+import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
@@ -23,6 +33,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.time.ZonedDateTime
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SaksbehandlerVarselApiTest {
@@ -136,11 +148,67 @@ class SaksbehandlerVarselApiTest {
         }
     }
 
+    @Test
+    fun `leverer info om tidspunkt for første sending og renotifikasjon`() = testVarselApi { client ->
+        val sendtTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(9)
+        val renotifikasjonTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(2)
+
+        val varselUtenSendtTidspunkt = testVarsel(
+            eksternVarslingSendt = true,
+            eksternVarslingSendtTidspunkt = sendtTidspunkt,
+            renotifikasjonSendt = true,
+            renotifikasjonTidspunkt = renotifikasjonTidspunkt
+        )
+
+        insertVarsel(varselUtenSendtTidspunkt)
+
+        client.getVarsler("/varsel/detaljert/alle", ident).first().let {
+            it.eksternVarsling.shouldNotBeNull()
+            it.eksternVarsling.sendt shouldBe true
+            it.eksternVarsling.sendtTidspunkt shouldBe sendtTidspunkt
+            it.eksternVarsling.renotifikasjonSendt shouldBe true
+            it.eksternVarsling.renotifikasjonTidspunkt shouldBe renotifikasjonTidspunkt
+        }
+    }
+
+    private fun testVarsel(
+        sistOppdatert: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc(),
+        eksternVarslingSendt: Boolean = false,
+        eksternVarslingSendtTidspunkt: ZonedDateTime? = null,
+        renotifikasjonSendt: Boolean = false,
+        renotifikasjonTidspunkt: ZonedDateTime? = null
+    ): DatabaseVarsel {
+        return DatabaseVarsel(
+            type = Beskjed,
+            varselId = UUID.randomUUID().toString(),
+            ident = ident,
+            aktiv = true,
+            sensitivitet = Sensitivitet.Substantial,
+            innhold = Innhold("Tekst", "https://link"),
+            produsent = DatabaseProdusent("cluster", "namespace", "appnavn"),
+            eksternVarslingBestilling = EksternVarslingBestilling(),
+            eksternVarslingStatus = EksternVarslingStatus(
+                sendt = eksternVarslingSendt,
+                sendtTidspunkt = eksternVarslingSendtTidspunkt,
+                sendtSomBatch = false,
+                renotifikasjonSendt = renotifikasjonSendt,
+                renotifikasjonTidspunkt = renotifikasjonTidspunkt,
+                kanaler = listOf("SMS"),
+                feilhistorikk = emptyList(),
+                sisteStatus = null,
+                sistOppdatert = sistOppdatert,
+            ),
+            opprettet = ZonedDateTimeHelper.nowAtUtc(),
+            aktivFremTil = null,
+            inaktivert = null,
+            inaktivertAv = null,
+            metadata = emptyMap()
+        )
+    }
+
     private suspend fun HttpClient.getVarsler(path: String, ident: String): List<DetaljertVarsel> = get(path) {
         headers.append("ident", ident)
     }.body()
-
-
 
     private fun insertVarsel(vararg varsler: DatabaseVarsel) {
         varsler.forEach {

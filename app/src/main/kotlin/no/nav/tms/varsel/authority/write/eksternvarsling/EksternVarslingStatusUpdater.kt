@@ -37,7 +37,9 @@ class EksternVarslingStatusUpdater(
         val updatedStatus = EksternVarslingStatus(
             sendt = currentStatus.sendt || statusEvent.status == Sendt,
             sendtSomBatch = currentStatus.sendtSomBatch || (statusEvent.batch == true && statusEvent.status == Sendt),
+            sendtTidspunkt = if (statusEvent.status == Sendt && statusEvent.renotifikasjon == false) statusEvent.tidspunkt else currentStatus.sendtTidspunkt,
             renotifikasjonSendt = if (statusEvent.renotifikasjon == true) true else currentStatus.renotifikasjonSendt,
+            renotifikasjonTidspunkt = if (statusEvent.renotifikasjon == true) statusEvent.tidspunkt else currentStatus.renotifikasjonTidspunkt,
             kanaler = (currentStatus.kanaler + statusEvent.kanal).filterNotNull().distinct(),
             feilhistorikk = feilhistorikk,
             sisteStatus = statusEvent.status,
