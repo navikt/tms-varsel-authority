@@ -8,7 +8,6 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
-import no.nav.tms.varsel.authority.common.parseVarseltype
 
 class ExpiredVarselRepository(private val database: PostgresDatabase) {
 
@@ -40,7 +39,7 @@ class ExpiredVarselRepository(private val database: PostgresDatabase) {
     private fun toExpiredVasel(): (Row) -> ExpiredVarsel = { row ->
         ExpiredVarsel(
             varselId = row.string("varselId"),
-            varseltype = row.string("varseltype").let(::parseVarseltype),
+            varseltype = row.string("varseltype").let(Varseltype::parse),
             produsent = row.json("produsent")
         )
     }

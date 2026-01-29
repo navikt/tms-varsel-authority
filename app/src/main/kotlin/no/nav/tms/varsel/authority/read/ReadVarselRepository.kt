@@ -6,6 +6,7 @@ import kotliquery.queryOf
 import no.nav.tms.common.postgres.JsonbHelper.json
 import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
 import no.nav.tms.common.postgres.PostgresDatabase
+import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
@@ -177,11 +178,11 @@ class ReadVarselRepository(private val database: PostgresDatabase) {
 
     private fun toVarselsammendrag(): (Row) -> DatabaseVarselsammendrag = {
         DatabaseVarselsammendrag(
-            type = it.string("type").let(::parseVarseltype),
+            type = it.string("type").let(Varseltype::parse),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             innhold = it.json("innhold"),
-            sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
+            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarslingSendt = it.boolean("eksternVarslingSendt"),
             eksternVarslingKanaler = it.jsonOrNull("eksternVarslingKanaler") ?: emptyList(),
             opprettet = it.zonedDateTime("opprettet"),
@@ -192,12 +193,12 @@ class ReadVarselRepository(private val database: PostgresDatabase) {
 
     private fun toDetaljertVarsel(): (Row) -> DetaljertVarsel = {
         DetaljertVarsel(
-            type = it.string("type").let(::parseVarseltype),
+            type = it.string("type").let(Varseltype::parse),
             varselId = it.string("varselId"),
             aktiv = it.boolean("aktiv"),
             produsent = it.json("produsent"),
             innhold = it.json("innhold"),
-            sensitivitet = it.string("sensitivitet").let(::parseSensitivitet),
+            sensitivitet = it.string("sensitivitet").let(Sensitivitet::parse),
             eksternVarsling = it.jsonOrNull("eksternVarslingStatus"),
             opprettet = it.zonedDateTime("opprettet"),
             aktivFremTil = it.zonedDateTimeOrNull("aktivFremTil"),
@@ -215,7 +216,7 @@ class ReadVarselRepository(private val database: PostgresDatabase) {
             val readEksternVarsling: EksternVarslingArchiveCompatible? =
                 it.jsonOrNull("eksternVarsling")
 
-            val varselType = it.string("type").let(::parseVarseltype)
+            val varselType = it.string("type").let(Varseltype::parse)
 
             adminVarsel = DetaljertAdminVarsel(
                 type = varselType,

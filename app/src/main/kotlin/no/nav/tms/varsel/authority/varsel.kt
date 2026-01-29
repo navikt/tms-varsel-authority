@@ -52,15 +52,6 @@ data class EksternFeilHistorikkEntry(
     val tidspunkt: ZonedDateTime
 )
 
-data class EksternVarslingHistorikkEntry(
-    val melding: String,
-    val status: EksternStatus,
-    val distribusjonsId: Long?,
-    val kanal: String?,
-    val renotifikasjon: Boolean?,
-    val tidspunkt: ZonedDateTime
-)
-
 enum class EksternStatus {
     Feilet, Info, Bestilt, Sendt, Ferdigstilt, Kansellert, Venter;
 

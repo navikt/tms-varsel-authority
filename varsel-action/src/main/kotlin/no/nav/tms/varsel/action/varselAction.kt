@@ -45,6 +45,12 @@ enum class Varseltype {
 
     @JsonValue
     fun toJson() = name.lowercase()
+
+    companion object {
+        fun parse(string: String): Varseltype = entries
+            .firstOrNull { it.name.equals(string, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Could not parse varseltype $string")
+    }
 }
 
 enum class Sensitivitet {
@@ -53,6 +59,12 @@ enum class Sensitivitet {
 
     @JsonValue
     fun toJson() = name.lowercase()
+
+    companion object {
+        fun parse(string: String): Sensitivitet = entries
+            .firstOrNull { it.name.equals(string, ignoreCase = true) }
+            ?: throw IllegalArgumentException("Could not parse sensitivitet $string")
+    }
 }
 
 data class Produsent(
