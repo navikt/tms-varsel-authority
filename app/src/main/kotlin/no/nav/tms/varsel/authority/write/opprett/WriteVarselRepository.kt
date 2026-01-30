@@ -6,6 +6,8 @@ import no.nav.tms.common.postgres.JsonbHelper.json
 import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
 import no.nav.tms.common.postgres.JsonbHelper.toJsonb
 import no.nav.tms.common.postgres.PostgresDatabase
+import no.nav.tms.varsel.action.Sensitivitet
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.common.*
@@ -107,11 +109,11 @@ class WriteVarselRepository(val database: PostgresDatabase) {
         val varselInnhold: Innhold = row.json("innhold")
 
         DatabaseVarsel(
-            type = row.string("type").let(::parseVarseltype),
+            type = row.string("type").let(Varseltype::parse),
             varselId = row.string("varselId"),
             ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
+            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
             innhold = varselInnhold,
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.jsonOrNull("eksternVarslingBestilling"),

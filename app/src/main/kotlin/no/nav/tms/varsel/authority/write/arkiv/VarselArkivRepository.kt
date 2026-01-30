@@ -68,11 +68,11 @@ class VarselArkivRepository(private val database: PostgresDatabase) {
 
     private fun toArchiveVarsel(): (Row) -> ArkivVarsel = { row ->
         ArkivVarsel(
-            type = row.string("type").let(::parseVarseltype),
+            type = row.string("type").let(Varseltype::parse),
             varselId = row.string("varselId"),
             ident = row.string("ident"),
             aktiv = row.boolean("aktiv"),
-            sensitivitet = row.string("sensitivitet").let(::parseSensitivitet),
+            sensitivitet = row.string("sensitivitet").let(Sensitivitet::parse),
             innhold = row.json("innhold"),
             produsent = row.json("produsent"),
             eksternVarslingBestilling = row.jsonOrNull("eksternVarslingBestilling"),

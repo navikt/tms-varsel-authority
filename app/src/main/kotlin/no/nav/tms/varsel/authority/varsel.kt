@@ -1,5 +1,6 @@
 package no.nav.tms.varsel.authority
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonValue
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 import no.nav.tms.varsel.action.*
@@ -36,8 +37,10 @@ data class DatabaseProdusent(
 
 data class EksternVarslingStatus(
     val sendt: Boolean,
+    val sendtTidspunkt: ZonedDateTime? = null,
     val sendtSomBatch: Boolean = false,
     val renotifikasjonSendt: Boolean,
+    val renotifikasjonTidspunkt: ZonedDateTime? = null,
     val kanaler: List<String>,
     val feilhistorikk: List<EksternFeilHistorikkEntry> = emptyList(),
     val sisteStatus: EksternStatus? = null,
@@ -46,15 +49,6 @@ data class EksternVarslingStatus(
 
 data class EksternFeilHistorikkEntry(
     val feilmelding: String,
-    val tidspunkt: ZonedDateTime
-)
-
-data class EksternVarslingHistorikkEntry(
-    val melding: String,
-    val status: EksternStatus,
-    val distribusjonsId: Long?,
-    val kanal: String?,
-    val renotifikasjon: Boolean?,
     val tidspunkt: ZonedDateTime
 )
 

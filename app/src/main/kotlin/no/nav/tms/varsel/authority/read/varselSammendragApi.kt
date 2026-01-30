@@ -1,10 +1,10 @@
 package no.nav.tms.varsel.authority.read
 
 import io.ktor.server.application.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
@@ -15,7 +15,6 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source.BRUKER
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.action.Sensitivitet
-import no.nav.tms.varsel.authority.common.parseVarseltype
 
 fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
 
@@ -35,66 +34,49 @@ fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
         call.respond(varsler)
     }
 
-    get("/varsel/sammendrag/alle") {
-        fetchVarslerAndRespond(user = call.user)
-    }
 
-    get("/varsel/sammendrag/aktive") {
-        fetchVarslerAndRespond(user = call.user, aktiv = true)
-    }
-
-    get("/varsel/sammendrag/inaktive") {
-        fetchVarslerAndRespond(user = call.user, aktiv = false)
-    }
-
-    get("/beskjed/sammendrag/alle") {
-        fetchVarslerAndRespond(user = call.user, type = Beskjed)
-    }
-
-    get("/beskjed/sammendrag/aktive") {
-        fetchVarslerAndRespond(user = call.user, type = Beskjed, aktiv = true)
-    }
-
-    get("/beskjed/sammendrag/inaktive") {
-        fetchVarslerAndRespond(user = call.user, type = Beskjed, aktiv = false)
-    }
-
-    get("/oppgave/sammendrag/alle") {
-        fetchVarslerAndRespond(user = call.user, type = Oppgave)
-    }
-
-    get("/oppgave/sammendrag/aktive") {
-        fetchVarslerAndRespond(user = call.user, type = Oppgave, aktiv = true)
-    }
-
-    get("/oppgave/sammendrag/inaktive") {
-        fetchVarslerAndRespond(user = call.user, type = Oppgave, aktiv = false)
-    }
-
-    get("/innboks/sammendrag/alle") {
-        fetchVarslerAndRespond(user = call.user, type = Innboks)
-    }
-
-    get("/innboks/sammendrag/aktive") {
-        fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = true)
-    }
-
-    get("/innboks/sammendrag/inaktive") {
-        fetchVarslerAndRespond(user = call.user, type = Innboks, aktiv = false)
+    // {type} = [beskjed, oppgave, innboks]
+    // {aktiv} = [alle, aktive, inaktive]
+    get("/{type}/sammendrag/{aktiv}") {
+        fetchVarslerAndRespond(
+            user = call.user,
+            type = call.typeFilterFromPath(),
+            aktiv = call.aktivFilterFromPath()
+        )
     }
 
     get("/varsel/sammendrag") {
         fetchVarslerAndRespond(
             user = call.user,
-            type = call.request.type,
-            aktiv = call.request.aktiv
+            type = call.request.typeFromQueryParam,
+            aktiv = call.request.aktivFromQueryParam
         )
     }
 }
 
-private val ApplicationRequest.type get() = queryParameters["type"]?.let { parseVarseltype(it) }
-private val ApplicationRequest.aktiv get() = queryParameters["aktiv"]?.lowercase()?.toBooleanStrict()
 private val ApplicationRequest.preferertSpraak get() = queryParameters["preferert_spraak"]?.lowercase()
+private val ApplicationRequest.typeFromQueryParam get() = queryParameters["type"]?.let(Varseltype::parse)
+private val ApplicationRequest.aktivFromQueryParam get() = queryParameters["aktiv"]?.lowercase()?.toBooleanStrict()
+
+private fun RoutingCall.typeFilterFromPath(): Varseltype? {
+    return try {
+        when (val filter = request.pathVariables["type"]!!) {
+            "varsel" -> null
+            else -> Varseltype.parse(filter)
+        }
+    } catch (e: Exception) {
+        throw BadRequestException("Ugyldig varseltype-filter i path")
+    }
+}
+
+private fun RoutingCall.aktivFilterFromPath(): Boolean? {
+    return when(request.pathVariables["aktiv"]?.lowercase()) {
+        "alle" -> null
+        "aktive" -> true
+        "inaktive" -> false
+        else -> throw BadRequestException("Ugyldig aktiv-filter i path")
+    }
+}
 
 
 private val ApplicationCall.user get() = TokenXUserFactory.createTokenXUser(this)

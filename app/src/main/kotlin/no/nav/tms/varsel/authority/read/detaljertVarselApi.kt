@@ -18,59 +18,55 @@ fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
         ident: String,
         type: Varseltype? = null,
         aktiv: Boolean? = null,
-        timeRange: Timerange? = null
     ) = withContext(Dispatchers.IO) {
         VarselMetricsReporter.registerVarselHentet(type, Source.SAKSBEHANDLER)
-        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange = timeRange))
+
+        call.respond(readRepository.getDetaljertVarselForUser(ident, type = type, aktiv = aktiv, timeRange = null))
     }
 
-    get("/varsel/detaljert/alle") {
-        fetchVarslerAndRespond(ident = call.request.identHeader)
+    // {type} = [beskjed, oppgave, innboks]
+    // {aktiv} = [alle, aktive, inaktive]
+    post("/{type}/detaljert/{aktiv}") {
+        fetchVarslerAndRespond(
+            ident = call.identFromBody(),
+            type = call.typeFilterFromPath(),
+            aktiv = call.aktivFilterFromPath()
+        )
     }
 
-    get("/varsel/detaljert/aktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, aktiv = true)
-    }
-
-    get("/varsel/detaljert/inaktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, aktiv = false)
-    }
-
-    get("/beskjed/detaljert/alle") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed)
-    }
-
-    get("/beskjed/detaljert/aktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed, aktiv = true)
-    }
-
-    get("/beskjed/detaljert/inaktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Beskjed, aktiv = false)
-    }
-
-    get("/oppgave/detaljert/alle") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave)
-    }
-
-    get("/oppgave/detaljert/aktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave, aktiv = true)
-    }
-
-    get("/oppgave/detaljert/inaktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Oppgave, aktiv = false)
-    }
-
-    get("/innboks/detaljert/alle") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks)
-    }
-
-    get("/innboks/detaljert/aktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks, aktiv = true)
-    }
-
-    get("/innboks/detaljert/inaktive") {
-        fetchVarslerAndRespond(ident = call.request.identHeader, type = Innboks, aktiv = false)
+    // Deprecated TODO: Fjern get med ident-header
+    get("/{type}/detaljert/{aktiv}") {
+        fetchVarslerAndRespond(
+            ident = call.request.identFromHeader,
+            type = call.typeFilterFromPath(),
+            aktiv = call.aktivFilterFromPath()
+        )
     }
 }
 
-private val ApplicationRequest.identHeader get() = headers["ident"] ?: throw BadRequestException("Mangler ident-header")
+private data class IdentBody(
+    val ident: String
+)
+
+private fun RoutingCall.typeFilterFromPath(): Varseltype? {
+    return try {
+        when (val filter = request.pathVariables["type"]!!) {
+            "varsel" -> null
+            else -> Varseltype.parse(filter)
+        }
+    } catch (e: Exception) {
+        throw BadRequestException("Ugyldig varseltype-filter i path")
+    }
+}
+
+private fun RoutingCall.aktivFilterFromPath(): Boolean? {
+    return when(request.pathVariables["aktiv"]?.lowercase()) {
+        "alle" -> null
+        "aktive" -> true
+        "inaktive" -> false
+        else -> throw BadRequestException("Ugyldig aktiv-filter i path")
+    }
+}
+
+private val ApplicationRequest.identFromHeader get() = headers["ident"] ?: throw BadRequestException("Mangler ident-header")
+private suspend fun RoutingCall.identFromBody() = receive<IdentBody>().ident
