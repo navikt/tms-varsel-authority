@@ -2,6 +2,7 @@ package no.nav.tms.varsel.authority.read
 
 import io.ktor.server.application.*
 import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.NotFoundException
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -65,7 +66,7 @@ private fun RoutingCall.typeFilterFromPath(): Varseltype? {
             else -> Varseltype.parse(filter)
         }
     } catch (e: Exception) {
-        throw BadRequestException("Ugyldig varseltype-filter i path")
+        throw NotFoundException("Ugyldig varseltype-filter i path")
     }
 }
 
@@ -74,7 +75,7 @@ private fun RoutingCall.aktivFilterFromPath(): Boolean? {
         "alle" -> null
         "aktive" -> true
         "inaktive" -> false
-        else -> throw BadRequestException("Ugyldig aktiv-filter i path")
+        else -> throw NotFoundException("Ugyldig aktiv-filter i path")
     }
 }
 

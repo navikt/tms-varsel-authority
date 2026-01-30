@@ -13,6 +13,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.NotFoundException
 import no.nav.tms.common.metrics.installTmsApiMetrics
 import no.nav.tms.token.support.azure.validation.AzureAuthenticator
 import no.nav.tms.token.support.azure.validation.azure
@@ -66,6 +67,11 @@ fun Application.varselApi(
                         text = "Bruker kan ikke inaktivere ${cause.type} via api"
                     )
                     log.warn(cause) { cause.message }
+                }
+
+                is NotFoundException -> {
+                    call.respond(HttpStatusCode.NotFound)
+                    log.debug(cause) { "Feilaktig sti-parametre i url" }
                 }
 
                 is IllegalArgumentException -> {

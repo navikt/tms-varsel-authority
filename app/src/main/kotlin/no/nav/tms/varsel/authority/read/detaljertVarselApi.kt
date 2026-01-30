@@ -55,7 +55,7 @@ private fun RoutingCall.typeFilterFromPath(): Varseltype? {
             else -> Varseltype.parse(filter)
         }
     } catch (e: Exception) {
-        throw BadRequestException("Ugyldig varseltype-filter i path")
+        throw NotFoundException("Ugyldig varseltype-filter i path")
     }
 }
 
@@ -64,7 +64,7 @@ private fun RoutingCall.aktivFilterFromPath(): Boolean? {
         "alle" -> null
         "aktive" -> true
         "inaktive" -> false
-        else -> throw BadRequestException("Ugyldig aktiv-filter i path")
+        else -> throw NotFoundException("Ugyldig aktiv-filter i path")
     }
 }
 
