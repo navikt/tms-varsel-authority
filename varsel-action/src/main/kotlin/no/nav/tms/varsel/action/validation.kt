@@ -35,7 +35,8 @@ object OpprettVarselValidation {
         AktivFremTilSupportedValidator,
         SmstekstValidator,
         EposttittelValidator,
-        EposttekstValidator
+        EposttekstValidator,
+        ForbyLinkIEksternVarslingValidator
     )
 
     fun validate(opprettVarsel: OpprettVarsel) = validators.validate(opprettVarsel)
@@ -270,5 +271,28 @@ private object EposttittelValidator: OpprettVarselValidator {
             ?.let {
                 it.isNotBlank() && it.length <= MAX_LENGTH_EPOST_VARSLINGSTTITTEL
             } ?: true
+    }
+}
+
+private object ForbyLinkIEksternVarslingValidator: OpprettVarselValidator {
+    private const val URL_CHARACTERS = "[-a-zA-Z0-9@:%_\\+.~#?&//=]"
+    private val linkLikePattern = "(https?://$URL_CHARACTERS+|$URL_CHARACTERS{2,256}\\.[a-z]{2,4}\\b(/$URL_CHARACTERS*)?)".toRegex()
+
+    override val description = "Tekst i SMS/Epost kan ikke inneholde link, eller tekst som ser ut som link"
+
+    override fun validate(varselAction: OpprettVarsel) = assertTrue {
+        smsHarIkkeLink(varselAction) && epostHarIkkeLink(varselAction)
+    }
+
+    private fun smsHarIkkeLink(varselAction: OpprettVarsel): Boolean {
+        val smsTekst = varselAction.eksternVarsling?.smsVarslingstekst
+
+        return smsTekst == null || linkLikePattern.containsMatchIn(smsTekst).not()
+    }
+
+    private fun epostHarIkkeLink(varselAction: OpprettVarsel): Boolean {
+        val epostTekst = varselAction.eksternVarsling?.epostVarslingstekst
+
+        return epostTekst == null || linkLikePattern.containsMatchIn(epostTekst).not()
     }
 }

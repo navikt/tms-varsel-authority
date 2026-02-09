@@ -310,6 +310,46 @@ class OpprettVarselValidationTest {
         }
     }
 
+    @Test
+    fun `feiler dersom innhold i sms eller epost inneholder lenke eller noe som ser ut som lenke`() {
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    epostVarslingstekst = "Epost med lenke: https://lenke"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Sms med lenke: http://www.nav.no"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Tekst som ser ut.som lenke"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Skrivefeil som ikke.heltser ut som lenke."
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+    }
+
     private fun opprettVarsel(type: Varseltype) = OpprettVarsel(
         type = type,
         varselId = UUID.randomUUID().toString(),
