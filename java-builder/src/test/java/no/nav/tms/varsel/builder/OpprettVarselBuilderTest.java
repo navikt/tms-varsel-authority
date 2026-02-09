@@ -37,7 +37,7 @@ class OpprettVarselBuilderTest {
             .withVarselId(testVarselId)
             .withIdent("12345678910")
             .withSensitivitet(Sensitivitet.High)
-            .withLink("https://link")
+            .withLink("https://link.nav.no")
             .withTekst("no", "tekst", true)
             .withTekst("en", "text", false)
             .withEksternVarsling(
@@ -59,7 +59,7 @@ class OpprettVarselBuilderTest {
         assertEquals(json.get("varselId").asText(), testVarselId);
         assertEquals(json.get("ident").asText(), "12345678910");
         assertEquals(json.get("sensitivitet").asText(), "high");
-        assertEquals(json.get("link").asText(), "https://link");
+        assertEquals(json.get("link").asText(), "https://link.nav.no");
 
         JsonNode tekster1 = json.get("tekster").get(0);
         assertEquals(tekster1.get("spraakkode").asText(), "no");
@@ -104,7 +104,7 @@ class OpprettVarselBuilderTest {
                 .withVarselId(testVarselId)
                 .withIdent("12345678910")
                 .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
+                .withLink("https://link.nav.no")
                 .withTekst("no", "tekst", true)
                 .withEksternVarsling()
                 .withProdusent("cluster", "namespace", "app")
@@ -140,7 +140,7 @@ class OpprettVarselBuilderTest {
             .withVarselId(UUID.randomUUID().toString())
             .withIdent("12345678910")
             .withSensitivitet(Sensitivitet.High)
-            .withLink("https://link")
+            .withLink("https://link.nav.no")
             .withTekst("no", "tekst", true)
             .withTekst("en", "text", false)
             .withEksternVarsling()
@@ -161,7 +161,7 @@ class OpprettVarselBuilderTest {
                 .withVarselId("badId")
                 .withIdent("12345678910")
                 .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
+                .withLink("https://link.nav.no")
                 .withTekst("no", "tekst", true)
                 .withTekst("en", "text", false)
                 .withEksternVarsling()
@@ -179,7 +179,7 @@ class OpprettVarselBuilderTest {
                 .withVarselId(UUID.randomUUID().toString())
                 .withIdent("12345678910")
                 .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
+                .withLink("https://link.nav.no")
                 .withTekst("no", "tekst", true)
                 .withTekst("en", "text", false)
                 .withEksternVarsling()
@@ -196,7 +196,7 @@ class OpprettVarselBuilderTest {
                 .withVarselId(UUID.randomUUID().toString())
                 .withIdent("12345678910")
                 .withSensitivitet(Sensitivitet.High)
-                .withLink("https://link")
+                .withLink("https://link.nav.no")
                 .withTekst("no", "tekst")
                 .withProdusent("cluster", "namespace", "app")
                 .build()

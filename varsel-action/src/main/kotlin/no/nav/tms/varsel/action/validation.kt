@@ -1,11 +1,8 @@
 package no.nav.tms.varsel.action
 
-import java.net.MalformedURLException
 import java.net.URI
-import java.net.URISyntaxException
-import java.net.URL
 
-const val VarselActionVersion = "v2.1"
+const val VarselActionVersion = "v2.2"
 
 class VarselIdException(msg: String): IllegalArgumentException(msg)
 
@@ -32,8 +29,9 @@ object OpprettVarselValidation {
         OpprettVarselTekstLengthValidator,
         OpprettVarselDefaultTekstValidator,
         OpprettVarselTekstI18nValidator,
-        OpprettVarselLinkContentValidator,
         OpprettVarselLinkRequiredValidator,
+        OpprettVarselLinkFormatValidator,
+        OpprettVarselLinkContentValidator,
         AktivFremTilSupportedValidator,
         SmstekstValidator,
         EposttittelValidator,
@@ -185,38 +183,22 @@ private object TekstDefaultValidator {
 }
 
 private object OpprettVarselLinkRequiredValidator: OpprettVarselValidator {
-    override val description = LinkRequiredValidator.description
+    override val description: String = "link er påkrevd for innboks og oppgave"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
-        LinkRequiredValidator.validate(varselAction.type, varselAction.link)
-    }
-}
-
-private object LinkRequiredValidator {
-    const val description: String = "link er påkrevd for innboks og oppgave"
-
-    fun validate(type: Varseltype, link: String?): Boolean {
-        return when(type) {
+        when(varselAction.type) {
             Varseltype.Beskjed -> true
-            Varseltype.Innboks, Varseltype.Oppgave -> link != null
+            Varseltype.Innboks, Varseltype.Oppgave -> varselAction.link != null
         }
     }
 }
 
-private object OpprettVarselLinkContentValidator: OpprettVarselValidator {
-    override val description = LinkContentValidator.description
+private object OpprettVarselLinkFormatValidator: OpprettVarselValidator {
+    private const val MAX_LENGTH_LINK = 200
+    override val description: String = "Link må være gyldig URL og maks $MAX_LENGTH_LINK tegn"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
-        LinkContentValidator.validate(varselAction.link)
-    }
-}
-
-private object LinkContentValidator {
-    private const val MAX_LENGTH_LINK = 200
-    const val description: String = "Link må være gyldig URL og maks $MAX_LENGTH_LINK tegn"
-
-    fun validate(link: String?): Boolean {
-        return link == null || isValidURL(link)
+        varselAction.link == null || isValidURL(varselAction.link)
     }
 
     private fun isValidURL(link: String) =
@@ -226,6 +208,16 @@ private object LinkContentValidator {
         } catch (e: IllegalArgumentException) {
             false
         }
+}
+
+private object OpprettVarselLinkContentValidator: OpprettVarselValidator {
+    private val navDomainPattern = "https://(?:[a-z0-9-]{0,61}\\.)*nav\\.no(\\z|[/?])".toRegex()
+
+    override val description: String = "Link må lede til et nav.no domene"
+
+    override fun validate(varselAction: OpprettVarsel) = assertTrue {
+        varselAction.link == null || navDomainPattern.containsMatchIn(varselAction.link)
+    }
 }
 
 private object AktivFremTilSupportedValidator: OpprettVarselValidator {

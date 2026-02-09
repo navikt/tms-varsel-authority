@@ -31,7 +31,7 @@ class VarselActionBuilderTest {
             varselId = testVarselId
             ident = "12345678910"
             sensitivitet = Sensitivitet.High
-            link = "https://link"
+            link = "https://link.nav.no"
             tekst = Tekst("no", "tekst", default = true)
             tekster += Tekst("en", "text", default = false)
             eksternVarsling {
@@ -51,7 +51,7 @@ class VarselActionBuilderTest {
             json["varselId"].asText() shouldBe testVarselId
             json["ident"].asText() shouldBe "12345678910"
             json["sensitivitet"].asText() shouldBe "high"
-            json["link"].asText() shouldBe "https://link"
+            json["link"].asText() shouldBe "https://link.nav.no"
             json["tekster"][0].let {
                 it["spraakkode"].asText() shouldBe "no"
                 it["tekst"].asText() shouldBe "tekst"
@@ -94,7 +94,7 @@ class VarselActionBuilderTest {
             varselId = testVarselId
             ident = "12345678910"
             sensitivitet = Sensitivitet.High
-            link = "https://link"
+            link = "https://link.nav.no"
             tekst = Tekst("no", "tekst", default = true)
             eksternVarsling { }
             produsent = Produsent("cluster", "namespace", "app")
@@ -131,7 +131,7 @@ class VarselActionBuilderTest {
             varselId = UUID.randomUUID().toString()
             ident = "12345678910"
             sensitivitet = Sensitivitet.High
-            link = "https://link"
+            link = "https://link.nav.no"
             tekst = Tekst("no", "tekst", default = true)
             tekster += Tekst("en", "text", default = false)
             eksternVarsling { kanBatches = true }
@@ -155,7 +155,7 @@ class VarselActionBuilderTest {
                 varselId = UUID.randomUUID().toString()
                 ident = "12345678910"
                 sensitivitet = Sensitivitet.High
-                link = "https://link"
+                link = "https://link.nav.no"
                 tekst = Tekst("no", "tekst", default = true)
                 tekster += Tekst("en", "text", default = false)
                 eksternVarsling { kanBatches = true }
@@ -195,7 +195,7 @@ class VarselActionBuilderTest {
                 varselId = "badId"
                 ident = "12345678910"
                 sensitivitet = Sensitivitet.High
-                link = "https://link"
+                link = "https://link.nav.no"
                 tekst = Tekst("no", "tekst", default = true)
                 tekster += Tekst("en", "text", default = false)
                 eksternVarsling { kanBatches = true }
