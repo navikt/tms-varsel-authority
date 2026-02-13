@@ -50,25 +50,36 @@ private fun <T> List<Validator<T>>.validate(action: T) {
         if (errors.size > 1) {
             throw VarselValidationException(
                 message = "Fant ${errors.size} feil ved validering av varsel-action",
-                explanation = errors.mapNotNull { it.explanation }
+                errors = errors.mapNotNull { it.error }
             )
         } else if (errors.size == 1) {
             throw VarselValidationException(
-                message = "Feil ved validering av varsel-action: ${errors.first().explanation}",
-                explanation = errors.mapNotNull { it.explanation }
+                message = "Feil ved validering av varsel-action: ${errors.first().error?.description}",
+                errors = errors.mapNotNull { it.error }
             )
         }
     }
 
-class VarselValidationException(message: String, val explanation: List<String> = emptyList()): IllegalArgumentException(message)
+data class ValidationError(
+    val title: String,
+    val description: String
+)
+
+class VarselValidationException(
+    message: String,
+    val errors: List<ValidationError> = emptyList()
+) : IllegalArgumentException(message) {
+    val explanation get() = errors.map { it.description }
+}
 
 private interface Validator<T> {
+    val title: String
     val description: String
 
     fun assertTrue(validatorFunction: () -> Boolean) = if (validatorFunction()) {
         ValidatorResult(true)
     } else {
-        ValidatorResult(false, description)
+        ValidatorResult(false, ValidationError(title, description))
     }
 
     fun validate(varselAction: T): ValidatorResult
@@ -78,10 +89,11 @@ private interface OpprettVarselValidator: Validator<OpprettVarsel>
 
 private data class ValidatorResult(
     val isValid: Boolean,
-    val explanation: String? = null
+    val error: ValidationError? = null
 )
 
 private object IdentValidator: OpprettVarselValidator {
+    override val title: String = "ident_feil_lengde"
     override val description: String = "Fodselsnummer må være 11 tegn"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -90,7 +102,8 @@ private object IdentValidator: OpprettVarselValidator {
 }
 
 private object OpprettVarselVarselIdValidator: OpprettVarselValidator {
-    override val description: String = "Eventid må være gyldig UUID eller ULID"
+    override val title: String = "varselid_feil_format"
+    override val description: String = "VarselId må være gyldig UUID eller ULID"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
         varselAction.varselId.let { varselId ->
@@ -105,6 +118,7 @@ private object OpprettVarselVarselIdValidator: OpprettVarselValidator {
 }
 
 private object OpprettVarselTekstLengthValidator: OpprettVarselValidator {
+    override val title: String = "minside_tekst_feil_lengde"
     override val description = TekstLengthValidator.description
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -115,6 +129,7 @@ private object OpprettVarselTekstLengthValidator: OpprettVarselValidator {
 }
 
 private object OpprettVarselLanguageCodeValidator: OpprettVarselValidator {
+    override val title: String = "minside_tekst_feil_format_spraakkode"
     override val description = LanguageCodeValidator.description
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -150,6 +165,7 @@ private object TekstLengthValidator {
 }
 
 private object OpprettVarselTekstI18nValidator: OpprettVarselValidator {
+    override val title: String = "minside_tekst_spraak_duplikat"
     override val description = TekstI18nValidator.description
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -168,6 +184,7 @@ private object TekstI18nValidator {
 }
 
 private object OpprettVarselDefaultTekstValidator: OpprettVarselValidator {
+    override val title: String = "minside_tekst_default_spraak_mangler"
     override val description = TekstDefaultValidator.description
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -184,6 +201,7 @@ private object TekstDefaultValidator {
 }
 
 private object OpprettVarselLinkRequiredValidator: OpprettVarselValidator {
+    override val title: String = "link_mangler"
     override val description: String = "link er påkrevd for innboks og oppgave"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -196,6 +214,7 @@ private object OpprettVarselLinkRequiredValidator: OpprettVarselValidator {
 
 private object OpprettVarselLinkFormatValidator: OpprettVarselValidator {
     private const val MAX_LENGTH_LINK = 200
+    override val title: String = "feil_format_link"
     override val description: String = "Link må være gyldig URL og maks $MAX_LENGTH_LINK tegn"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -214,6 +233,7 @@ private object OpprettVarselLinkFormatValidator: OpprettVarselValidator {
 private object OpprettVarselLinkContentValidator: OpprettVarselValidator {
     private val navDomainPattern = "https://(?:[a-z0-9-]{0,61}\\.)*nav\\.no(\\z|[/?])".toRegex()
 
+    override val title: String = "feil_domene_link"
     override val description: String = "Link må lede til et nav.no domene"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -222,6 +242,7 @@ private object OpprettVarselLinkContentValidator: OpprettVarselValidator {
 }
 
 private object AktivFremTilSupportedValidator: OpprettVarselValidator {
+    override val title: String = "innboks_aktiv_frem_til"
     override val description = "Innboks støtter ikke aktivFremTil"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {
@@ -234,6 +255,7 @@ private object AktivFremTilSupportedValidator: OpprettVarselValidator {
 
 private object SmstekstValidator: OpprettVarselValidator {
     private const val MAX_LENGTH_SMS_VARSLINGSTEKST = 160
+    override val title: String = "sms_tekst_feil_lendge"
     override val description: String =
         "Sms-varsel kan ikke være tom string, og maks $MAX_LENGTH_SMS_VARSLINGSTEKST tegn"
 
@@ -248,6 +270,7 @@ private object SmstekstValidator: OpprettVarselValidator {
 
 private object EposttekstValidator: OpprettVarselValidator {
     private const val MAX_LENGTH_EPOST_VARSLINGSTEKST = 4000
+    override val title: String = "epost_tekst_feil_lengde"
     override val description: String =
         "Epost-tekst kan ikke være tom string, og maks $MAX_LENGTH_EPOST_VARSLINGSTEKST tegn"
 
@@ -262,6 +285,7 @@ private object EposttekstValidator: OpprettVarselValidator {
 
 private object EposttittelValidator: OpprettVarselValidator {
     private const val MAX_LENGTH_EPOST_VARSLINGSTTITTEL = 40
+    override val title: String = "epost_tittel_feil_lengde"
     override val description: String =
         "Epost-tittel kan ikke være tom string, og maks $MAX_LENGTH_EPOST_VARSLINGSTTITTEL tegn"
 
@@ -278,6 +302,7 @@ private object ForbyLinkIEksternVarslingValidator: OpprettVarselValidator {
     private const val URL_CHARACTERS = "[-a-zA-Z0-9@:%_\\+.~#?&//=]"
     private val linkLikePattern = "(https?://$URL_CHARACTERS+|$URL_CHARACTERS{2,256}\\.[a-z]{2,4}\\b(/$URL_CHARACTERS*)?)".toRegex()
 
+    override val title: String = "link_i_ekstern_varsling"
     override val description = "Tekst i SMS/Epost kan ikke inneholde link, eller tekst som ser ut som link"
 
     override fun validate(varselAction: OpprettVarsel) = assertTrue {

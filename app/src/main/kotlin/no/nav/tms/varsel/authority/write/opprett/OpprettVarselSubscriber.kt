@@ -46,8 +46,6 @@ internal class OpprettVarselSubscriber(
 
     private val teamLog = TeamLogs.logger { }
     private val objectMapper = defaultObjectMapper()
-    private val sourceTopic = "external"
-
 
     override suspend fun receive(jsonMessage: JsonMessage) = traceOpprettVarsel(jsonMessage) {
         log.info { "Opprett-event motatt" }
@@ -77,7 +75,7 @@ internal class OpprettVarselSubscriber(
         try {
             varselRepository.insertVarsel(dbVarsel)
             varselAktivertProducer.varselOpprettet(dbVarsel)
-            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent, sourceTopic)
+            VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
             log.info { "Opprett varsel fra kafka behandlet" }
 
         } catch (e: UniqueConstraintException) {
@@ -113,9 +111,7 @@ internal class OpprettVarselSubscriber(
         )
 
     private fun mapMetadata(opprettVarsel: OpprettVarsel): Map<String, Any> {
-        val opprettEvent = mutableMapOf<String, Any>(
-            "source_topic" to sourceTopic
-        )
+        val opprettEvent = mutableMapOf<String, Any>()
 
         if (opprettVarsel.eksternVarsling != null) {
             opprettEvent += "bruk_default_kan_batches" to (opprettVarsel.eksternVarsling?.kanBatches == null)
@@ -144,8 +140,10 @@ internal class OpprettVarselSubscriber(
         try {
             OpprettVarselValidation.validate(opprettVarsel)
         } catch (e: VarselValidationException) {
-            log.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]" }
-            teamLog.warn { "Feil ved validering av opprett-varsel event med id [${opprettVarsel.varselId}]: ${e.explanation.joinToString()}" }
+            VarselMetricsReporter.registrerVarselInvalid(opprettVarsel.type, opprettVarsel.produsent, e.errors)
+
+            log.warn { "Feil ved validering av opprett-varsel event" }
+            teamLog.warn { "Feil ved validering av opprett-varsel event: ${e.explanation.joinToString()}" }
 
             throw OpprettVarselValidationException()
         }

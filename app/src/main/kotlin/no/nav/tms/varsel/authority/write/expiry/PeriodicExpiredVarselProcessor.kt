@@ -48,7 +48,7 @@ class PeriodicExpiredVarselProcessor(
                     kilde = Frist
                 )
             )
-            VarselMetricsReporter.registerVarselInaktivert(expired.varseltype, expired.produsent, Frist, "N/A")
+            VarselMetricsReporter.registerVarselInaktivert(expired.varseltype, expired.produsent, Frist)
         }
     }
 }
