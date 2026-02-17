@@ -25,11 +25,14 @@ class EksternVarslingStatusOppdatertSubscriberTest {
     private val database = LocalPostgresDatabase.cleanDb()
     private val varselRepository = WriteVarselRepository(database)
 
+    private val feilhistorikkMaxSize = 3
+
     private val eksternVarslingStatusRepository = EksternVarslingStatusRepository(database)
     private val eksternVarslingStatusUpdater =
         EksternVarslingStatusUpdater(
             eksternVarslingStatusRepository,
-            varselRepository
+            varselRepository,
+            feilhistorikkMaxSize
         )
 
     private val testBroadcaster =
@@ -500,6 +503,64 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         }.let {
             it.shouldNotBeNull()
             it.cause::class shouldBe EksternVarslingStatusOppdatertSubscriber.StatusOppdatertDeserializationException::class
+        }
+    }
+
+    @Test
+    fun `ignorerer feil-statuser dersom feilhistorikk allerede er full`() {
+        val varselId = randomUUID().toString()
+
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
+
+        testBroadcaster.broadcastJson(varselEvent)
+
+        repeat(feilhistorikkMaxSize) { i ->
+            eksternVarslingOppdatert(
+                varselId = varselId,
+                status = EksternStatus.Feilet,
+                batch = false,
+                feilmelding = "Feilmelding ${i + 1}"
+            ).let { feilMelding ->
+                testBroadcaster.broadcastJson(feilMelding)
+            }
+        }
+
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.let {
+                it.sisteStatus shouldBe EksternStatus.Feilet
+            }
+
+        eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Feilet,
+            batch = false,
+            feilmelding = "En feilmelding"
+        ).let { feilet ->
+            testBroadcaster.broadcastJson(feilet)
+        }
+
+        eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            kanal = "SMS",
+            renotifikasjon = false,
+            batch = false
+        ).let { sendt ->
+            testBroadcaster.broadcastJson(sendt)
+        }
+
+        varselRepository.getVarsel(varselId)
+            ?.eksternVarslingStatus
+            ?.let {
+                it.sendt shouldBe true
+            }
+
+        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+            it.getOrNull("status")?.asText() == EksternStatus.Feilet.lowercaseName
+        }.let {
+            it.shouldNotBeNull()
+            it.cause::class shouldBe FeilhistorikkFullException::class
         }
     }
 }
