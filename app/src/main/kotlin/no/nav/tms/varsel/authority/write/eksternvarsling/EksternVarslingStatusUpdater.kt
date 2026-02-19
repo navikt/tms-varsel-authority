@@ -1,37 +1,50 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.EksternStatus.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.slf4j.MDC
+import kotlin.collections.distinct
+import kotlin.collections.plus
 
 class EksternVarslingStatusUpdater(
     private val eksternVarslingStatusRepository: EksternVarslingStatusRepository,
-    private val varselRepository: WriteVarselRepository
+    private val varselRepository: WriteVarselRepository,
+    private val feilhistorikkMaxSize: Int = 10
 ) {
+    private val log = KotlinLogging.logger { }
 
     fun updateEksternVarslingStatus(statusEvent: EksternVarslingOppdatert) {
         val varsel = varselRepository.getVarsel(statusEvent.varselId)
 
         if (varsel == null) {
+            log.warn { "Ignorerer status [${statusEvent.status}] fordi tilhørende varsel ikke fantes." }
             throw UpdatedVarselMissingException()
+        } else if (statusEvent.feilmelding != null && feilhistorikkIsFull(varsel.eksternVarslingStatus)) {
+            log.warn { "Ignorerer feilet-status fordi feilhistorikken er full (max_entries: $feilhistorikkMaxSize)." }
+            throw FeilhistorikkFullException()
         }
-
-        MDC.put("type", varsel.type.name.lowercase())
 
         val currentStatus = varsel.eksternVarslingStatus ?: emptyEksternVarsling()
 
-        val feilhistorikk = if (statusEvent.feilmelding != null) {
+        withLoggingContext("type" to varsel.type.name.lowercase()) {
+            mapStatusAndPerformUpdate(varsel.varselId, currentStatus, statusEvent)
+        }
+    }
+
+    private fun mapStatusAndPerformUpdate(varselId: String, currentStatus: EksternVarslingStatus, statusEvent: EksternVarslingOppdatert) {
+        val feilhistorikk = if (statusEvent.feilmelding == null) {
+            currentStatus.feilhistorikk
+        } else {
             EksternFeilHistorikkEntry(
                 feilmelding = statusEvent.feilmelding,
                 tidspunkt = statusEvent.tidspunkt,
             ).let {
                 currentStatus.feilhistorikk + it
             }.distinct()
-        } else {
-            currentStatus.feilhistorikk
         }
 
         val updatedStatus = EksternVarslingStatus(
@@ -46,9 +59,8 @@ class EksternVarslingStatusUpdater(
             sistOppdatert = nowAtUtc()
         )
 
-        eksternVarslingStatusRepository.updateEksternVarslingStatus(varsel.varselId, updatedStatus)
+        eksternVarslingStatusRepository.updateEksternVarslingStatus(varselId, updatedStatus)
     }
-
 
     private fun emptyEksternVarsling() = EksternVarslingStatus(
         sendt = false,
@@ -56,6 +68,11 @@ class EksternVarslingStatusUpdater(
         kanaler = emptyList(),
         sistOppdatert = nowAtUtc()
     )
+
+    private fun feilhistorikkIsFull(status: EksternVarslingStatus?): Boolean {
+        return status?.feilhistorikk != null && status.feilhistorikk.size >= feilhistorikkMaxSize
+    }
 }
 
 class UpdatedVarselMissingException : MessageException("Fant ikke varsel tilhørende ekstern varseloppdatering")
+class FeilhistorikkFullException: MessageException("Ignorerer feil-status; Feilhistorikken er full")
