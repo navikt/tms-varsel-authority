@@ -110,7 +110,7 @@ private fun varsel(
     ident = "123",
     innhold = Innhold(
         tekst = "Bla.",
-        link = "http://link",
+        link = "https://link.nav.no",
     ),
     opprettet = nowAtUtc(),
     aktivFremTil = aktivFremTil

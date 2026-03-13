@@ -38,7 +38,7 @@ class VarselInaktiverer(
 
                     varselRepository.inaktiverVarsel(varsel.varselId, Bruker)
 
-                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker, "N/A")
+                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)
 
                     varselInaktivertProducer.varselInaktivert(
                         VarselInaktivertHendelse(
@@ -73,7 +73,7 @@ class VarselInaktiverer(
                         )
                     )
 
-                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Admin, "N/A")
+                    VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Admin)
 
                     varselInaktivertProducer.varselInaktivert(
                         VarselInaktivertHendelse(

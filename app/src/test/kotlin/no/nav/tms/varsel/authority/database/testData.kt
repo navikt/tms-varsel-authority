@@ -280,7 +280,7 @@ private fun EksternVarslingBestilling.serializeForArchive() = """
 
 fun testInnhold(
     tekst: String = "varseltekst",
-    link: String? = "http://link",
+    link: String? = "https://link.nav.no",
     tekster: List<Tekst> = listOf(Tekst("nb", "varseltekst", false))
 ) = Innhold(
     tekst = tekst,

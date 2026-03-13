@@ -180,7 +180,7 @@ internal class PeriodicVarselArchiverTest {
         sensitivitet = Sensitivitet.Substantial,
         innhold = Innhold(
             tekst = "Bla.",
-            link = "http://link",
+            link = "https://link.nav.no",
         ),
         produsent = DatabaseProdusent(namespace = "namespace", appnavn = "app", cluster = null),
         eksternVarslingStatus = EksternVarslingStatus(

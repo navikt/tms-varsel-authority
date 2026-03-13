@@ -11,10 +11,7 @@ import io.ktor.utils.io.*
 import no.nav.tms.token.support.azure.validation.mock.azureMock
 import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
 import no.nav.tms.varsel.action.EksternVarslingBestilling
-import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.Sensitivitet
-import no.nav.tms.varsel.action.Tekst
-import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
@@ -25,9 +22,6 @@ import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
-import no.nav.tms.varsel.authority.mockProducer
-import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
-import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -184,7 +178,7 @@ class SaksbehandlerVarselApiTest {
             ident = ident,
             aktiv = true,
             sensitivitet = Sensitivitet.Substantial,
-            innhold = Innhold("Tekst", "https://link"),
+            innhold = Innhold("Tekst", "https://link.nav.no"),
             produsent = DatabaseProdusent("cluster", "namespace", "appnavn"),
             eksternVarslingBestilling = EksternVarslingBestilling(),
             eksternVarslingStatus = EksternVarslingStatus(

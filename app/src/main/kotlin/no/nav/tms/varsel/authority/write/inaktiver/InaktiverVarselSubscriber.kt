@@ -50,8 +50,7 @@ internal class InaktiverVarselSubscriber(
                 VarselMetricsReporter.registerVarselInaktivert(
                     varseltype = varsel.type,
                     produsent = varsel.produsent,
-                    kilde = VarselInaktivertKilde.Produsent,
-                    sourceTopic = sourceTopic
+                    kilde = VarselInaktivertKilde.Produsent
                 )
                 varselInaktivertProducer.varselInaktivert(
                     VarselInaktivertHendelse(

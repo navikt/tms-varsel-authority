@@ -10,7 +10,7 @@ fun opprettVarselEvent(
     produsent: Produsent = Produsent("cluster", "namespace", "appnavn"),
     ident: String = "01234567890",
     tekster: List<Tekst> = listOf(Tekst("no", "tekst", true)),
-    link: String? = "http://link",
+    link: String? = "https://link.nav.no",
     sensitivitet: Sensitivitet = Sensitivitet.High,
     aktivFremTil: ZonedDateTime? = nowAtUtc().plusDays(1),
     eksternVarsling: EksternVarslingBestilling? = EksternVarslingBestilling(

@@ -246,12 +246,116 @@ class OpprettVarselValidationTest {
         }
     }
 
+    @Test
+    fun `godtar varianter av url så lenge domene leder til nav no`() {
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://nav.no"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://www.nav.no/sti"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://domene.nav.no/enda/lengre/sti"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://annet.langt.domene.nav.no?param=queryparam"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+    }
+
+    @Test
+    fun `feiler dersom url leder til et annet domene enn nav_no eller ikke bruker https`() {
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://nav.no.co.uk"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "https://hack.com?workaround=nav.no"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "naken.lenke.nav.no"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                link = "http://usikker.nav.no"
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+    }
+
+    @Test
+    fun `feiler dersom innhold i sms eller epost inneholder lenke eller noe som ser ut som lenke`() {
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    epostVarslingstekst = "Epost med lenke: https://lenke"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Sms med lenke: http://www.nav.no"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Tekst som ser ut.som lenke"
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+        shouldNotThrow<VarselValidationException> {
+            validOpprettOppgaveAction.copy(
+                eksternVarsling = EksternVarslingBestilling(
+                    smsVarslingstekst = "Skrivefeil som ikke.heltser ut som lenke."
+                )
+            ).let {
+                OpprettVarselValidation.validate(it)
+            }
+        }
+    }
+
     private fun opprettVarsel(type: Varseltype) = OpprettVarsel(
         type = type,
         varselId = UUID.randomUUID().toString(),
         ident = "12345678910",
         sensitivitet = Sensitivitet.Substantial,
-        link = "https://link",
+        link = "https://www.nav.no",
         tekster = listOf(Tekst("no", "tekst", default = true)),
         eksternVarsling = EksternVarslingBestilling(
             prefererteKanaler = listOf(EksternKanal.SMS, EksternKanal.EPOST),
