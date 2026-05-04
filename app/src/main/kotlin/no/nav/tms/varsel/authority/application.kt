@@ -101,6 +101,7 @@ fun main() {
             domain = Domain.varsel
             idFieldName = "varselId"
             producedByFieldName = "produsent"
+            allowMissingProducerField = true
         }
 
         onStartup {
