@@ -10,13 +10,13 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
-import no.nav.tms.token.support.azure.validation.mock.azureMock
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance.HIGH
-import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
-import no.nav.tms.varsel.action.Varseltype
+import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
+import no.nav.tms.token.support.user.token.verification.Issuer
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.ADMIN_ROUTES
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.mockProducer
@@ -131,7 +131,6 @@ class InaktiverBeskjedApiTest {
         }
     }
 
-    @KtorDsl
     private fun testVarselApi(
         userIdent: String,
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
@@ -143,14 +142,16 @@ class InaktiverBeskjedApiTest {
                 varselInaktiverer,
                 installAuthenticatorsFunction = {
                     authentication {
-                        tokenXMock {
-                            setAsDefault = true
-                            alwaysAuthenticated = true
-                            staticUserPid = userIdent
-                            staticLevelOfAssurance = HIGH
+                        userTokenMock {
+                            levelOfAssurance = LevelOfAssurance.Substantial
+                            configureIssuers(Issuer.Tokenx)
+                            enableDefaultAuthentication {
+                                tokenIdent = userIdent
+                                tokenLoa = LevelOfAssurance.High
+                            }
                         }
-                        azureMock {
-                            setAsDefault = false
+                        entraIdMock(ADMIN_ROUTES) {
+
                         }
                     }
                 }

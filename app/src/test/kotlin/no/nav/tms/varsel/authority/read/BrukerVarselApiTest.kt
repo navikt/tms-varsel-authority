@@ -7,8 +7,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.varsel.action.Sensitivitet.High
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
 import no.nav.tms.varsel.action.Tekst
@@ -117,7 +116,7 @@ class BrukerVarselApiTest {
     @Test
     fun `maskerer innhold i varsel hvis bruker har for lav loa`() = testVarselApi(
         userIdent = ident,
-        userLoa = LevelOfAssurance.SUBSTANTIAL
+        userLoa = LevelOfAssurance.Substantial
     ) { client ->
         val varsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = Substantial).dbVarsel()
         val sensitivtVarsel = TestVarsel(type = Beskjed, ident = ident, sensitivitet = High).dbVarsel()
@@ -278,10 +277,9 @@ class BrukerVarselApiTest {
         }
     }
 
-    @KtorDsl
     private fun testVarselApi(
         userIdent: String = ident,
-        userLoa: LevelOfAssurance = LevelOfAssurance.HIGH,
+        userLoa: LevelOfAssurance = LevelOfAssurance.High,
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = baseTestApplication(
         userIdent = userIdent,

@@ -1,15 +1,15 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.action.Varseltype.Beskjed
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Admin
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import no.nav.tms.common.observability.traceVarsel
-import org.slf4j.MDC
 
 class VarselInaktiverer(
     private val varselRepository: WriteVarselRepository,
@@ -18,9 +18,13 @@ class VarselInaktiverer(
     private val log = KotlinLogging.logger {}
 
     suspend fun inaktiverBeskjedForBruker(varselId: String, ident: String) = withContext(Dispatchers.IO) {
-        traceVarsel(id = varselId, mapOf("action" to "inaktiver", "initiated_by" to "bruker")) {
-            val varsel = varselRepository.getVarsel(varselId)
+        val varsel = varselRepository.getVarsel(varselId)
 
+        withInaktiverVarselMdc(
+            varselId = varselId,
+            initiatedBy = "bruker",
+            type = varsel?.type
+        ) {
             when {
                 varsel == null -> throw VarselNotFoundException("Fant ikke varsel")
                 varsel.ident != ident -> throw UnprivilegedAccessException("Kan ikke inaktivere annen brukers beskjed.")
@@ -54,9 +58,14 @@ class VarselInaktiverer(
     }
 
     suspend fun inaktiverVarselForAdmin(varselId: String, grunn: String) = withContext(Dispatchers.IO) {
-        traceVarsel(varselId, mapOf("action" to "inaktiver", "initiated_by" to "admin")) {
+        val varsel = varselRepository.getVarsel(varselId)
 
-            when (val varsel = varselRepository.getVarsel(varselId)) {
+        withInaktiverVarselMdc(
+            varselId = varselId,
+            initiatedBy = "admin",
+            type = varsel?.type
+        ) {
+            when (varsel) {
                 null -> throw VarselNotFoundException("Fant ikke varsel")
                 else -> {
                     log.info { "Inaktiverer varsel." }
@@ -86,6 +95,32 @@ class VarselInaktiverer(
                 }
             }
         }
+    }
+
+    private fun withInaktiverVarselMdc(
+        varselId: String,
+        initiatedBy: String,
+        type: Varseltype? = null,
+        function: () -> Unit
+    ) {
+        val mdcMap = mutableMapOf(
+            "minside_id" to varselId,
+            "event" to "inaktiver",
+            "initiated_by" to initiatedBy
+        )
+
+        if (type != null) {
+            mdcMap["type"] = type.name.lowercase()
+        }
+
+        withLoggingContext(
+            map = mapOf(
+                "minside_id" to varselId,
+                "event" to "inaktiver",
+                "initiated_by" to initiatedBy
+            ),
+            body = function
+        )
     }
 }
 

@@ -365,7 +365,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         dbVarsel?.eksternVarslingStatus.shouldNotBeNull()
 
-        dbVarsel?.eksternVarslingStatus?.let {
+        dbVarsel.eksternVarslingStatus.let {
             it shouldNotBe null
 
             it.sendt shouldBe true

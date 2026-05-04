@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority
 import kotlinx.coroutines.runBlocking
 import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.common.postgres.Postgres
+import no.nav.tms.kafka.application.Domain
 import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
@@ -95,6 +96,12 @@ fun main() {
                 eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
             )
         )
+
+        minSideMdc {
+            domain = Domain.varsel
+            idFieldName = "varselId"
+            producedByFieldName = "produsent"
+        }
 
         onStartup {
             Flyway.configure()

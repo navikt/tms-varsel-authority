@@ -1,18 +1,16 @@
 package no.nav.tms.varsel.authority.read
 
 import io.ktor.server.application.*
-import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.auth.principal
 import io.ktor.server.plugins.NotFoundException
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
-import no.nav.tms.token.support.tokenx.validation.user.TokenXUser
-import no.nav.tms.token.support.tokenx.validation.user.TokenXUserFactory
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verification.UserPrincipal
 import no.nav.tms.varsel.action.Varseltype
-import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source.BRUKER
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.action.Sensitivitet
@@ -20,7 +18,7 @@ import no.nav.tms.varsel.action.Sensitivitet
 fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
 
     suspend fun RoutingContext.fetchVarslerAndRespond(
-        user: TokenXUser,
+        user: UserPrincipal,
         type: Varseltype? = null,
         aktiv: Boolean? = null
     ) = withContext(Dispatchers.IO) {
@@ -31,7 +29,7 @@ fun Route.varselSammendragApi(readRepository: ReadVarselRepository) {
                 spraakkode = call.request.preferertSpraak
             )
 
-        VarselMetricsReporter.registerVarselHentet(type,BRUKER,user.levelOfAssurance)
+        VarselMetricsReporter.registerVarselHentet(type,BRUKER, user.levelOfAssurance)
         call.respond(varsler)
     }
 
@@ -80,9 +78,9 @@ private fun RoutingCall.aktivFilterFromPath(): Boolean? {
 }
 
 
-private val ApplicationCall.user get() = TokenXUserFactory.createTokenXUser(this)
+private val ApplicationCall.user get() = principal<UserPrincipal>() ?: throw IllegalStateException("Fant ikke UserPrincipall i ApplicationCall")
 
-private fun loaIsLowerThanHigh(user: TokenXUser) = user.levelOfAssurance != LevelOfAssurance.HIGH
+private fun loaIsLowerThanHigh(user: UserPrincipal) = user.levelOfAssurance != LevelOfAssurance.High
 
 private fun List<DatabaseVarselsammendrag>.toSammendrag(
     maskerSensitive: Boolean,

@@ -3,18 +3,16 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import no.nav.tms.common.logging.TeamLogs
-import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
-import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.varsel.action.InaktiverVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.slf4j.MDC
 
 internal class InaktiverVarselSubscriber(
     private val varselRepository: WriteVarselRepository,
@@ -32,14 +30,19 @@ internal class InaktiverVarselSubscriber(
         .withOptionalFields("metadata")
 
 
-    override suspend fun receive(jsonMessage: JsonMessage) = traceInaktiverVarsel(jsonMessage) {
+    override suspend fun receive(jsonMessage: JsonMessage) {
+
         log.info { "Inaktiver-event mottatt" }
 
         val inaktiverVarsel = deserialize(jsonMessage)
         val varsel = varselRepository.getVarsel(inaktiverVarsel.varselId)
 
-        varsel?.let {
+        if (varsel == null) {
+            log.warn { "Fant ikke varsel å inaktivere" }
+            throw InaktivertVarselMissingException()
+        }
 
+        withLoggingContext("type" to varsel.type.name.lowercase()) {
             if (varsel.aktiv) {
                 varselRepository.inaktiverVarsel(
                     varselId = varsel.varselId,
@@ -64,9 +67,6 @@ internal class InaktiverVarselSubscriber(
             } else {
                 log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
             }
-        } ?: run {
-            log.warn { "Fant ikke varsel å inaktivere" }
-            throw InaktivertVarselMissingException()
         }
     }
 
@@ -93,23 +93,6 @@ internal class InaktiverVarselSubscriber(
         }
 
         return mapOf("inaktiver_event" to inaktiverEvent)
-    }
-
-    private fun traceInaktiverVarsel(jsonMessage: JsonMessage, function: () -> Unit) {
-        // Guard mot feilaktig format inne i produsent-objektet
-        val produsent = jsonMessage["produsent"]["appnavn"]
-            ?.takeIf { !it.isMissingOrNull() }
-            ?.asText()
-            ?: "ukjent"
-
-        traceVarsel(
-            id = jsonMessage["varselId"].asText(),
-            extra = mapOf(
-                "action" to "inaktiver",
-                "initiated_by" to produsent
-            ),
-            function = function
-        )
     }
 
     class InaktiverVarselDeserializationException: MessageException("Inaktiver-event har ikke riktig json-format")
