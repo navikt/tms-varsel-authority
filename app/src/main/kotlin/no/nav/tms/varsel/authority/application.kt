@@ -97,13 +97,6 @@ fun main() {
             )
         )
 
-        minSideMdc {
-            domain = Domain.varsel
-            idFieldName = "varselId"
-            producedByFieldName = "produsent"
-            allowMissingProducerField = true
-        }
-
         onStartup {
             Flyway.configure()
                 .dataSource(database.dataSource)
@@ -123,6 +116,24 @@ fun main() {
                 varselInaktivertProducer.flushAndClose()
                 varselOpprettetProducer.flushAndClose()
                 varselArkivertProducer.flushAndClose()
+            }
+        }
+
+        minSideMdc {
+            domain = Domain.varsel
+            idFieldName = "varselId"
+            producedBySupplier { message ->
+                val produsentNode = message.json.get("produsent")
+
+                if (produsentNode.isObject) {
+                    val cluster = produsentNode["cluster"].asText()
+                    val namespace = produsentNode["namespace"].asText()
+                    val appnavn = produsentNode["appnavn"].asText()
+
+                    "$cluster:$namespace:$appnavn"
+                } else {
+                    null
+                }
             }
         }
     }.start()
