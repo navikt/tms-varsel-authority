@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.write.inaktiver
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.varsel.action.Varseltype.Beskjed
@@ -8,8 +9,6 @@ import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Admin
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Bruker
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import no.nav.tms.common.observability.traceVarsel
-import org.slf4j.MDC
 
 class VarselInaktiverer(
     private val varselRepository: WriteVarselRepository,
@@ -18,7 +17,7 @@ class VarselInaktiverer(
     private val log = KotlinLogging.logger {}
 
     suspend fun inaktiverBeskjedForBruker(varselId: String, ident: String) = withContext(Dispatchers.IO) {
-        traceVarsel(id = varselId, mapOf("action" to "inaktiver", "initiated_by" to "bruker")) {
+        traceInaktiverVarsel(varselId, Bruker) {
             val varsel = varselRepository.getVarsel(varselId)
 
             when {
@@ -54,7 +53,7 @@ class VarselInaktiverer(
     }
 
     suspend fun inaktiverVarselForAdmin(varselId: String, grunn: String) = withContext(Dispatchers.IO) {
-        traceVarsel(varselId, mapOf("action" to "inaktiver", "initiated_by" to "admin")) {
+        traceInaktiverVarsel(varselId, Admin) {
 
             when (val varsel = varselRepository.getVarsel(varselId)) {
                 null -> throw VarselNotFoundException("Fant ikke varsel")
@@ -85,6 +84,16 @@ class VarselInaktiverer(
                     )
                 }
             }
+        }
+    }
+
+    private fun traceInaktiverVarsel(varselId: String, kilde: VarselInaktivertKilde, function: () -> Unit) {
+        withLoggingContext(
+            "minside_id" to varselId,
+            "action" to "inaktiver",
+            "initiated_by" to kilde.lowercaseName,
+        ) {
+            function()
         }
     }
 }

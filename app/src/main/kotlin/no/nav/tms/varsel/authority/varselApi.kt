@@ -15,14 +15,14 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.NotFoundException
 import no.nav.tms.common.metrics.installTmsApiMetrics
-import no.nav.tms.token.support.azure.validation.AzureAuthenticator
-import no.nav.tms.token.support.azure.validation.azure
-import no.nav.tms.token.support.tokenx.validation.tokenX
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.read.detaljertVarselApi
 import no.nav.tms.varsel.authority.read.varselSammendragApi
 import no.nav.tms.varsel.authority.write.inaktiver.*
 import no.nav.tms.common.observability.ApiMdc
+import no.nav.tms.token.support.entraid.token.verification.entraId
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verification.userToken
 import no.nav.tms.varsel.action.VarselIdException
 import java.text.DateFormat
 
@@ -97,20 +97,22 @@ fun Application.varselApi(
             inaktiverBeskjedApi(varselInaktiverer)
             varselSammendragApi(readVarselRepository)
         }
-        authenticate(AzureAuthenticator.name) {
+        authenticate(SYSTEM_API) {
             adminApi(varselInaktiverer, readVarselRepository)
             detaljertVarselApi(readVarselRepository)
         }
     }
 }
 
+const val SYSTEM_API = "system_api"
+
 private fun installAuth(): Application.() -> Unit = {
     authentication {
-        tokenX {
-            setAsDefault = true
+        userToken {
+            levelOfAssurance = LevelOfAssurance.Substantial
         }
-        azure {
-            setAsDefault = false
+        entraId(SYSTEM_API) {
+
         }
     }
 }

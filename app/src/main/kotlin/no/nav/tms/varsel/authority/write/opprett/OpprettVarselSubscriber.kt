@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
-import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.common.postgres.UniqueConstraintException
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
-import no.nav.tms.kafka.application.isMissingOrNull
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
@@ -47,7 +45,7 @@ internal class OpprettVarselSubscriber(
     private val teamLog = TeamLogs.logger { }
     private val objectMapper = defaultObjectMapper()
 
-    override suspend fun receive(jsonMessage: JsonMessage) = traceOpprettVarsel(jsonMessage) {
+    override suspend fun receive(jsonMessage: JsonMessage) {
         log.info { "Opprett-event motatt" }
 
         deserialize(jsonMessage)
@@ -164,24 +162,6 @@ internal class OpprettVarselSubscriber(
 
     private fun eksterneTeksterErSpesifisert(eksternVarsling: EksternVarslingBestilling): Boolean {
         return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
-    }
-
-    private fun traceOpprettVarsel(jsonMessage: JsonMessage, function: () -> Unit) {
-        // Guard mot feilaktig format inne i produsent-objektet
-        val produsent = jsonMessage["produsent"]["appnavn"]
-            ?.takeIf { !it.isMissingOrNull() }
-            ?.asText()
-            ?: "ukjent"
-
-        traceVarsel(
-            id = jsonMessage["varselId"].asText(),
-            extra = mapOf(
-                "action" to "opprett",
-                "initiated_by" to produsent,
-                "type" to jsonMessage["type"].asText()
-            ),
-            function = function
-        )
     }
 
     class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")

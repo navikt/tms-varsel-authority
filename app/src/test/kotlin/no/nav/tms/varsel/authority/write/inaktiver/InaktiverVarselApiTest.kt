@@ -11,10 +11,11 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.utils.io.*
-import no.nav.tms.token.support.azure.validation.mock.azureMock
-import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
+import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.mockProducer
@@ -81,7 +82,6 @@ class InaktiverVarselApiTest {
         }
     }
 
-    @KtorDsl
     private fun testVarselApi(
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = testApplication {
@@ -92,12 +92,11 @@ class InaktiverVarselApiTest {
                 varselInaktiverer,
                 installAuthenticatorsFunction = {
                     authentication {
-                        tokenXMock {
-                            setAsDefault = true
+                        userTokenMock {
+
                         }
-                        azureMock {
-                            setAsDefault = false
-                            alwaysAuthenticated = true
+                        entraIdMock(SYSTEM_API) {
+                            enableDefaultAuthentication()
                         }
                     }
                 }

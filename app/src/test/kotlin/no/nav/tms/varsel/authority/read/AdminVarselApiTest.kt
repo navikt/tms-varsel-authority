@@ -20,9 +20,10 @@ import io.ktor.serialization.jackson.jackson
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
 import kotliquery.queryOf
-import no.nav.tms.token.support.azure.validation.mock.azureMock
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
-import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verification.userToken
+import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
 import no.nav.tms.varsel.action.Varseltype.Beskjed
@@ -31,6 +32,7 @@ import no.nav.tms.varsel.action.Varseltype.Oppgave
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.EksternFeilHistorikkEntry
 import no.nav.tms.varsel.authority.EksternStatus
+import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.read.JsonHelpers.findElementsWithKey
 import no.nav.tms.varsel.authority.read.JsonHelpers.shouldHaveValue
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
@@ -537,16 +539,15 @@ class AdminVarselApiTest {
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = baseTestApplication(
         userIdent = userIdent,
-        userLoa = LevelOfAssurance.HIGH,
+        userLoa = LevelOfAssurance.High,
         readVarselRepository = readRepository,
         authentication = {
             authentication {
-                tokenXMock {
-                    setAsDefault = true
+                userTokenMock {
+
                 }
-                azureMock {
-                    setAsDefault = false
-                    alwaysAuthenticated = true
+                entraIdMock(SYSTEM_API) {
+                    enableDefaultAuthentication()
                 }
             }
         },

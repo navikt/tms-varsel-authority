@@ -17,33 +17,35 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import no.nav.tms.kafka.application.isMissingOrNull
-import no.nav.tms.token.support.azure.validation.mock.azureMock
-import no.nav.tms.token.support.tokenx.validation.mock.LevelOfAssurance
-import no.nav.tms.token.support.tokenx.validation.mock.tokenXMock
+import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
+import no.nav.tms.token.support.user.token.verification.Issuer
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
-import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
-import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import java.text.DateFormat
 import kotlin.collections.forEach
 
 fun baseTestApplication(
     userIdent: String="1234567819",
-    userLoa: LevelOfAssurance = LevelOfAssurance.HIGH,
+    userLoa: LevelOfAssurance = LevelOfAssurance.High,
     readVarselRepository: ReadVarselRepository,
     varselInaktiverer: VarselInaktiverer = mockk(),
     authentication: Application.() -> Unit = {
             authentication {
-                tokenXMock {
-                    setAsDefault = true
-                    alwaysAuthenticated = true
-                    staticUserPid = userIdent
-                    staticLevelOfAssurance = userLoa
+                userTokenMock {
+                    configureIssuers(Issuer.Tokenx)
+                    levelOfAssurance = LevelOfAssurance.Substantial
+                    enableDefaultAuthentication {
+                        tokenLoa = userLoa
+                        tokenIdent = userIdent
+                    }
                 }
-                azureMock {
-                    setAsDefault = false
+                entraIdMock(SYSTEM_API) {
+
                 }
             }
 
@@ -138,7 +140,7 @@ object Matchers {
         aktiv shouldBe dbVarsel.aktiv
         innhold shouldMatch dbVarsel.innhold
         eksternVarslingSendt shouldBe dbVarsel.eksternVarslingStatus!!.sendt
-        eksternVarslingKanaler shouldBe dbVarsel.eksternVarslingStatus!!.kanaler
+        eksternVarslingKanaler shouldBe dbVarsel.eksternVarslingStatus.kanaler
         opprettet shouldBe dbVarsel.opprettet
         aktivFremTil shouldBe dbVarsel.aktivFremTil
         inaktivert shouldBe dbVarsel.inaktivert
