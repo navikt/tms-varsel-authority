@@ -34,7 +34,7 @@ dependencies {
     implementation(KotlinLogging.logging)
     implementation(Ktor.Client.core)
     implementation(Ktor.Client.contentNegotiation)
-    implementation(Ktor.Client.apache)
+    implementation(Ktor.Client.apache5)
     implementation(Ktor.Server.auth)
     implementation(Ktor.Server.contentNegotiation)
     implementation(Ktor.Server.core)
@@ -42,8 +42,8 @@ dependencies {
     implementation(Ktor.Serialization.jackson)
     implementation(Logstash.logbackEncoder)
     implementation(Prometheus.metricsCore)
-    implementation(TmsKtorTokenSupport.azureValidation)
-    implementation(TmsKtorTokenSupport.tokenXValidation)
+    implementation(TmsKtorTokenSupport.userTokenVerification)
+    implementation(TmsKtorTokenSupport.entraIdTokenVerification)
     implementation(KotliQuery.kotliquery)
     implementation(JacksonDatatype.moduleKotlin)
     implementation(TmsCommonLib.kubernetes)
@@ -58,13 +58,14 @@ dependencies {
 
     testImplementation(JunitPlatform.launcher)
     testImplementation(JunitJupiter.api)
+    testImplementation(JunitJupiter.engine)
     testImplementation(Mockk.mockk)
     testImplementation(TestContainers.postgresql)
     testImplementation(Kotest.runnerJunit5)
     testImplementation(Kotest.assertionsCore)
     testImplementation(Ktor.Test.serverTestHost)
-    testImplementation(TmsKtorTokenSupport.tokenXValidationMock)
-    testImplementation(TmsKtorTokenSupport.azureValidationMock)
+    testImplementation(TmsKtorTokenSupport.userTokenVerificationMock)
+    testImplementation(TmsKtorTokenSupport.entraIdTokenVerificationMock)
 }
 
 application {

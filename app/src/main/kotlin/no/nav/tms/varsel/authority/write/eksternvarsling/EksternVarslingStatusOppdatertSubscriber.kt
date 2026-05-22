@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
-import no.nav.tms.common.observability.traceVarsel
 import no.nav.tms.kafka.application.JsonMessage
 import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
-import no.nav.tms.varsel.action.OpprettVarsel
 import no.nav.tms.varsel.authority.EksternStatus
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import java.time.ZonedDateTime
@@ -34,12 +32,10 @@ internal class EksternVarslingStatusOppdatertSubscriber(
 
 
     override suspend fun receive(jsonMessage: JsonMessage) {
-        traceVarsel(id = jsonMessage["varselId"].asText(), mapOf("action" to "eksternVarslingOppdatert")) {
-            val oppdatertEvent = deserialize(jsonMessage)
+        val oppdatertEvent = deserialize(jsonMessage)
 
-            eksternVarslingStatusUpdater.updateEksternVarslingStatus(oppdatertEvent)
-            log.info { "Behandlet eksternVarslingStatusOppdatert med status ${oppdatertEvent.status}" }
-        }
+        eksternVarslingStatusUpdater.updateEksternVarslingStatus(oppdatertEvent)
+        log.info { "Behandlet eksternVarslingStatusOppdatert med status ${oppdatertEvent.status}" }
     }
 
     private fun deserialize(jsonMessage: JsonMessage): EksternVarslingOppdatert {

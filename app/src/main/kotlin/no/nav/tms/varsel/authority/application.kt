@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority
 import kotlinx.coroutines.runBlocking
 import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.common.postgres.Postgres
+import no.nav.tms.kafka.application.Domain
 import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
@@ -115,6 +116,24 @@ fun main() {
                 varselInaktivertProducer.flushAndClose()
                 varselOpprettetProducer.flushAndClose()
                 varselArkivertProducer.flushAndClose()
+            }
+        }
+
+        minSideMdc {
+            domain = Domain.varsel
+            idFieldName = "varselId"
+            producedBySupplier { message ->
+                val produsentNode = message.json.get("produsent")
+
+                if (produsentNode?.isObject == true) {
+                    val cluster = produsentNode["cluster"].asText()
+                    val namespace = produsentNode["namespace"].asText()
+                    val appnavn = produsentNode["appnavn"].asText()
+
+                    "$cluster:$namespace:$appnavn"
+                } else {
+                    null
+                }
             }
         }
     }.start()

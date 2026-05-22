@@ -1,7 +1,7 @@
 package no.nav.tms.varsel.authority.config
 
 import io.prometheus.metrics.core.metrics.Counter
-import no.nav.tms.token.support.tokenx.validation.LevelOfAssurance
+import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.varsel.action.Produsent
 import no.nav.tms.varsel.action.ValidationError
 import no.nav.tms.varsel.authority.DatabaseProdusent
@@ -77,7 +77,7 @@ object VarselMetricsReporter {
         .labelNames("type", "source", "assurance_level")
         .register()
 
-    fun registerVarselHentet(varseltype: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance?=null) {
+    fun registerVarselHentet(varseltype: Varseltype?, source: Source, levelOfAssurance: LevelOfAssurance? = null) {
         VARSEL_HENTET
             .labelValues(
                 varseltype?.name?.lowercase() ?: "all",
