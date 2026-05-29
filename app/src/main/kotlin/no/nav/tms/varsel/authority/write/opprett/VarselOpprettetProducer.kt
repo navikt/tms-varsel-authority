@@ -9,12 +9,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import org.apache.kafka.clients.producer.Producer
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime
 
 class VarselOpprettetProducer(
-    private val kafkaProducer: Producer<String, String>,
+    private val kafkaProducer: RetryingKafkaProducer,
     private val topicName: String
 ) {
 
@@ -42,16 +42,6 @@ class VarselOpprettetProducer(
 
     private fun Any.asJson(): ObjectNode {
         return objectMapper.valueToTree(this)
-    }
-
-    fun flushAndClose() {
-        try {
-            kafkaProducer.flush()
-            kafkaProducer.close()
-            log.info { "Produsent for kafka-eventer er flushet og lukket." }
-        } catch (e: Exception) {
-            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
-        }
     }
 }
 

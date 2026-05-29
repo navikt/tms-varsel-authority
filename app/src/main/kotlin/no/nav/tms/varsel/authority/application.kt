@@ -7,6 +7,8 @@ import no.nav.tms.kafka.application.Domain
 import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
+import no.nav.tms.varsel.authority.write.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
@@ -39,25 +41,31 @@ fun main() {
         varselRepository
     )
 
-    val varselOpprettetProducer = VarselOpprettetProducer(
+    val leaderElection = PodLeaderElection()
+
+    val retryingKafkaProducer = RetryingKafkaProducer(
+        repository = RecordQueueRepository(database),
         kafkaProducer = initializeKafkaProducer(environment),
+        leaderElection = leaderElection,
+    )
+
+    val varselOpprettetProducer = VarselOpprettetProducer(
+        kafkaProducer = retryingKafkaProducer,
         topicName = environment.internalVarselTopic,
     )
 
     val varselInaktivertProducer = VarselInaktivertProducer(
-        kafkaProducer = initializeKafkaProducer(environment),
+        kafkaProducer = retryingKafkaProducer,
         topicName = environment.internalVarselTopic,
     )
-
-    val leaderElection = PodLeaderElection()
 
     val expiredVarselRepository = ExpiredVarselRepository(database)
     val periodicExpiredVarselProcessor =
         PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
 
     val varselArkivertProducer = VarselArkivertProducer(
-        initializeKafkaProducer(environment),
-        environment.internalVarselTopic
+        kafkaProducer = retryingKafkaProducer,
+        topicName = environment.internalVarselTopic
     )
 
     val varselArchivingRepository = VarselArkivRepository(database)
@@ -107,15 +115,15 @@ fun main() {
         onReady {
             periodicExpiredVarselProcessor.start()
             varselArchiver.start()
+            retryingKafkaProducer.start()
         }
 
         onShutdown {
             runBlocking {
                 periodicExpiredVarselProcessor.stop()
                 varselArchiver.stop()
-                varselInaktivertProducer.flushAndClose()
-                varselOpprettetProducer.flushAndClose()
-                varselArkivertProducer.flushAndClose()
+                retryingKafkaProducer.stop()
+                retryingKafkaProducer.flushAndClose()
             }
         }
 

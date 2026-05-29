@@ -8,6 +8,7 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.server.testing.*
 import io.ktor.utils.io.*
+import io.mockk.mockk
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.varsel.action.Sensitivitet.High
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
@@ -23,6 +24,7 @@ import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.database.testInnhold
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -31,7 +33,7 @@ import org.junit.jupiter.api.Test
 class BrukerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = mockProducer()
+    private val mockProducer: RetryingKafkaProducer = mockk()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 

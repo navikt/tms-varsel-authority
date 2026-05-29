@@ -11,6 +11,8 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
 import io.ktor.utils.io.*
+import io.mockk.mockk
+import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.Varseltype
@@ -21,6 +23,8 @@ import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
+import no.nav.tms.varsel.authority.write.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -30,9 +34,12 @@ import java.util.*
 class InaktiverVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer = mockProducer()
+    private val leaderElection: PodLeaderElection = mockk()
 
-    private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
+    private val mockProducer = mockProducer()
+    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
+
+    private val inaktivertProducer = VarselInaktivertProducer(retryingKafkaProducer, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)

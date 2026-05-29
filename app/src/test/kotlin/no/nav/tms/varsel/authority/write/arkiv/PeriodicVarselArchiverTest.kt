@@ -17,6 +17,8 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.write.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -34,8 +36,9 @@ internal class PeriodicVarselArchiverTest {
     private val testRepository = ArchiveTestRepository(database)
 
     private val mockProducer = mockProducer()
+    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
 
-    private val arkivertProducer = VarselArkivertProducer(mockProducer ,"testTopic")
+    private val arkivertProducer = VarselArkivertProducer(retryingKafkaProducer ,"testTopic")
     private val gammelBeskjed =
         varsel(type = Beskjed, varselId = "b1", opprettet = nowAtUtc().minusDays(11))
     private val nyBeskjed =

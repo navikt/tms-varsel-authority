@@ -6,16 +6,14 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
-import org.apache.kafka.clients.producer.Producer
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.ZonedDateTime
 
 class VarselArkivertProducer(
-    private val kafkaProducer: Producer<String, String>,
+    private val kafkaProducer: RetryingKafkaProducer,
     private val topicName: String
 ) {
-    private val log = KotlinLogging.logger { }
-
     private val objectMapper = defaultObjectMapper()
 
     fun varselArkivert(arkivVarsel: ArkivVarsel) {
@@ -28,16 +26,6 @@ class VarselArkivertProducer(
         )
 
         kafkaProducer.send(ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse)))
-    }
-
-    fun flushAndClose() {
-        try {
-            kafkaProducer.flush()
-            kafkaProducer.close()
-            log.info { "Produsent for kafka-eventer er flushet og lukket." }
-        } catch (e: Exception) {
-            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
-        }
     }
 }
 
