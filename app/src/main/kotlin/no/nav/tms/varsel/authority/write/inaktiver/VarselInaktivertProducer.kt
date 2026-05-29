@@ -7,11 +7,12 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 
 class VarselInaktivertProducer(
-    private val kafkaProducer: Producer<String, String>,
+    private val kafkaProducer: RetryingKafkaProducer,
     private val topicName: String,
 ) {
     private val log = KotlinLogging.logger {}
@@ -23,16 +24,6 @@ class VarselInaktivertProducer(
         kafkaProducer.send(ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse)))
 
         log.info { "inaktivert-event produsert til kafka" }
-    }
-
-    fun flushAndClose() {
-        try {
-            kafkaProducer.flush()
-            kafkaProducer.close()
-            log.info { "Produsent for kafka-eventer er flushet og lukket." }
-        } catch (e: Exception) {
-            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
-        }
     }
 }
 

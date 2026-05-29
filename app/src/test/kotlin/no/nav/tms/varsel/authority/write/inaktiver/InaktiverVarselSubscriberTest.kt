@@ -5,11 +5,15 @@ import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
 import kotliquery.queryOf
+import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
+import no.nav.tms.varsel.authority.write.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -19,12 +23,16 @@ import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 internal class InaktiverVarselSubscriberTest {
-    private val mockProducer = mockProducer()
-
-    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-
     private val database = LocalPostgresDatabase.cleanDb()
+
+    private val leaderElection: PodLeaderElection = mockk()
+
+    private val mockProducer = mockProducer()
+    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
+
+    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = retryingKafkaProducer, topicName = "testtopic")
+    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = retryingKafkaProducer, topicName = "testtopic")
+
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(
         OpprettVarselSubscriber(repository, varselOpprettetProducer),
