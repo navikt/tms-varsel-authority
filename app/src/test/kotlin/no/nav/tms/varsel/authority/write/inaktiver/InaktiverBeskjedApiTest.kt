@@ -10,7 +10,6 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
 import io.mockk.mockk
 import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
@@ -25,8 +24,8 @@ import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
-import no.nav.tms.varsel.authority.write.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -36,13 +35,10 @@ import java.util.*
 class InaktiverBeskjedApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val leaderElection: PodLeaderElection = mockk()
+    private val recordQueueRepository = RecordQueueRepository(database)
+    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer())
 
-    private val mockProducer = mockProducer()
-    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
-
-
-    private val inaktivertProducer = VarselInaktivertProducer(retryingKafkaProducer, "topic")
+    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
@@ -50,11 +46,9 @@ class InaktiverBeskjedApiTest {
 
     private val ident = "123"
 
-
     @AfterEach
     fun deleteData() {
         LocalPostgresDatabase.cleanDb()
-        mockProducer.clear()
     }
 
     @Test
@@ -68,6 +62,8 @@ class InaktiverBeskjedApiTest {
 
         getDbVarsel(beskjed1.varselId).aktiv shouldBe false
         getDbVarsel(beskjed2.varselId).aktiv shouldBe true
+
+        recordQueueRepository.queueSize() shouldBe 1
     }
 
     @Test
@@ -79,6 +75,8 @@ class InaktiverBeskjedApiTest {
         val response = client.inaktiverBeskjed(varselId = UUID.randomUUID().toString())
 
         response.status shouldBe HttpStatusCode.Forbidden
+
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
     @Test
@@ -90,6 +88,8 @@ class InaktiverBeskjedApiTest {
         val response = client.inaktiverBeskjed(varselId = oppgave.varselId)
 
         response.status shouldBe HttpStatusCode.Forbidden
+
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
     @Test
@@ -101,6 +101,8 @@ class InaktiverBeskjedApiTest {
         val response = client.inaktiverBeskjed(varselId = beskjed.varselId)
 
         response.status shouldBe HttpStatusCode.Forbidden
+
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
     @Test
@@ -108,6 +110,8 @@ class InaktiverBeskjedApiTest {
         val response = client.inaktiverBeskjed(varselId = "bad id")
 
         response.status shouldBe HttpStatusCode.Forbidden
+
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
 
@@ -125,7 +129,7 @@ class InaktiverBeskjedApiTest {
         response1.status shouldBe HttpStatusCode.OK
         response2.status shouldBe HttpStatusCode.OK
 
-        mockProducer.history().size shouldBe 1
+        recordQueueRepository.queueSize() shouldBe 1
     }
 
     private suspend fun HttpClient.inaktiverBeskjed(varselId: String) =

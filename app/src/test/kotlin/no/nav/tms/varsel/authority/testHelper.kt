@@ -7,8 +7,8 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
 
 
-fun mockProducer() = MockProducer(
-    false,
+fun mockProducer(autoComplete: Boolean = true) = MockProducer(
+    autoComplete,
     null,
     StringSerializer(),
     StringSerializer()

@@ -23,6 +23,7 @@ object LocalPostgresDatabase {
     fun cleanDb(): PostgresDatabase {
         instance.update { queryOf("delete from varsel") }
         instance.update { queryOf("delete from varsel_arkiv") }
+        instance.update { queryOf("delete from outgoing_record_queue") }
         return instance
     }
 

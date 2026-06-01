@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
 import io.mockk.mockk
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.varsel.action.Sensitivitet.High
@@ -17,14 +16,13 @@ import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.mockProducer
 import org.junit.jupiter.api.AfterEach
 
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.database.testInnhold
-import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -33,7 +31,7 @@ import org.junit.jupiter.api.Test
 class BrukerVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val mockProducer: RetryingKafkaProducer = mockk()
+    private val mockProducer: QueueableKafkaProducer = mockk()
 
     private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
 
@@ -269,7 +267,6 @@ class BrukerVarselApiTest {
             beskjed.innhold?.spraakkode shouldBe "nb"
         }
     }
-
 
     private suspend fun HttpClient.getVarsler(path: String): List<Varselsammendrag> = get(path).body()
 

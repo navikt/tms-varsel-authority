@@ -3,6 +3,7 @@ package no.nav.tms.varsel.authority.write.opprett
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -15,9 +16,10 @@ import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.shouldBeSameTime
-import no.nav.tms.varsel.authority.write.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
-import no.nav.tms.varsel.authority.write.inaktiver.InaktiverVarselSubscriber
+import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
+import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
@@ -27,11 +29,9 @@ class OpprettVarselSubscriberTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
     private val mockProducer = mockProducer()
-    private val leaderElection: PodLeaderElection = mockk()
+    private val kafkaProducer = QueueableKafkaProducer(RecordQueueRepository(database), mockProducer)
 
-    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
-
-    private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = retryingKafkaProducer, topicName = "testtopic")
+    private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(OpprettVarselSubscriber(repository, aktivertProducer), enableTracking = true)
 
@@ -42,6 +42,7 @@ class OpprettVarselSubscriberTest {
     @AfterEach
     fun cleanUp() {
         mockProducer.clear()
+        mockProducer.sendException = null
         database.update {
             queryOf("delete from varsel")
         }
@@ -241,9 +242,7 @@ class OpprettVarselSubscriberTest {
             .forEach { varselOpprettet ->
                 varselOpprettet["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
             }
-
     }
-
 
     @Test
     fun `takler dårlig data på topic`() {
@@ -287,6 +286,24 @@ class OpprettVarselSubscriberTest {
             it.shouldNotBeNull()
             it.cause::class shouldBe OpprettVarselSubscriber.OpprettVarselDeserializationException::class
         }
+    }
+
+    @Test
+    fun `ruller tilbake oppretting dersom sending av 'opprettet' til kafka feiler`() {
+        val varselId = randomUUID().toString()
+
+        val opprettBeskjed = opprettVarselEvent(
+            "beskjed", varselId, eksternVarsling = EksternVarslingBestilling(kanBatches = null, smsVarslingstekst = "Annet")
+        )
+
+        mockProducer.sendException = TimeoutException()
+
+        shouldThrow<KafkaProducerException> {
+            testBroadcaster.broadcastJson(opprettBeskjed)
+        }
+
+        repository.getVarsel(varselId).shouldBeNull()
+        mockProducer.history().size shouldBe 0
     }
 
 

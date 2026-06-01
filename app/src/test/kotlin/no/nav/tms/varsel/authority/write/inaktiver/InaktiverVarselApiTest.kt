@@ -10,7 +10,6 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
 import io.mockk.mockk
 import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
@@ -23,8 +22,8 @@ import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
-import no.nav.tms.varsel.authority.write.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -34,12 +33,11 @@ import java.util.*
 class InaktiverVarselApiTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
-    private val leaderElection: PodLeaderElection = mockk()
-
     private val mockProducer = mockProducer()
-    private val retryingKafkaProducer = RetryingKafkaProducer(RecordQueueRepository(database), mockProducer, leaderElection)
+    private val recordQueueRepository = RecordQueueRepository(database)
+    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
 
-    private val inaktivertProducer = VarselInaktivertProducer(retryingKafkaProducer, "topic")
+    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
@@ -64,6 +62,8 @@ class InaktiverVarselApiTest {
 
         getDbVarsel(oppgave1.varselId).aktiv shouldBe false
         getDbVarsel(oppgave2.varselId).aktiv shouldBe true
+
+        recordQueueRepository.queueSize() shouldBe 1
     }
 
     @Test
@@ -75,6 +75,8 @@ class InaktiverVarselApiTest {
         val response = client.inaktiverVarsel(varselId = UUID.randomUUID().toString(), grunnForInaktivering)
 
         response.status shouldBe HttpStatusCode.Forbidden
+
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
     private suspend fun HttpClient.inaktiverVarsel(varselId: String, grunn: String) =

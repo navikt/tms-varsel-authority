@@ -39,7 +39,7 @@ class VarselInaktiverer(
 
                     VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Bruker)
 
-                    varselInaktivertProducer.varselInaktivert(
+                    varselInaktivertProducer.enqueueVarselInaktivert(
                         VarselInaktivertHendelse(
                             varselId = varsel.varselId,
                             varseltype = varsel.type,
@@ -74,7 +74,7 @@ class VarselInaktiverer(
 
                     VarselMetricsReporter.registerVarselInaktivert(varsel.type, varsel.produsent, Admin)
 
-                    varselInaktivertProducer.varselInaktivert(
+                    varselInaktivertProducer.enqueueVarselInaktivert(
                         VarselInaktivertHendelse(
                             varselId = varsel.varselId,
                             varseltype = varsel.type,

@@ -2,19 +2,17 @@ package no.nav.tms.varsel.authority.write.opprett
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.RetryingKafkaProducer
-import org.apache.kafka.clients.producer.ProducerRecord
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import java.time.ZonedDateTime
 
 class VarselOpprettetProducer(
-    private val kafkaProducer: RetryingKafkaProducer,
+    private val kafkaProducer: QueueableKafkaProducer,
     private val topicName: String
 ) {
 
@@ -28,20 +26,11 @@ class VarselOpprettetProducer(
     fun varselOpprettet(dbVarsel: DatabaseVarsel) {
 
         val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
+            .let(objectMapper::writeValueAsString)
 
-        sendEvent(dbVarsel.varselId, varselOpprettetEvent)
+        kafkaProducer.send(topicName, dbVarsel.varselId, varselOpprettetEvent)
 
         log.info { "Opprettet-event produsert til kafka" }
-    }
-
-    private fun sendEvent(varselId: String, body: Any) {
-        ProducerRecord(topicName, varselId, body.asJson().toString()).let {
-            kafkaProducer.send(it)
-        }
-    }
-
-    private fun Any.asJson(): ObjectNode {
-        return objectMapper.valueToTree(this)
     }
 }
 
