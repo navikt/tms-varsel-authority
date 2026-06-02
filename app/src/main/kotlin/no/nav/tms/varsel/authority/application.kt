@@ -21,7 +21,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import no.nav.tms.varsel.authority.write.outgoing.KafkaQueueProcessor
+import no.nav.tms.varsel.authority.write.outgoing.PeriodicKafkaQueueProcessor
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -49,7 +49,7 @@ fun main() {
         recordProducer = initializeKafkaProducer(environment)
     )
 
-    val kafkaQueueProcessor = KafkaQueueProcessor(
+    val kafkaQueueProcessor = PeriodicKafkaQueueProcessor(
         repository = RecordQueueRepository(database),
         recordProducer = initializeKafkaProducer(environment),
         leaderElection = leaderElection,
@@ -110,6 +110,9 @@ fun main() {
                 eksternVarslingStatusUpdater = eksternVarslingStatusUpdater
             )
         )
+
+        healthCheck("VarselExpiryProcessor", periodicExpiredVarselProcessor::isHealthy)
+        healthCheck("KafkaRecordProcessor", kafkaQueueProcessor::isHealthy)
 
         onStartup {
             Flyway.configure()

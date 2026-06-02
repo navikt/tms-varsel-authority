@@ -97,7 +97,7 @@ class KafkaQueueProcessorTest {
         }
     }
 
-    private fun initProducer(batchSize: Int, interval: Duration = Duration.ofSeconds(3)): KafkaQueueProcessor {
-        return KafkaQueueProcessor(repository, mockProducer, leaderElection, batchSize, interval)
+    private fun initProducer(batchSize: Int, interval: Duration = Duration.ofSeconds(3)): PeriodicKafkaQueueProcessor {
+        return PeriodicKafkaQueueProcessor(repository, mockProducer, leaderElection, batchSize, interval)
     }
 }

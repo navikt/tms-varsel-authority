@@ -10,7 +10,7 @@ import no.nav.tms.varsel.action.Varseltype
 
 object VarselMetricsReporter {
 
-    private const val NAMESPACE = "tms_varsel_authority_v1"
+    const val NAMESPACE = "tms_varsel_authority_v1"
 
     private const val VARSEL_AKTIVERT_NAME = "${NAMESPACE}_varsel_aktivert"
     private const val VARSEL_INAKTIVERT_NAME = "${NAMESPACE}_varsel_inaktivert"
