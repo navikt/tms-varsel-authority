@@ -17,63 +17,59 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
 
 class WriteVarselRepository(val database: PostgresDatabase) {
 
-    fun insertVarsel(dbVarsel: DatabaseVarsel, transactional: () -> Unit = {}) {
-        database.transaction {
-            updateInTx {
-                queryOf(
-                    """
-                    insert into varsel(
-                        type,
-                        varselId,
-                        ident,
-                        sensitivitet,
-                        innhold,
-                        produsent,
-                        eksternVarslingBestilling,
-                        eksternVarslingStatus,
-                        aktiv,
-                        opprettet,
-                        aktivFremTil,
-                        inaktivert,
-                        inaktivertAv,
-                        metadata
-                    ) values (
-                        :type,
-                        :varselId,
-                        :ident,
-                        :sensitivitet,
-                        :innhold,
-                        :produsent,
-                        :eksternVarslingBestilling,
-                        :eksternVarslingStatus,
-                        :aktiv,
-                        :opprettet,
-                        :aktivFremTil,
-                        :inaktivert,
-                        :inaktivertAv,
-                        :metadata
-                    )
-                """,
-                    mapOf(
-                        "type" to dbVarsel.type.name.lowercase(),
-                        "varselId" to dbVarsel.varselId,
-                        "ident" to dbVarsel.ident,
-                        "sensitivitet" to dbVarsel.sensitivitet.name.lowercase(),
-                        "innhold" to dbVarsel.innhold.toJsonb(),
-                        "produsent" to dbVarsel.produsent.toJsonb(),
-                        "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(),
-                        "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(),
-                        "aktiv" to dbVarsel.aktiv,
-                        "opprettet" to dbVarsel.opprettet,
-                        "aktivFremTil" to dbVarsel.aktivFremTil,
-                        "inaktivert" to dbVarsel.inaktivert,
-                        "inaktivertAv" to dbVarsel.inaktivertAv?.name,
-                        "metadata" to dbVarsel.metadata.toJsonb()
-                    )
+    fun insertVarsel(dbVarsel: DatabaseVarsel) {
+        database.update {
+            queryOf(
+                """
+                insert into varsel(
+                    type,
+                    varselId,
+                    ident,
+                    sensitivitet,
+                    innhold,
+                    produsent,
+                    eksternVarslingBestilling,
+                    eksternVarslingStatus,
+                    aktiv,
+                    opprettet,
+                    aktivFremTil,
+                    inaktivert,
+                    inaktivertAv,
+                    metadata
+                ) values (
+                    :type,
+                    :varselId,
+                    :ident,
+                    :sensitivitet,
+                    :innhold,
+                    :produsent,
+                    :eksternVarslingBestilling,
+                    :eksternVarslingStatus,
+                    :aktiv,
+                    :opprettet,
+                    :aktivFremTil,
+                    :inaktivert,
+                    :inaktivertAv,
+                    :metadata
                 )
-            }.also {
-                transactional()
-            }
+            """,
+                mapOf(
+                    "type" to dbVarsel.type.name.lowercase(),
+                    "varselId" to dbVarsel.varselId,
+                    "ident" to dbVarsel.ident,
+                    "sensitivitet" to dbVarsel.sensitivitet.name.lowercase(),
+                    "innhold" to dbVarsel.innhold.toJsonb(),
+                    "produsent" to dbVarsel.produsent.toJsonb(),
+                    "eksternVarslingBestilling" to dbVarsel.eksternVarslingBestilling.toJsonb(),
+                    "eksternVarslingStatus" to dbVarsel.eksternVarslingStatus.toJsonb(),
+                    "aktiv" to dbVarsel.aktiv,
+                    "opprettet" to dbVarsel.opprettet,
+                    "aktivFremTil" to dbVarsel.aktivFremTil,
+                    "inaktivert" to dbVarsel.inaktivert,
+                    "inaktivertAv" to dbVarsel.inaktivertAv?.name,
+                    "metadata" to dbVarsel.metadata.toJsonb()
+                )
+            )
         }
     }
 
@@ -87,30 +83,25 @@ class WriteVarselRepository(val database: PostgresDatabase) {
         }
     }
 
-    fun inaktiverVarsel(varselId: String, kilde: VarselInaktivertKilde, metadata: Map<String, Any>? = null, transactional: () -> Unit = {}) {
-        database.transaction {
-            updateInTx {
-                queryOf(
-                    """
-                    update varsel set 
-                      aktiv = false,
-                      inaktivertAv = :kilde,
-                      inaktivert = :tidspunkt,
-                      metadata = coalesce(metadata::jsonb, '{}'::jsonb) || coalesce(:metadata, '{}'::jsonb)
-                    where varselId = :varselId
-                """,
-                    mapOf(
-                        "varselId" to varselId,
-                        "kilde" to kilde.lowercaseName,
-                        "tidspunkt" to nowAtUtc(),
-                        "metadata" to metadata.toJsonb()
-                    )
+    fun inaktiverVarsel(varselId: String, kilde: VarselInaktivertKilde, metadata: Map<String, Any>? = null) {
+        database.update {
+            queryOf(
+                """
+                update varsel set 
+                  aktiv = false,
+                  inaktivertAv = :kilde,
+                  inaktivert = :tidspunkt,
+                  metadata = coalesce(metadata::jsonb, '{}'::jsonb) || coalesce(:metadata, '{}'::jsonb)
+                where varselId = :varselId
+            """,
+                mapOf(
+                    "varselId" to varselId,
+                    "kilde" to kilde.lowercaseName,
+                    "tidspunkt" to nowAtUtc(),
+                    "metadata" to metadata.toJsonb()
                 )
-            }.also {
-                transactional()
-            }
+            )
         }
-
     }
 
     private fun toDbVarsel(): (Row) -> DatabaseVarsel = { row ->

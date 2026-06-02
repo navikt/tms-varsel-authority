@@ -43,9 +43,9 @@ internal class InaktiverVarselSubscriber(
                     varselId = varsel.varselId,
                     kilde = VarselInaktivertKilde.Produsent,
                     metadata = mapMetadata(inaktiverVarsel)
-                ) {
-                    sendVarselInaktivert(varsel)
-                }
+                )
+
+                queueVarselInaktivert(varsel)
 
                 VarselMetricsReporter.registerVarselInaktivert(
                     varseltype = varsel.type,
@@ -63,7 +63,7 @@ internal class InaktiverVarselSubscriber(
         }
     }
 
-    private fun sendVarselInaktivert(varsel: DatabaseVarsel) {
+    private fun queueVarselInaktivert(varsel: DatabaseVarsel) {
         varselInaktivertProducer.enqueueVarselInaktivert(
             VarselInaktivertHendelse(
                 varseltype = varsel.type,
