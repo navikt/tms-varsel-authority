@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.write.outgoing
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.oshai.kotlinlogging.withLoggingContext
 import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.util.scheduling.PeriodicJob
@@ -26,15 +27,21 @@ class KafkaQueueProcessor(
 
     private fun processQueue() {
         repository.nextInQueue(batchSize).forEach { dto ->
-            try {
-                recordProducer.send(dto.toKafkaRecord()).get()
-                repository.dequeueRecord(dto.id)
-            } catch (e: Exception) {
+            withLoggingContext(
+                "minside_id" to dto.recordKey
+            ) {
+                try {
+                    recordProducer.send(dto.toKafkaRecord()).get()
+                    repository.dequeueRecord(dto.id)
+                    log.info { "Event er hentet fra record-queue og lagt på kafka" }
+                } catch (e: Exception) {
 
-                log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
-                teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
-                return
+                    log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
+                    teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
+                    return
+                }
             }
+
         }
     }
 
