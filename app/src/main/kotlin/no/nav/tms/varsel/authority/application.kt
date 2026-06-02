@@ -7,6 +7,8 @@ import no.nav.tms.kafka.application.Domain
 import no.nav.tms.kafka.application.KafkaApplication
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
@@ -19,6 +21,7 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.outgoing.KafkaQueueProcessor
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -39,25 +42,36 @@ fun main() {
         varselRepository
     )
 
+    val leaderElection = PodLeaderElection()
+
+    val kafkaProducer = QueueableKafkaProducer(
+        repository = RecordQueueRepository(database),
+        recordProducer = initializeKafkaProducer(environment)
+    )
+
+    val kafkaQueueProcessor = KafkaQueueProcessor(
+        repository = RecordQueueRepository(database),
+        recordProducer = initializeKafkaProducer(environment),
+        leaderElection = leaderElection,
+    )
+
     val varselOpprettetProducer = VarselOpprettetProducer(
-        kafkaProducer = initializeKafkaProducer(environment),
+        kafkaProducer = kafkaProducer,
         topicName = environment.internalVarselTopic,
     )
 
     val varselInaktivertProducer = VarselInaktivertProducer(
-        kafkaProducer = initializeKafkaProducer(environment),
+        kafkaProducer = kafkaProducer,
         topicName = environment.internalVarselTopic,
     )
-
-    val leaderElection = PodLeaderElection()
 
     val expiredVarselRepository = ExpiredVarselRepository(database)
     val periodicExpiredVarselProcessor =
         PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
 
     val varselArkivertProducer = VarselArkivertProducer(
-        initializeKafkaProducer(environment),
-        environment.internalVarselTopic
+        kafkaProducer = kafkaProducer,
+        topicName = environment.internalVarselTopic
     )
 
     val varselArchivingRepository = VarselArkivRepository(database)
@@ -107,15 +121,16 @@ fun main() {
         onReady {
             periodicExpiredVarselProcessor.start()
             varselArchiver.start()
+            kafkaQueueProcessor.start()
         }
 
         onShutdown {
             runBlocking {
                 periodicExpiredVarselProcessor.stop()
                 varselArchiver.stop()
-                varselInaktivertProducer.flushAndClose()
-                varselOpprettetProducer.flushAndClose()
-                varselArkivertProducer.flushAndClose()
+                kafkaQueueProcessor.stop()
+                kafkaQueueProcessor.flushAndClose()
+                kafkaProducer.flushAndClose()
             }
         }
 

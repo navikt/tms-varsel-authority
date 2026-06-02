@@ -9,6 +9,7 @@ import no.nav.tms.kafka.application.MessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.InaktiverVarsel
+import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -42,21 +43,16 @@ internal class InaktiverVarselSubscriber(
                     varselId = varsel.varselId,
                     kilde = VarselInaktivertKilde.Produsent,
                     metadata = mapMetadata(inaktiverVarsel)
-                )
+                ) {
+                    sendVarselInaktivert(varsel)
+                }
 
                 VarselMetricsReporter.registerVarselInaktivert(
                     varseltype = varsel.type,
                     produsent = varsel.produsent,
                     kilde = VarselInaktivertKilde.Produsent
                 )
-                varselInaktivertProducer.varselInaktivert(
-                    VarselInaktivertHendelse(
-                        varseltype = varsel.type,
-                        varselId = varsel.varselId,
-                        produsent = varsel.produsent,
-                        kilde = VarselInaktivertKilde.Produsent
-                    )
-                )
+
                 log.info { "Inaktiverte varsel etter event fra kafka" }
             } else {
                 log.info { "Behandlet inaktiver-event for allerede inaktivt varsel" }
@@ -65,6 +61,17 @@ internal class InaktiverVarselSubscriber(
             log.warn { "Fant ikke varsel å inaktivere" }
             throw InaktivertVarselMissingException()
         }
+    }
+
+    private fun sendVarselInaktivert(varsel: DatabaseVarsel) {
+        varselInaktivertProducer.sendVarselInaktivert(
+            VarselInaktivertHendelse(
+                varseltype = varsel.type,
+                varselId = varsel.varselId,
+                produsent = varsel.produsent,
+                kilde = VarselInaktivertKilde.Produsent
+            )
+        )
     }
 
     private fun deserialize(jsonMessage: JsonMessage): InaktiverVarsel {

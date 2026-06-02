@@ -3,7 +3,6 @@ package no.nav.tms.varsel.authority.write.expiry
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.clearMocks
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotliquery.queryOf
@@ -92,7 +91,7 @@ internal class PeriodicExpiredVarselProcessorTest {
         updatedBeskjed?.aktiv shouldBe false
 
 
-        verify(exactly = 1) { varselInaktivertProducer.varselInaktivert(any()) }
+        verify(exactly = 1) { varselInaktivertProducer.sendVarselInaktivert(any()) }
     }
 }
 

@@ -365,7 +365,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         dbVarsel?.eksternVarslingStatus.shouldNotBeNull()
 
-        dbVarsel.eksternVarslingStatus?.let {
+        dbVarsel.eksternVarslingStatus.let {
             it shouldNotBe null
 
             it.sendt shouldBe true
@@ -375,7 +375,6 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.kanaler.size shouldBe 2
             it.kanaler shouldContainAll listOf("SMS", "EPOST")
         }
-
     }
 
     @Test

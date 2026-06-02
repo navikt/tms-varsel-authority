@@ -3,28 +3,37 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
 import kotliquery.queryOf
+import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
+import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
+import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 internal class InaktiverVarselSubscriberTest {
-    private val mockProducer = mockProducer()
-
-    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = mockProducer, topicName = "testtopic")
-
     private val database = LocalPostgresDatabase.cleanDb()
+
+    private val mockProducer = mockProducer()
+    private val kafkaProducer = QueueableKafkaProducer(RecordQueueRepository(database), mockProducer)
+
+    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
+    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
+
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(
         OpprettVarselSubscriber(repository, varselOpprettetProducer),
@@ -40,6 +49,7 @@ internal class InaktiverVarselSubscriberTest {
     @AfterEach
     fun cleanUp() {
         mockProducer.clear()
+        mockProducer.sendException = null
         database.update {
             queryOf("delete from varsel")
         }
@@ -148,6 +158,23 @@ internal class InaktiverVarselSubscriberTest {
             it.shouldNotBeNull()
             it.cause::class shouldBe InaktiverVarselSubscriber.InaktiverVarselDeserializationException::class
         }
+    }
+
+    @Test
+    fun `ruller tilbake inaktivering dersom sending av 'inaktivert' til kafka feiler`() {
+        val varselId = randomUUID().toString()
+
+        val opprettBeskjed = opprettVarselEvent("beskjed", varselId)
+        val inaktiverBeskjed = inaktiverVarsel(varselId)
+
+        testBroadcaster.broadcastJson(opprettBeskjed)
+
+        mockProducer.sendException = TimeoutException()
+        shouldThrow<KafkaProducerException> {
+            testBroadcaster.broadcastJson(inaktiverBeskjed)
+        }
+
+        repository.getVarsel(varselId)?.aktiv shouldBe true
     }
 
     private fun inaktiverVarsel(varselId: String) = """

@@ -17,7 +17,10 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.asZonedDateTime
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
+import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,8 +37,10 @@ internal class PeriodicVarselArchiverTest {
     private val testRepository = ArchiveTestRepository(database)
 
     private val mockProducer = mockProducer()
+    private val recordQueueRepository = RecordQueueRepository(database)
+    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
 
-    private val arkivertProducer = VarselArkivertProducer(mockProducer ,"testTopic")
+    private val arkivertProducer = VarselArkivertProducer(kafkaProducer ,"testTopic")
     private val gammelBeskjed =
         varsel(type = Beskjed, varselId = "b1", opprettet = nowAtUtc().minusDays(11))
     private val nyBeskjed =
@@ -52,6 +57,7 @@ internal class PeriodicVarselArchiverTest {
     fun cleanUp() {
         clearMocks(leaderElection)
         mockProducer.clear()
+        mockProducer.sendException = null
         database.update { queryOf("delete from varsel") }
         database.update { queryOf("delete from varsel_arkiv") }
     }
@@ -115,6 +121,19 @@ internal class PeriodicVarselArchiverTest {
             eksternVarslingStatus?.sendt shouldBe gammelBeskjed.eksternVarslingStatus?.sendt
             opprettet shouldBe gammelBeskjed.opprettet
         }
+    }
+
+    @Test
+    fun `legger 'arkivert'-eventer i record-queue dersom sending til kafka feiler`() = runBlocking<Unit> {
+
+        coEvery { leaderElection.isLeader() } returns true
+
+        mockProducer.sendException = TimeoutException()
+
+        runArchiverUntilNRemains(1)
+
+        mockProducer.history().size shouldBe 0
+        recordQueueRepository.queueSize() shouldBe 1
     }
 
     @Test

@@ -71,8 +71,9 @@ internal class OpprettVarselSubscriber(
 
     private fun opprettVarsel(dbVarsel: DatabaseVarsel) {
         try {
-            varselRepository.insertVarsel(dbVarsel)
-            varselAktivertProducer.varselOpprettet(dbVarsel)
+            varselRepository.insertVarsel(dbVarsel) {
+                varselAktivertProducer.varselOpprettet(dbVarsel)
+            }
             VarselMetricsReporter.registerVarselAktivert(dbVarsel.type, dbVarsel.produsent)
             log.info { "Opprett varsel fra kafka behandlet" }
 

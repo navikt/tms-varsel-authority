@@ -12,7 +12,7 @@ object LocalPostgresDatabase {
     private val container = PostgreSQLContainer("postgres:14.5").apply { start() }
     private val instance: PostgresDatabase by lazy {
         Postgres.connectToContainer(container).also {
-            migrate(it.dataSource, expectedMigrations = 4)
+            migrate(it.dataSource, expectedMigrations = 5)
         }
     }
 
@@ -23,6 +23,7 @@ object LocalPostgresDatabase {
     fun cleanDb(): PostgresDatabase {
         instance.update { queryOf("delete from varsel") }
         instance.update { queryOf("delete from varsel_arkiv") }
+        instance.update { queryOf("delete from outgoing_record_queue") }
         return instance
     }
 

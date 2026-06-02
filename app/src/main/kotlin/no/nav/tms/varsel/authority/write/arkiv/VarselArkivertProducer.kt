@@ -1,43 +1,35 @@
 package no.nav.tms.varsel.authority.write.arkiv
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
-import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerRecord
+import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
+import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
 import java.time.ZonedDateTime
 
 class VarselArkivertProducer(
-    private val kafkaProducer: Producer<String, String>,
+    private val kafkaProducer: QueueableKafkaProducer,
     private val topicName: String
 ) {
-    private val log = KotlinLogging.logger { }
-
     private val objectMapper = defaultObjectMapper()
 
     fun varselArkivert(arkivVarsel: ArkivVarsel) {
 
-        val hendelse = VarselArkivertHendelse(
+        val hendelseJson = VarselArkivertHendelse(
             varselId = arkivVarsel.varselId,
             varseltype = arkivVarsel.type,
             produsent = arkivVarsel.produsent,
             opprettet = arkivVarsel.opprettet
-        )
+        ).let(objectMapper::writeValueAsString)
 
-        kafkaProducer.send(ProducerRecord(topicName, hendelse.varselId, objectMapper.writeValueAsString(hendelse)))
-    }
-
-    fun flushAndClose() {
         try {
-            kafkaProducer.flush()
-            kafkaProducer.close()
-            log.info { "Produsent for kafka-eventer er flushet og lukket." }
-        } catch (e: Exception) {
-            log.warn { "Klarte ikke å flushe og lukke produsent. Det kan være eventer som ikke ble produsert." }
+            kafkaProducer.send(topicName, arkivVarsel.varselId, hendelseJson)
+        } catch (e: KafkaProducerException) {
+            kafkaProducer.enqueue(topicName, arkivVarsel.varselId, hendelseJson)
         }
+
     }
 }
 
