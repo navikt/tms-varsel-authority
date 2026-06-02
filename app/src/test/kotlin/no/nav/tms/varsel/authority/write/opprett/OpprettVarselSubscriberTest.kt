@@ -29,7 +29,8 @@ class OpprettVarselSubscriberTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
     private val mockProducer = mockProducer()
-    private val kafkaProducer = QueueableKafkaProducer(RecordQueueRepository(database), mockProducer)
+    private val recordQueueRepository = RecordQueueRepository(database)
+    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
 
     private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
     private val repository = WriteVarselRepository(database)
@@ -46,6 +47,7 @@ class OpprettVarselSubscriberTest {
         database.update {
             queryOf("delete from varsel")
         }
+        LocalPostgresDatabase.cleanDb()
         testBroadcaster.clearHistory()
     }
 
@@ -77,9 +79,8 @@ class OpprettVarselSubscriberTest {
         dbVarsel.produsent.appnavn shouldBe opprettJson["produsent"]["appnavn"].asText()
         dbVarsel.inaktivert shouldBe null
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" }
             .let { it.shouldNotBeNull() }
             .let { varselAktivert ->
@@ -145,7 +146,8 @@ class OpprettVarselSubscriberTest {
             it.cause::class shouldBe OpprettVarselSubscriber.DuplikatVarselException::class
         }
 
-        mockProducer.history().size shouldBe 1
+        recordQueueRepository.nextInQueue(10).size shouldBe 1
+
     }
 
     @Test
@@ -181,27 +183,24 @@ class OpprettVarselSubscriberTest {
         dbInnboks.eksternVarslingBestilling?.kanBatches shouldBe false
         dbOppgave.eksternVarslingBestilling?.kanBatches shouldBe false
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
             .let { it.shouldNotBeNull() }
             .let { varselAktivert ->
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe true
             }
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "oppgave"}
             .let { it.shouldNotBeNull() }
             .let { varselAktivert ->
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
             }
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "innboks"}
             .let { it.shouldNotBeNull() }
             .let { varselAktivert ->
@@ -234,9 +233,8 @@ class OpprettVarselSubscriberTest {
         dbBeskjedMedSms.eksternVarslingBestilling?.kanBatches shouldBe false
         dbBeskjedMedEpost.eksternVarslingBestilling?.kanBatches shouldBe false
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(500)
+            .map { objectMapper.readTree(it.recordValue) }
             .filter { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
             .also { it.isEmpty() shouldBe false }
             .forEach { varselOpprettet ->
@@ -287,25 +285,5 @@ class OpprettVarselSubscriberTest {
             it.cause::class shouldBe OpprettVarselSubscriber.OpprettVarselDeserializationException::class
         }
     }
-
-    @Test
-    fun `ruller tilbake oppretting dersom sending av 'opprettet' til kafka feiler`() {
-        val varselId = randomUUID().toString()
-
-        val opprettBeskjed = opprettVarselEvent(
-            "beskjed", varselId, eksternVarsling = EksternVarslingBestilling(kanBatches = null, smsVarslingstekst = "Annet")
-        )
-
-        mockProducer.sendException = TimeoutException()
-
-        shouldThrow<KafkaProducerException> {
-            testBroadcaster.broadcastJson(opprettBeskjed)
-        }
-
-        repository.getVarsel(varselId).shouldBeNull()
-        mockProducer.history().size shouldBe 0
-    }
-
-
 }
 

@@ -13,7 +13,7 @@ class KafkaQueueProcessor(
     private val repository: RecordQueueRepository,
     private val recordProducer: Producer<String, String>,
     private val leaderElection: PodLeaderElection,
-    private val batchSize: Int = 500,
+    private val batchSize: Int = 1000,
     internal: Duration = Duration.ofSeconds(5)
 ): PeriodicJob(internal) {
     private val log = KotlinLogging.logger { }
@@ -26,22 +26,26 @@ class KafkaQueueProcessor(
     }
 
     private fun processQueue() {
-        repository.nextInQueue(batchSize).forEach { dto ->
-            withLoggingContext(
-                "minside_id" to dto.recordKey
-            ) {
-                try {
-                    recordProducer.send(dto.toKafkaRecord()).get()
-                    repository.dequeueRecord(dto.id)
-                    log.info { "Event er hentet fra record-queue og lagt på kafka" }
-                } catch (e: Exception) {
 
-                    log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
-                    teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
-                    return
-                }
+        val nextInQueue = repository.nextInQueue(batchSize)
+
+        if (nextInQueue.isEmpty()) {
+            return
+        }
+
+        log.info { "Behandler neste ${nextInQueue.size} elementer i record-queue" }
+
+        nextInQueue.forEach { dto ->
+            try {
+                recordProducer.send(dto.toKafkaRecord()).get()
+                repository.dequeueRecord(dto.id)
+                log.info { "Event er hentet fra record-queue og lagt på kafka" }
+            } catch (e: Exception) {
+
+                log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
+                teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
+                return
             }
-
         }
     }
 

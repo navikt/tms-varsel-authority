@@ -29,7 +29,6 @@ class VarselArkivertProducer(
         } catch (e: KafkaProducerException) {
             kafkaProducer.enqueue(topicName, arkivVarsel.varselId, hendelseJson)
         }
-
     }
 }
 

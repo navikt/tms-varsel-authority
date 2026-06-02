@@ -28,7 +28,7 @@ class VarselOpprettetProducer(
         val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
             .let(objectMapper::writeValueAsString)
 
-        kafkaProducer.send(topicName, dbVarsel.varselId, varselOpprettetEvent)
+        kafkaProducer.enqueue(topicName, dbVarsel.varselId, varselOpprettetEvent)
 
         log.info { "Opprettet-event produsert til kafka" }
     }

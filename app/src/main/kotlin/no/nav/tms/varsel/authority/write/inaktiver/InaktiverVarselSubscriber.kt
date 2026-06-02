@@ -64,7 +64,7 @@ internal class InaktiverVarselSubscriber(
     }
 
     private fun sendVarselInaktivert(varsel: DatabaseVarsel) {
-        varselInaktivertProducer.sendVarselInaktivert(
+        varselInaktivertProducer.enqueueVarselInaktivert(
             VarselInaktivertHendelse(
                 varseltype = varsel.type,
                 varselId = varsel.varselId,

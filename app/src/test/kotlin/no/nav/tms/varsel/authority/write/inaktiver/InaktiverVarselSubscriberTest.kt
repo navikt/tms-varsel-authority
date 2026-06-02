@@ -6,9 +6,6 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.mockk.mockk
-import kotliquery.queryOf
-import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
@@ -29,7 +26,8 @@ internal class InaktiverVarselSubscriberTest {
     private val database = LocalPostgresDatabase.cleanDb()
 
     private val mockProducer = mockProducer()
-    private val kafkaProducer = QueueableKafkaProducer(RecordQueueRepository(database), mockProducer)
+    private val recordQueueRepository = RecordQueueRepository(database)
+    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
 
     private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
     private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
@@ -50,9 +48,7 @@ internal class InaktiverVarselSubscriberTest {
     fun cleanUp() {
         mockProducer.clear()
         mockProducer.sendException = null
-        database.update {
-            queryOf("delete from varsel")
-        }
+        LocalPostgresDatabase.cleanDb()
         testBroadcaster.clearHistory()
     }
 
@@ -72,11 +68,9 @@ internal class InaktiverVarselSubscriberTest {
         dbVarsel.aktiv shouldBe false
         dbVarsel.inaktivert.shouldNotBeNull()
 
-        val outputJson = mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
-            .filter { it["@event_name"].asText() == "inaktivert" }
-            .first()
+        val outputJson = recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
+            .first { it["@event_name"].asText() == "inaktivert" }
 
         outputJson["varselId"].asText() shouldBe varselId
         outputJson["varseltype"].asText() shouldBe "beskjed"
@@ -107,9 +101,8 @@ internal class InaktiverVarselSubscriberTest {
             it.accepted shouldBe 2
         }
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
+        recordQueueRepository.nextInQueue(50)
+            .map { objectMapper.readTree(it.recordValue) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 1
     }
@@ -158,23 +151,6 @@ internal class InaktiverVarselSubscriberTest {
             it.shouldNotBeNull()
             it.cause::class shouldBe InaktiverVarselSubscriber.InaktiverVarselDeserializationException::class
         }
-    }
-
-    @Test
-    fun `ruller tilbake inaktivering dersom sending av 'inaktivert' til kafka feiler`() {
-        val varselId = randomUUID().toString()
-
-        val opprettBeskjed = opprettVarselEvent("beskjed", varselId)
-        val inaktiverBeskjed = inaktiverVarsel(varselId)
-
-        testBroadcaster.broadcastJson(opprettBeskjed)
-
-        mockProducer.sendException = TimeoutException()
-        shouldThrow<KafkaProducerException> {
-            testBroadcaster.broadcastJson(inaktiverBeskjed)
-        }
-
-        repository.getVarsel(varselId)?.aktiv shouldBe true
     }
 
     private fun inaktiverVarsel(varselId: String) = """
