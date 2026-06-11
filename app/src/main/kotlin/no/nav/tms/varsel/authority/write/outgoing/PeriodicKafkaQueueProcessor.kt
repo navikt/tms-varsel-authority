@@ -22,7 +22,7 @@ class PeriodicKafkaQueueProcessor(
     private val leaderElection: PodLeaderElection,
     private val batchSize: Int = 1000,
     private val syncTimeoutSeconds: Long = 15,
-    internal: Duration = Duration.ofSeconds(5)
+    internal: Duration = Duration.ofSeconds(2)
 ): PeriodicJob(internal) {
     private val log = KotlinLogging.logger { }
     private val teamLog = TeamLogs.logger { }
