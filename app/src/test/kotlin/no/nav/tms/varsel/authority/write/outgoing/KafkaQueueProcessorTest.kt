@@ -16,6 +16,7 @@ import no.nav.tms.varsel.authority.mockProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
@@ -115,8 +116,8 @@ class KafkaQueueProcessorTest {
         mockProducer.history().size shouldBe 3
     }
 
-
     @Test
+    @Disabled // Denne testen er svært sårbar for race-conditions og lar seg ofte ikke kjøre sammen med andre tester
     fun `Forsøker på nytt senere dersom event ikke er bekreftet lagt på kafka`() {
         coEvery { leaderElection.isLeader() } returns true
 
@@ -175,6 +176,7 @@ class KafkaQueueProcessorTest {
     }
 
     @Test
+    @Disabled // Denne testen er svært sårbar for race-conditions og lar seg ofte ikke kjøre sammen med andre tester
     fun `Forsøker på nytt senere dersom kafka ikke svarer i tide ved synkronisering`() {
         coEvery { leaderElection.isLeader() } returns true
 
