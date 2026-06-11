@@ -3,21 +3,18 @@ package no.nav.tms.varsel.authority.write.inaktiver
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
-import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
 import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import no.nav.tms.varsel.authority.write.opprett.opprettVarselEvent
-import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
@@ -68,7 +65,7 @@ internal class InaktiverVarselSubscriberTest {
         dbVarsel.aktiv shouldBe false
         dbVarsel.inaktivert.shouldNotBeNull()
 
-        val outputJson = recordQueueRepository.nextInQueue(50)
+        val outputJson = recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .first { it["@event_name"].asText() == "inaktivert" }
 
@@ -101,7 +98,7 @@ internal class InaktiverVarselSubscriberTest {
             it.accepted shouldBe 2
         }
 
-        recordQueueRepository.nextInQueue(50)
+        recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .filter { it["@event_name"].asText() == "inaktivert" }
             .size shouldBe 1

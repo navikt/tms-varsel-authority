@@ -30,7 +30,7 @@ class RecordQueueRepository(private val database: PostgresDatabase) {
         }
     }
 
-    fun nextInQueue(batchSize: Int): List<RecordQueueDto> {
+    fun peekNext(numberOfElements: Int): List<RecordQueueDto> {
         return database.list {
             queryOf("""
                 select
@@ -42,7 +42,7 @@ class RecordQueueRepository(private val database: PostgresDatabase) {
                     outgoing_record_queue
                 order by createdAt
                 limit :batchSize
-            """, mapOf("batchSize" to batchSize)
+            """, mapOf("batchSize" to numberOfElements)
                 ).map { row ->
                 RecordQueueDto(
                     id = row.long("id"),

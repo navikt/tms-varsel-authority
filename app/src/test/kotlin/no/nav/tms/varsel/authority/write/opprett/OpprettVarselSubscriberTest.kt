@@ -3,23 +3,18 @@ package no.nav.tms.varsel.authority.write.opprett
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import io.kotest.assertions.throwables.shouldNotThrow
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.mockk.mockk
 import kotliquery.queryOf
-import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.shouldBeSameTime
-import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
 import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
-import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
@@ -79,7 +74,7 @@ class OpprettVarselSubscriberTest {
         dbVarsel.produsent.appnavn shouldBe opprettJson["produsent"]["appnavn"].asText()
         dbVarsel.inaktivert shouldBe null
 
-        recordQueueRepository.nextInQueue(50)
+        recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" }
             .let { it.shouldNotBeNull() }
@@ -146,7 +141,7 @@ class OpprettVarselSubscriberTest {
             it.cause::class shouldBe OpprettVarselSubscriber.DuplikatVarselException::class
         }
 
-        recordQueueRepository.nextInQueue(10).size shouldBe 1
+        recordQueueRepository.peekNext(10).size shouldBe 1
 
     }
 
@@ -183,7 +178,7 @@ class OpprettVarselSubscriberTest {
         dbInnboks.eksternVarslingBestilling?.kanBatches shouldBe false
         dbOppgave.eksternVarslingBestilling?.kanBatches shouldBe false
 
-        recordQueueRepository.nextInQueue(50)
+        recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
             .let { it.shouldNotBeNull() }
@@ -191,7 +186,7 @@ class OpprettVarselSubscriberTest {
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe true
             }
 
-        recordQueueRepository.nextInQueue(50)
+        recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "oppgave"}
             .let { it.shouldNotBeNull() }
@@ -199,7 +194,7 @@ class OpprettVarselSubscriberTest {
                 varselAktivert["eksternVarslingBestilling"]["kanBatches"].asBoolean() shouldBe false
             }
 
-        recordQueueRepository.nextInQueue(50)
+        recordQueueRepository.peekNext(50)
             .map { objectMapper.readTree(it.recordValue) }
             .find { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "innboks"}
             .let { it.shouldNotBeNull() }
@@ -233,7 +228,7 @@ class OpprettVarselSubscriberTest {
         dbBeskjedMedSms.eksternVarslingBestilling?.kanBatches shouldBe false
         dbBeskjedMedEpost.eksternVarslingBestilling?.kanBatches shouldBe false
 
-        recordQueueRepository.nextInQueue(500)
+        recordQueueRepository.peekNext(500)
             .map { objectMapper.readTree(it.recordValue) }
             .filter { it["@event_name"].asText() == "opprettet" && it["type"].asText() == "beskjed"}
             .also { it.isEmpty() shouldBe false }
