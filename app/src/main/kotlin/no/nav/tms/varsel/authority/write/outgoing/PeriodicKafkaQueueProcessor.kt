@@ -64,24 +64,23 @@ class PeriodicKafkaQueueProcessor(
             teamLog.error(e) { "Fikk feil ved flushing av kafka-eventer fra record-queue. Fortsetter prosessering." }
         }
 
-        results
-            .forEach { (dto, result) ->
-                try {
-                    val offsetMetadata = result.get(syncTimeoutSeconds, TimeUnit.SECONDS)
-                    if (offsetMetadata.hasOffset()) {
-                        repository.dequeueRecord(dto.id)
-                        reportEntryProcessed(dto.topic)
-                        log.info { "Event er hentet fra record-queue og lagt på kafka" }
-                    } else {
-                        reportError(Result)
-                        log.warn { "Event ble ikke godtatt av kafka av ukjent årsak. Prøver på nytt senere" }
-                    }
-                } catch (e: Exception) {
-                    reportError(Sync)
-                    log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
-                    teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
+        results.forEach { (dto, result) ->
+            try {
+                val offsetMetadata = result.get(syncTimeoutSeconds, TimeUnit.SECONDS)
+                if (offsetMetadata.hasOffset()) {
+                    repository.dequeueRecord(dto.id)
+                    reportEntryProcessed(dto.topic)
+                    log.info { "Event er hentet fra record-queue og lagt på kafka" }
+                } else {
+                    reportError(Result)
+                    log.warn { "Event ble ikke godtatt av kafka av ukjent årsak. Prøver på nytt senere" }
                 }
+            } catch (e: Exception) {
+                reportError(Sync)
+                log.error { "Fikk feil ved sending av event til kafka fra record-queue." }
+                teamLog.error(e) { "Fikk feil ved sending av event til kafka fra record-queue." }
             }
+        }
     }
 
     fun isHealthy() = if (job.isActive) {
