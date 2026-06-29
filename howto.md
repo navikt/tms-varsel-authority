@@ -90,7 +90,7 @@ Vi publiserer disse artifaktene til githubs package-repository. Husk å legge ti
 
 For å gi varsel til bruker sender en et opprett-varsel event.
 
-### Opprett-varsel felter
+### Opprett-varsel felt
 
 | felt            | påkrevd          | beskrivelse                                                                                | restriksjoner                                                                 | tillegginfo                                                                                                                                                                                                                 |
 |-----------------|------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -103,6 +103,20 @@ For å gi varsel til bruker sender en et opprett-varsel event.
 | aktivFremTil    | nei              | Tidspunkt for når varslet skal inaktiverer automatisk av systemet                          | Tidspunkt med tidssone. `UTC` eller `Z` er anbefalt                           | Støttes ikke for Innboks-varsler                                                                                                                                                                                            |
 | eksternVarsling | nei              | Om det skal sendes sms og/eller epost til mottaker                                         | Kan kun velge preferert kanal `SMS` eller `EPOST`.                            | Dersom ekstern varslingstekst ikke er satt blir det sendt en standardtekst.                                                                                                                                                 |
 | produsent       | ja               | Teknisk kilde til varsel-eventet                                                           | Ingen spesielle                                                               | Buildere vil forsøke å hente dette automatisk basert på nais-miljøvariabler. Der disse ikke er tilgjengelige må produsent settes manuelt.                                                                                   |
+
+
+### Ekstern varsling felt
+
+Alle felt er valgfrie.
+
+| felt                 | beskrivelse                                                                                     | restriksjoner                                | tillegginfo                                                                                                                       |
+|----------------------|-------------------------------------------------------------------------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| preferertKanal       | Preferert kanal for ekstern varsling. Endelig kanal kan endre seg basert på brukers kontaktinfo | Må være én av `SMS`, `EPOST`, `BETINGET_SMS` | Dersom preferert kanal ikke er valgt sendes varsling på epost                                                                     |
+| smsVarslingstekst    | Varslingstekst send på sms                                                                      | Inntil 160 tegn. Kan ikke inneholde lenke    |                                                                                                                                   |
+| epostVarslingstekst  | Varslingstekst sendt på epost                                                                   | Inntil 4000 tegn. Kan ikke inneholde lenke   |                                                                                                                                   |
+| epostVarslingstittel | Eposttittel                                                                                     | Inntil 40 tegn. Kan ikke inneholde lenke     |                                                                                                                                   |
+| kanBatches           | Hvorvidt ekstern varsling kan sendes samlet                                                     |                                              | Dersom ikke noe annet er valgt, batches kun beskjeder med standardtekst                                                           |
+| utsettSendingTil     | Tidspunkt for utsatt sending av ekstern varsling                                                |                                              | Ekstern varsling sendes ikke før angitt tidspunkt er passert, og heller ikke hvis det underliggende varsleret blir fullført først |
 
 
 ### Json-format
@@ -124,11 +138,12 @@ For å gi varsel til bruker sender en et opprett-varsel event.
    "sensitivitet": "<sensitivitet>",
    "aktivFremTil": "<aktivFremTil>",
    "eksternVarsling": {
-      "prefererteKanaler": ["SMS", "EPOST"],
+      "prefererteKanaler": ["SMS"],
       "smsVarslingstekst": "<smsTekst>",
       "epostVarslingstittel": "epostTittel",
       "epostVarslingstekst": "epostTekst",
-      "kanBatches": false
+      "kanBatches": false,
+      "utsettSendingTil": "<utsettSendingTil>"
    },
    "produsent": {
       "cluster": "<cluster>",
