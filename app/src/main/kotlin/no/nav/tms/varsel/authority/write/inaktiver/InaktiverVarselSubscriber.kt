@@ -5,7 +5,7 @@ import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.kafka.application.JsonMessage
-import no.nav.tms.kafka.application.MessageException
+import no.nav.tms.kafka.application.SkippableMessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.InaktiverVarsel
@@ -99,6 +99,6 @@ internal class InaktiverVarselSubscriber(
         return mapOf("inaktiver_event" to inaktiverEvent)
     }
 
-    class InaktiverVarselDeserializationException: MessageException("Inaktiver-event har ikke riktig json-format")
-    class InaktivertVarselMissingException : MessageException("Fant ikke inaktivert varsel")
+    class InaktiverVarselDeserializationException: SkippableMessageException("Inaktiver-event har ikke riktig json-format")
+    class InaktivertVarselMissingException : SkippableMessageException("Fant ikke inaktivert varsel")
 }

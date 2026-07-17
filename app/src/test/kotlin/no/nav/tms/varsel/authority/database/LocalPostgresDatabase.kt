@@ -20,11 +20,15 @@ object LocalPostgresDatabase {
         container.start()
     }
 
-    fun cleanDb(): PostgresDatabase {
+    fun getCleanInstance(): PostgresDatabase {
+        resetInstance()
+        return instance
+    }
+
+    fun resetInstance() {
         instance.update { queryOf("delete from varsel") }
         instance.update { queryOf("delete from varsel_arkiv") }
         instance.update { queryOf("delete from outgoing_record_queue") }
-        return instance
     }
 
     private fun migrate(dataSource: HikariDataSource, expectedMigrations: Int) {

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
 
 internal class PeriodicExpiredVarselProcessorTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
     private val varselRepository = WriteVarselRepository(database)
 
@@ -91,7 +91,7 @@ internal class PeriodicExpiredVarselProcessorTest {
         updatedBeskjed?.aktiv shouldBe false
 
 
-        verify(exactly = 1) { varselInaktivertProducer.sendVarselInaktivert(any()) }
+        verify(exactly = 1) { varselInaktivertProducer.enqueueVarselInaktivert(any()) }
     }
 }
 

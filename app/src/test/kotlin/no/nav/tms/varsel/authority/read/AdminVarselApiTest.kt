@@ -22,7 +22,6 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import kotliquery.queryOf
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
-import no.nav.tms.token.support.user.token.verification.userToken
 import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
@@ -58,7 +57,7 @@ import kotlin.collections.toList
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AdminVarselApiTest {
     private val ident = "123"
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
     private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).registerModule(JavaTimeModule())
@@ -118,7 +117,7 @@ class AdminVarselApiTest {
 
     @AfterEach
     fun deleteData() {
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
     }
 
     @Test

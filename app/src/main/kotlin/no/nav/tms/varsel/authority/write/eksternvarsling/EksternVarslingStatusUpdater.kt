@@ -2,7 +2,7 @@ package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
-import no.nav.tms.kafka.application.MessageException
+import no.nav.tms.kafka.application.SkippableMessageException
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.EksternStatus.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
@@ -74,5 +74,5 @@ class EksternVarslingStatusUpdater(
     }
 }
 
-class UpdatedVarselMissingException : MessageException("Fant ikke varsel tilhørende ekstern varseloppdatering")
-class FeilhistorikkFullException: MessageException("Ignorerer feil-status; Feilhistorikken er full")
+class UpdatedVarselMissingException : SkippableMessageException("Fant ikke varsel tilhørende ekstern varseloppdatering")
+class FeilhistorikkFullException: SkippableMessageException("Ignorerer feil-status; Feilhistorikken er full")

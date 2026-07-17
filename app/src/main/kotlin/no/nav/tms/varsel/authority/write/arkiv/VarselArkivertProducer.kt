@@ -5,12 +5,11 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.DatabaseProdusent
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
-import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
 import java.time.ZonedDateTime
 
 class VarselArkivertProducer(
-    private val kafkaProducer: QueueableKafkaProducer,
+    private val queueRepository: RecordQueueRepository,
     private val topicName: String
 ) {
     private val objectMapper = defaultObjectMapper()
@@ -24,11 +23,7 @@ class VarselArkivertProducer(
             opprettet = arkivVarsel.opprettet
         ).let(objectMapper::writeValueAsString)
 
-        try {
-            kafkaProducer.send(topicName, arkivVarsel.varselId, hendelseJson)
-        } catch (e: KafkaProducerException) {
-            kafkaProducer.enqueue(topicName, arkivVarsel.varselId, hendelseJson)
-        }
+        queueRepository.enqueueRecord(topicName, arkivVarsel.varselId, hendelseJson)
     }
 }
 

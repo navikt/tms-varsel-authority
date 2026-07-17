@@ -18,9 +18,7 @@ import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.config.defaultObjectMapper
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
-import org.apache.kafka.common.errors.TimeoutException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,17 +28,16 @@ import java.time.ZonedDateTime
 
 internal class PeriodicVarselArchiverTest {
 
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
     private val archiveRepository = VarselArkivRepository(database)
     private val leaderElection: PodLeaderElection = mockk()
 
     private val testRepository = ArchiveTestRepository(database)
 
-    private val mockProducer = mockProducer()
     private val recordQueueRepository = RecordQueueRepository(database)
-    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
+    private val queueRepository = RecordQueueRepository(database)
 
-    private val arkivertProducer = VarselArkivertProducer(kafkaProducer ,"testTopic")
+    private val arkivertProducer = VarselArkivertProducer(queueRepository ,"testTopic")
     private val gammelBeskjed =
         varsel(type = Beskjed, varselId = "b1", opprettet = nowAtUtc().minusDays(11))
     private val nyBeskjed =
@@ -56,10 +53,7 @@ internal class PeriodicVarselArchiverTest {
     @AfterEach
     fun cleanUp() {
         clearMocks(leaderElection)
-        mockProducer.clear()
-        mockProducer.sendException = null
-        database.update { queryOf("delete from varsel") }
-        database.update { queryOf("delete from varsel_arkiv") }
+        LocalPostgresDatabase.resetInstance()
     }
 
 
@@ -83,10 +77,10 @@ internal class PeriodicVarselArchiverTest {
             varselId shouldBe gammelBeskjed.varselId
         }
 
-        mockProducer.history().size shouldBe 1
+        queueRepository.queueSize() shouldBe 1
 
-        mockProducer.history()
-            .map { it.value() }
+        queueRepository.peekNext(1)
+            .map { it.recordValue }
             .map { objectMapper.readTree(it) }
             .first()
             .let {
@@ -124,19 +118,6 @@ internal class PeriodicVarselArchiverTest {
     }
 
     @Test
-    fun `legger 'arkivert'-eventer i record-queue dersom sending til kafka feiler`() = runBlocking<Unit> {
-
-        coEvery { leaderElection.isLeader() } returns true
-
-        mockProducer.sendException = TimeoutException()
-
-        runArchiverUntilNRemains(1)
-
-        mockProducer.history().size shouldBe 0
-        recordQueueRepository.queueSize() shouldBe 1
-    }
-
-    @Test
     fun `does nothing when not leader`() = runBlocking<Unit> {
         coEvery { leaderElection.isLeader() } returns false
 
@@ -155,7 +136,7 @@ internal class PeriodicVarselArchiverTest {
 
         varselInDbCount() shouldBe 2
         testRepository.getAllArchivedVarsel().size shouldBe 0
-        mockProducer.history().size shouldBe 0
+        recordQueueRepository.queueSize() shouldBe 0
     }
 
     private fun runArchiverUntilNRemains(remainingVarsler: Int = 0) = runBlocking {

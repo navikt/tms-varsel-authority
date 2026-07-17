@@ -9,7 +9,6 @@ import no.nav.tms.kafka.producer.KafkaProducerBuilder
 import no.nav.tms.varsel.authority.config.Environment
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.arkiv.PeriodicVarselArchiver
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivRepository
 import no.nav.tms.varsel.authority.write.arkiv.VarselArkivertProducer
@@ -37,25 +36,21 @@ fun main() {
     )
 
     val leaderElection = PodLeaderElection()
-
-    val kafkaProducer = QueueableKafkaProducer(
-        repository = RecordQueueRepository(database),
-        recordProducer = KafkaProducerBuilder.stringProducer()
-    )
+    val recordQueueRepository = RecordQueueRepository(database)
 
     val kafkaQueueProcessor = PeriodicKafkaQueueProcessor(
-        repository = RecordQueueRepository(database),
+        repository = recordQueueRepository,
         recordProducer = KafkaProducerBuilder.stringProducer(),
         leaderElection = leaderElection,
     )
 
     val varselOpprettetProducer = VarselOpprettetProducer(
-        kafkaProducer = kafkaProducer,
+        queueRepository = recordQueueRepository,
         topicName = environment.internalVarselTopic,
     )
 
     val varselInaktivertProducer = VarselInaktivertProducer(
-        kafkaProducer = kafkaProducer,
+        queueRepository = recordQueueRepository,
         topicName = environment.internalVarselTopic,
     )
 
@@ -64,7 +59,7 @@ fun main() {
         PeriodicExpiredVarselProcessor(expiredVarselRepository, varselInaktivertProducer, leaderElection)
 
     val varselArkivertProducer = VarselArkivertProducer(
-        kafkaProducer = kafkaProducer,
+        queueRepository = recordQueueRepository,
         topicName = environment.internalVarselTopic
     )
 
@@ -127,7 +122,6 @@ fun main() {
                 varselArchiver.stop()
                 kafkaQueueProcessor.stop()
                 kafkaQueueProcessor.flushAndClose()
-                kafkaProducer.flushAndClose()
             }
         }
 
