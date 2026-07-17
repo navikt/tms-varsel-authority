@@ -7,7 +7,6 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertHendelse
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde.Frist
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.outgoing.KafkaProducerException
 import java.time.Duration
 
 class PeriodicExpiredVarselProcessor(
@@ -49,12 +48,7 @@ class PeriodicExpiredVarselProcessor(
                 kilde = Frist
             )
 
-            try {
-                varselInaktivertProducer.sendVarselInaktivert(inaktivertEvent)
-            } catch (e: KafkaProducerException) {
-                log.warn { "Klarte ikke sende inaktivert-event til kafka synkront. Legger i kø" }
-                varselInaktivertProducer.enqueueVarselInaktivert(inaktivertEvent)
-            }
+            varselInaktivertProducer.enqueueVarselInaktivert(inaktivertEvent)
 
             VarselMetricsReporter.registerVarselInaktivert(expired.varseltype, expired.produsent, Frist)
         }

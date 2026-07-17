@@ -5,7 +5,7 @@ import com.fasterxml.jackson.module.kotlin.treeToValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.kafka.application.JsonMessage
-import no.nav.tms.kafka.application.MessageException
+import no.nav.tms.kafka.application.SkippableMessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.authority.EksternStatus
@@ -50,7 +50,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
         }
     }
 
-    class StatusOppdatertDeserializationException: MessageException("eksternVarslingOppdatert-event har ikke riktig json-format")
+    class StatusOppdatertDeserializationException: SkippableMessageException("eksternVarslingOppdatert-event har ikke riktig json-format")
 }
 
 data class EksternVarslingOppdatert(

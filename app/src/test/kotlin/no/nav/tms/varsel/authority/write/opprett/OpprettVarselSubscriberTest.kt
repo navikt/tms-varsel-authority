@@ -6,28 +6,24 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import kotliquery.queryOf
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.action.EksternVarslingBestilling
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.shouldBeSameTime
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 class OpprettVarselSubscriberTest {
 
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
-    private val mockProducer = mockProducer()
     private val recordQueueRepository = RecordQueueRepository(database)
-    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
+    private val queueRepository = RecordQueueRepository(database)
 
-    private val aktivertProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
+    private val aktivertProducer = VarselOpprettetProducer(queueRepository, topicName = "testtopic")
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(OpprettVarselSubscriber(repository, aktivertProducer), enableTracking = true)
 
@@ -37,12 +33,7 @@ class OpprettVarselSubscriberTest {
 
     @AfterEach
     fun cleanUp() {
-        mockProducer.clear()
-        mockProducer.sendException = null
-        database.update {
-            queryOf("delete from varsel")
-        }
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
         testBroadcaster.clearHistory()
     }
 
@@ -109,14 +100,14 @@ class OpprettVarselSubscriberTest {
 
         dbVarsel.shouldBeNull()
 
-        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(OpprettVarselSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
             it.cause::class shouldBe OpprettVarselSubscriber.OpprettVarselValidationException::class
         }
 
-        mockProducer.history().size shouldBe 0
+        queueRepository.queueSize() shouldBe 0
     }
 
     @Test
@@ -134,7 +125,7 @@ class OpprettVarselSubscriberTest {
         dbVarsel.shouldNotBeNull()
         dbVarsel.type shouldBe Varseltype.Oppgave
 
-        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(OpprettVarselSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
@@ -273,7 +264,7 @@ class OpprettVarselSubscriberTest {
             testBroadcaster.broadcastJson(feilaktigEvent)
         }
 
-        testBroadcaster.history().findFailedOutcome(OpprettVarselSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(OpprettVarselSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()

@@ -53,6 +53,7 @@ dependencies {
     implementation(TmsCommonLib.teamLogger)
     implementation(TmsCommonLib.utils)
     implementation(TmsKafkaTools.kafkaApplication)
+    implementation(TmsKafkaTools.kafkaProducerUtils)
     implementation(JacksonDatatype.datatypeJsr310)
     implementation(project(":varsel-action"))
 

@@ -10,8 +10,6 @@ import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.mockk.mockk
-import no.nav.tms.common.kubernetes.PodLeaderElection
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verification.Issuer
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
@@ -21,11 +19,9 @@ import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
-import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -33,12 +29,12 @@ import java.text.DateFormat
 import java.util.*
 
 class InaktiverBeskjedApiTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
     private val recordQueueRepository = RecordQueueRepository(database)
-    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer())
+    private val queueRepository = RecordQueueRepository(database)
 
-    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer, "topic")
+    private val inaktivertProducer = VarselInaktivertProducer(queueRepository, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
@@ -48,7 +44,7 @@ class InaktiverBeskjedApiTest {
 
     @AfterEach
     fun deleteData() {
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
     }
 
     @Test

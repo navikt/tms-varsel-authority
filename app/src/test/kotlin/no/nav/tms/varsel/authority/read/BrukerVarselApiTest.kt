@@ -7,7 +7,6 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.server.testing.*
-import io.mockk.mockk
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.varsel.action.Sensitivitet.High
 import no.nav.tms.varsel.action.Sensitivitet.Substantial
@@ -22,18 +21,18 @@ import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.database.testInnhold
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
 import org.junit.jupiter.api.Test
 
 class BrukerVarselApiTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
-    private val mockProducer: QueueableKafkaProducer = mockk()
+    private val queueRepository = RecordQueueRepository(database)
 
-    private val inaktivertProducer = VarselInaktivertProducer(mockProducer, "topic")
+    private val inaktivertProducer = VarselInaktivertProducer(queueRepository, "topic")
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
@@ -43,7 +42,7 @@ class BrukerVarselApiTest {
 
     @AfterEach
     fun deleteData() {
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
     }
 
     @Test

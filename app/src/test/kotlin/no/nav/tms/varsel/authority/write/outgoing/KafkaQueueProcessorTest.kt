@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
 import java.time.Duration
 
 class KafkaQueueProcessorTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
     private val leaderElection: PodLeaderElection = mockk()
 
     private val mockProducer = mockProducer()
@@ -35,7 +35,7 @@ class KafkaQueueProcessorTest {
         mockProducer.clear()
         mockProducer.sendException = null
         mockProducer.flushException = null
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
     }
 
     @Test

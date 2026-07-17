@@ -8,9 +8,7 @@ import io.kotest.matchers.shouldBe
 import no.nav.tms.kafka.application.MessageBroadcaster
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
-import no.nav.tms.varsel.authority.mockProducer
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
 import no.nav.tms.varsel.authority.write.opprett.OpprettVarselSubscriber
 import no.nav.tms.varsel.authority.write.opprett.VarselOpprettetProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
@@ -20,14 +18,13 @@ import org.junit.jupiter.api.Test
 import java.util.UUID.randomUUID
 
 internal class InaktiverVarselSubscriberTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
-    private val mockProducer = mockProducer()
     private val recordQueueRepository = RecordQueueRepository(database)
-    private val kafkaProducer = QueueableKafkaProducer(recordQueueRepository, mockProducer)
+    private val queueRepository = RecordQueueRepository(database)
 
-    private val varselOpprettetProducer = VarselOpprettetProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
-    private val inaktivertProducer = VarselInaktivertProducer(kafkaProducer = kafkaProducer, topicName = "testtopic")
+    private val varselOpprettetProducer = VarselOpprettetProducer(queueRepository, topicName = "testtopic")
+    private val inaktivertProducer = VarselInaktivertProducer(queueRepository, topicName = "testtopic")
 
     private val repository = WriteVarselRepository(database)
     private val testBroadcaster = MessageBroadcaster(
@@ -43,9 +40,7 @@ internal class InaktiverVarselSubscriberTest {
 
     @AfterEach
     fun cleanUp() {
-        mockProducer.clear()
-        mockProducer.sendException = null
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
         testBroadcaster.clearHistory()
     }
 
@@ -112,18 +107,14 @@ internal class InaktiverVarselSubscriberTest {
 
         testBroadcaster.broadcastJson(inaktiverEvent)
 
-        testBroadcaster.history().findFailedOutcome(InaktiverVarselSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(InaktiverVarselSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
             it.cause::class shouldBe InaktiverVarselSubscriber.InaktivertVarselMissingException::class
         }
 
-        mockProducer.history()
-            .map { it.value() }
-            .map { objectMapper.readTree(it) }
-            .filter { it["@event_name"].asText() == "inaktivert" }
-            .size shouldBe 0
+        queueRepository.queueSize() shouldBe 0
     }
 
     @Test
@@ -142,7 +133,7 @@ internal class InaktiverVarselSubscriberTest {
             testBroadcaster.broadcastJson(feilaktigEvent)
         }
 
-        testBroadcaster.history().findFailedOutcome(InaktiverVarselSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(InaktiverVarselSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()

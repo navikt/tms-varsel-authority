@@ -8,11 +8,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.varsel.action.*
 import no.nav.tms.varsel.authority.*
 import no.nav.tms.varsel.authority.common.ZonedDateTimeHelper.nowAtUtc
-import no.nav.tms.varsel.authority.write.outgoing.QueueableKafkaProducer
+import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository
 import java.time.ZonedDateTime
 
 class VarselOpprettetProducer(
-    private val kafkaProducer: QueueableKafkaProducer,
+    private val queueRepository: RecordQueueRepository,
     private val topicName: String
 ) {
 
@@ -28,7 +28,7 @@ class VarselOpprettetProducer(
         val varselOpprettetEvent = VarselOpprettet.fromDatabaseVarsel(dbVarsel)
             .let(objectMapper::writeValueAsString)
 
-        kafkaProducer.enqueue(topicName, dbVarsel.varselId, varselOpprettetEvent)
+        queueRepository.enqueueRecord(topicName, dbVarsel.varselId, varselOpprettetEvent)
 
         log.info { "Opprettet-event produsert til kafka" }
     }

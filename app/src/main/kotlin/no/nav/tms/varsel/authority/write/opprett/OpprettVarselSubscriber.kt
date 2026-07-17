@@ -6,7 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tms.common.logging.TeamLogs
 import no.nav.tms.common.postgres.UniqueConstraintException
 import no.nav.tms.kafka.application.JsonMessage
-import no.nav.tms.kafka.application.MessageException
+import no.nav.tms.kafka.application.SkippableMessageException
 import no.nav.tms.kafka.application.Subscriber
 import no.nav.tms.kafka.application.Subscription
 import no.nav.tms.varsel.action.*
@@ -81,7 +81,7 @@ internal class OpprettVarselSubscriber(
             throw DuplikatVarselException()
         } catch (e: PSQLException) {
             log.error(e) { "Feil ved oppretting av varsel" }
-            throw MessageException("Uventet feil ved oppretting av varsel")
+            throw SkippableMessageException("Uventet feil ved oppretting av varsel")
         }
     }
 
@@ -164,7 +164,7 @@ internal class OpprettVarselSubscriber(
         return eksternVarsling.smsVarslingstekst != null || eksternVarsling.epostVarslingstekst != null
     }
 
-    class DuplikatVarselException: MessageException("Varsel med samme varselId finnes allerede")
-    class OpprettVarselDeserializationException: MessageException("Opprett-event har ikke riktig json-format")
-    class OpprettVarselValidationException: MessageException("Varsel består ikke validering")
+    class DuplikatVarselException: SkippableMessageException("Varsel med samme varselId finnes allerede")
+    class OpprettVarselDeserializationException: SkippableMessageException("Opprett-event har ikke riktig json-format")
+    class OpprettVarselValidationException: SkippableMessageException("Varsel består ikke validering")
 }

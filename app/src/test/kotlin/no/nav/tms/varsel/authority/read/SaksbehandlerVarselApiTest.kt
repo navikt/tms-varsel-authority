@@ -7,7 +7,6 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.server.auth.*
 import io.ktor.server.testing.*
-import io.ktor.utils.io.*
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
 import no.nav.tms.varsel.action.EksternVarslingBestilling
@@ -33,7 +32,7 @@ import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SaksbehandlerVarselApiTest {
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
 
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
@@ -42,7 +41,7 @@ class SaksbehandlerVarselApiTest {
 
     @AfterEach
     fun deleteData() {
-        LocalPostgresDatabase.cleanDb()
+        LocalPostgresDatabase.resetInstance()
     }
 
     @Nested

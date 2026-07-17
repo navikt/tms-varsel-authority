@@ -22,7 +22,7 @@ import java.util.UUID.randomUUID
 
 class EksternVarslingStatusOppdatertSubscriberTest {
 
-    private val database = LocalPostgresDatabase.cleanDb()
+    private val database = LocalPostgresDatabase.getCleanInstance()
     private val varselRepository = WriteVarselRepository(database)
 
     private val feilhistorikkMaxSize = 3
@@ -47,7 +47,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
     @BeforeEach
     fun resetDb() {
-        database.update { queryOf("delete from varsel") }
+        LocalPostgresDatabase.resetInstance()
         testBroadcaster.clearHistory()
     }
 
@@ -317,7 +317,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
         testBroadcaster.broadcastJson(event)
 
-        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
@@ -497,7 +497,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             testBroadcaster.broadcastJson(feilaktigEvent)
         }
 
-        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
             it["varselId"].asText() == varselId
         }.let {
             it.shouldNotBeNull()
@@ -555,7 +555,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
                 it.sendt shouldBe true
             }
 
-        testBroadcaster.history().findFailedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
+        testBroadcaster.history().findSkippedOutcome(EksternVarslingStatusOppdatertSubscriber::class) {
             it.getOrNull("status")?.asText() == EksternStatus.Feilet.lowercaseName
         }.let {
             it.shouldNotBeNull()
