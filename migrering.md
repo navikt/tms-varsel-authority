@@ -8,7 +8,9 @@ Produsenter trenger kun å forholde seg til ett topic for å opprette og inaktiv
 Vi bruker ikke lenger avro for å validere schema. Varsel-eventer sendes som json-string, med varsel-id som nøkkel. 
 
 ## Endringer i meldingene
-Se [produsere varsler](https://navikt.github.io/tms-dokumentasjon/varsler/produsere/) for dokumentasjon av nytt format.
+
+> [!NOTE]
+> Se [produsere varsler](https://navikt.github.io/tms-dokumentasjon/varsler/produsere/) for dokumentasjon av nytt format.
 
 #### meldingstyper
 Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til to objekter: opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
@@ -24,8 +26,10 @@ Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Di
 `grupperingsId` og `tidspunkt` er fjernet.
 
 #### tekst
-Alle tekster må ha en språkkode. Det er anbefalt å legge til tekst for flere språk.
-Om det er tekst på flere språk, må én være satt som default.
+
+> [!WARNING]
+> Alle tekster må ha en språkkode. Det er anbefalt å legge til tekst for flere språk.
+> Om det er tekst på flere språk, må én være satt som default.
 
 
 ## Eksempel

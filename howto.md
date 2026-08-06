@@ -1,6 +1,7 @@
 # Komme i gang med varsler
 
-_For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://navikt.github.io/tms-dokumentasjon/guide/)._
+> [!TIP]
+> For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://navikt.github.io/tms-dokumentasjon/guide/).
 
 1. Kafka tilgang: Opprett en pull-request mot topic `aapen-brukervarsel-v1`
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).
@@ -15,7 +16,8 @@ _For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne 
 | Oppgave | For noe som må bli utført                            | Produsent når oppgaven er utført ( inaktiver-event), eller av min side hvis aktivFremTil dato er satt eller varslet har vært aktivt i mer enn ett år. |
 | Innboks | For varsler om digitale innbokser andre steder i NAV | Produsent                                                                                                                                             |
 
-**NB! Det er viktig å huske å sende inaktiver-event for oppgave-varsler. Hvis ikke vil det se ut for personen som at oppgaven ikke er utført.**
+> [!WARNING]
+> Det er viktig å huske å sende inaktiver-event for oppgave-varsler. Hvis ikke vil det se ut for personen som at oppgaven ikke er utført.
 
 Alle varsler slettes 1 år etter mottaksdato.
 
@@ -33,7 +35,8 @@ Varsler med typen oppgave eller innboks får automatisk revarsling dersom varsel
 
 Dersom en velger å overskrive standardtekster for epost/sms, er det anbefalt å overskrive samtlige tekster. Dette er fordi bruker kan motta varsler via annen kanal enn preferansen.
 
-Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
+> [!CAUTION]
+> Eksterne varseltekster skal ikke inneholde lenker. Det er også produsentens ansvar å ikke sende sensitiv informasjon på epost og sms.
 
 Tekst i sms er begrenset til 160 tegn. Tittel for epost er maksimalt 40 tegn, og tekst er maksimalt 4000 tegn. Tekst i epost kan og bør inneholde markup.
 
@@ -68,7 +71,8 @@ For varsler opprettet med eldre buildere, eller sendt til legacy-topics, gjelder
 | Oppgave | Nei                                        |
 | Innboks | Nei                                        |
 
-Varsler med utsatt sending vil aldri batches.
+> [!NOTE]
+> Varsler med utsatt sending vil aldri batches.
 
 ## Kafka, schemas og buildere
 
