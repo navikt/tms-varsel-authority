@@ -29,7 +29,7 @@ Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg i
 
 ### Revarsling
 
-Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et bestemt antall dager. Oppgaver blir revarsler etter 7 dager, og innboks blir revarslet etter 4 dager.
+Varsler med typen oppgave eller innboks får automatisk revarsling dersom varselet ikke er ferdigstilt etter et bestemt antall dager. Oppgaver blir revarslet etter 7 dager, og innboks blir revarslet etter 4 dager.
 
 ### Overskriving av standardtekster
 
@@ -100,12 +100,12 @@ For å gi varsel til bruker sender en et opprett-varsel event.
 |-----------------|------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | type            | ja               | Type på varsel (beskjed, oppgave, innboks)                                                 | Må være én av `beskjed`, `oppgave`, `innboks`                                 |                                                                                                                                                                                                                             |
 | varselId        | ja               | Id til varselet. Produsenten bruker samme Id til å inaktivere varsel                       | Må være UUID eller ULID                                                       |                                                                                                                                                                                                                             |
-| ident           | ja               | Fodselsnummer (evt. d-nummer eller tilsvarende) til mottaker av varsel                     | Må ha 11 siffer                                                               |                                                                                                                                                                                                                             |
+| ident           | ja               | Fødselsnummer (evt. d-nummer eller tilsvarende) til mottaker av varsel                     | Må ha 11 siffer                                                               |                                                                                                                                                                                                                             |
 | tekster         | ja, minst 1      | Teksten som faktisk vises i varselet med språkkode.                                        | Dersom flere tekster på ulike språk er gitt må én tekst være satt som default | Språkkode må følge ISO-639 (typen `no`, `nb`, `en`...)                                                                                                                                                                      |
 | link            | ikke for beskjed | Lenke som blir aktivert når en person trykker på varselet i varselbjella eller på min side | Komplett URL, inkludert `https` protokoll.                                    |                                                                                                                                                                                                                             |
 | sensitivitet    | ja               | påkrevd level-of-assurance for å kunne se innhold i varsel                                 | Én av `high`, `substantial`                                                   | `high` og `substantial` tilsvarer det som tidligere var henholdvis nivå `4` og `3`. Hvis personen har varsler med sensitivitet `high`, men er logget inn med LoA `substantial`, vil hen se type varsel, men ikke innholdet. |
 | aktivFremTil    | nei              | Tidspunkt for når varslet skal inaktiverer automatisk av systemet                          | Tidspunkt med tidssone. `UTC` eller `Z` er anbefalt                           | Støttes ikke for Innboks-varsler                                                                                                                                                                                            |
-| eksternVarsling | nei              | Om det skal sendes sms og/eller epost til mottaker                                         | Kan kun velge preferert kanal `SMS` eller `EPOST`.                            | Dersom ekstern varslingstekst ikke er satt blir det sendt en standardtekst.                                                                                                                                                 |
+| eksternVarsling | nei              | Om det skal sendes sms og/eller epost til mottaker                                         | Må være én av `SMS`, `EPOST`, `BETINGET_SMS`.                                    | Dersom ekstern varslingstekst ikke er satt blir det sendt en standardtekst.                                                                                                                                                 |
 | produsent       | ja               | Teknisk kilde til varsel-eventet                                                           | Ingen spesielle                                                               | Buildere vil forsøke å hente dette automatisk basert på nais-miljøvariabler. Der disse ikke er tilgjengelige må produsent settes manuelt.                                                                                   |
 
 
@@ -115,12 +115,12 @@ Alle felt er valgfrie.
 
 | felt                 | beskrivelse                                                                                     | restriksjoner                                | tillegginfo                                                                                                                       |
 |----------------------|-------------------------------------------------------------------------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| preferertKanal       | Preferert kanal for ekstern varsling. Endelig kanal kan endre seg basert på brukers kontaktinfo | Må være én av `SMS`, `EPOST`, `BETINGET_SMS` | Dersom preferert kanal ikke er valgt sendes varsling på epost                                                                     |
+| prefererteKanaler    | Preferert kanal for ekstern varsling. Endelig kanal kan endre seg basert på brukers kontaktinfo | Må være én av `SMS`, `EPOST`, `BETINGET_SMS` | Dersom preferert kanal ikke er valgt sendes varsling på epost                                                                     |
 | smsVarslingstekst    | Varslingstekst send på sms                                                                      | Inntil 160 tegn. Kan ikke inneholde lenke    |                                                                                                                                   |
 | epostVarslingstekst  | Varslingstekst sendt på epost                                                                   | Inntil 4000 tegn. Kan ikke inneholde lenke   |                                                                                                                                   |
 | epostVarslingstittel | Eposttittel                                                                                     | Inntil 40 tegn. Kan ikke inneholde lenke     |                                                                                                                                   |
 | kanBatches           | Hvorvidt ekstern varsling kan sendes samlet                                                     |                                              | Dersom ikke noe annet er valgt, batches kun beskjeder med standardtekst                                                           |
-| utsettSendingTil     | Tidspunkt for utsatt sending av ekstern varsling                                                |                                              | Ekstern varsling sendes ikke før angitt tidspunkt er passert, og heller ikke hvis det underliggende varsleret blir fullført først |
+| utsettSendingTil     | Tidspunkt for utsatt sending av ekstern varsling                                                |                                              | Ekstern varsling sendes ikke før angitt tidspunkt er passert, og heller ikke hvis det underliggende varselet blir fullført først  |
 
 
 ### Json-format
@@ -272,9 +272,9 @@ kan en manuelt legge til disse variablene ved hjelp av `BuilderEnvironment.exten
 
 Hendelser blir logget til kibana med custom felter for filtrering
 
-Alle varsler: `x_contenttype:"varsel"`
-Sendt fra bestemt team: `x_initiated_by: "<namespace>"`
-Spesifikt varsel: `x_minside_id :"<varselId>"`
+- Alle varsler: `x_contenttype:"varsel"`
+- Sendt fra bestemt team: `x_initiated_by: "<namespace>"`
+- Spesifikt varsel: `x_minside_id :"<varselId>"`
 
 ### Kafka
 
