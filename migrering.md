@@ -1,9 +1,14 @@
-# Migreringsguide 
+# Migreringsguide
+
+Denne guiden er for produsenter som fortsatt sender varsler på de gamle
+Avro-topicene. Kort fortalt: ett felles topic i stedet for flere, json i stedet
+for Avro, og to meldingstyper i stedet for fire. Skal du sette opp varsler for
+første gang, trenger du ikke denne guiden.
 
 ## Topic
 Produsenter trenger kun å forholde seg til ett topic for å opprette og inaktivere varsler. Opprett pr i [github-repository](https://github.com/navikt/min-side-brukervarsel-topic-iac). 
 
-## Buildere og avro
+## Buildere og Avro
 
 Vi bruker ikke lenger avro for å validere schema. Varsel-eventer sendes som json-string, med varsel-id som nøkkel. 
 
@@ -12,20 +17,20 @@ Vi bruker ikke lenger avro for å validere schema. Varsel-eventer sendes som jso
 > [!NOTE]
 > Se [produsere varsler](https://navikt.github.io/tms-dokumentasjon/varsler/produsere/) for dokumentasjon av nytt format.
 
-### meldingstyper
+### Meldingstyper
 Tidligere har det vært fire meldingstyper (beskjed, oppgave, innboks, done). Disse er nå slått sammen til to objekter: opprett og inaktiver. Varseltypen spesifiseres i opprett-eventet.
 
-### endring av feltnavn
+### Endring av feltnavn
 - `eventId` -> `varselId`
 - `sikkerhetsnivaa` -> `sensitivitet` (3 -> substantial, 4 -> high)
 - `synligFremTil` -> `aktivFremTil`
 - `fodselsnummer` -> `ident`
 
-### deprekerte felter
+### Deprekerte felter
 
 `grupperingsId` og `tidspunkt` er fjernet.
 
-### tekst
+### Tekst
 
 > [!WARNING]
 > Alle tekster må ha en språkkode. Det er anbefalt å legge til tekst for flere språk.
@@ -44,7 +49,7 @@ Varslene har:
 - teksten "Dette er et oppgave-varsel"
 - ekstern varsling på sms med teksten "Dette er en sms om oppgave"
 
-### Gammelt oppsett med avro-builder
+### Gammelt oppsett med Avro-builder
 
 ```kotlin
 val gammeltOppgaveTopic = "min-side.aapen-brukernotifikasjon-oppgave-v1"
@@ -129,3 +134,7 @@ val inaktiverVarsel = VarselActionBuilder.inaktiver {
 
 kafkaProducer.send(ProducerRecord(nyttVarselTopic, oppgaveId, inaktiverVarsel))
 ```
+
+## Kontakt
+
+Ta kontakt med oss [på Slack](https://nav-it.slack.com/archives/C0912F59V29) hvis du lurer på noe.
