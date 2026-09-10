@@ -1,7 +1,14 @@
 # Komme i gang med varsler
 
+Varsler lar teamet ditt nå brukeren med beskjeder, oppgaver og innboksvarsler
+på Min side. Du sender dem som Kafka-eventer på ett felles topic – Min side tar
+seg av visningen i varselbjella og på varselsiden, og eventuell ekstern
+varsling på sms eller epost.
+
 > [!TIP]
 > For brukeropplevelsen er det viktig at du bruker riktig type varsel. Ta gjerne en ekstrasjekk med [innholdsguiden vår](https://navikt.github.io/tms-dokumentasjon/guide/).
+
+## Oppsett
 
 1. Kafka tilgang: Opprett en pull-request mot topic `aapen-brukervarsel-v1`
    i [min-side-brukervarsel-topic-iac](https://github.com/navikt/min-side-brukervarsel-topic-iac).
@@ -383,3 +390,7 @@ Eksempler:
   "appnavn": "demo-app"
 }
 ```
+
+## Kontakt
+
+Ta kontakt med oss [på Slack](https://nav-it.slack.com/archives/C0912F59V29) hvis du lurer på noe.
