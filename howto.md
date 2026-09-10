@@ -21,11 +21,20 @@
 
 Alle varsler slettes 1 år etter mottaksdato.
 
+## Tekst på Min Side
+
+`tekst`-feltet bestemmer innholdet i tekst på Min Side og i varselbjella. Det er mulig å legge til tekst-alternativer for ulike språk, som vises basert på hva bruker har valgt i språkvelgeren.
+
+Tekstlengden kan være opptil 300 tegn for Beskjed, og 500 tegn for Oppgave og Innboks. For brukere med mange varsler kan det fort bli mye informasjon å forholde seg til. Det er derfor anbefalt å holde tekstene klare og konsise. 
+
+> [!NOTE]
+> Markdown i varseltekst på Min Side er ikke støttet. Heller ikke egendefinerte linjeskift. Tekst wrappes dynamisk basert på lengde og evt skjemstørrelse.
+
 ## Ekstern varsling
 
 Produsent kan velge om bruker også skal varsles via eksterne kanaler (sms og epost). Produsent kan velge preferert kanal, og hvorvidt standardtekst skal overskrives.
 
-Standardtekst er av typen: `Hei! Du har fått en ny <varseltype> fra NAV. Logg inn på NAV for å se hva varselet gjelder. Vennlig hilsen NAV`
+Standardtekst er av typen: `Hei! Du har fått en ny <beskjed|oppgave|melding> fra Nav. Logg inn på Nav for å se hva <beskjeden|oppgaven|meldingen> gjelder. Vennlig hilsen Nav`
 
 ### Revarsling
 
@@ -82,8 +91,8 @@ Builderne finnes i følgende bibliotek:
 
 ### Github Maven repository
 
-- kotlin: no.nav.tms.varsel:kotlin-builder:2.1.1
-- java: no.nav.tms.varsel:java-builder:2.1.1
+- kotlin: no.nav.tms.varsel:kotlin-builder:2.2.0
+- java: no.nav.tms.varsel:java-builder:2.2.0
 
 Vi publiserer disse artifaktene til githubs package-repository. Husk å legge til én av disse repositories i ditt prosjekt:
 
@@ -107,7 +116,6 @@ For å gi varsel til bruker sender en et opprett-varsel event.
 | aktivFremTil    | nei              | Tidspunkt for når varslet skal inaktiverer automatisk av systemet                          | Tidspunkt med tidssone. `UTC` eller `Z` er anbefalt                           | Støttes ikke for Innboks-varsler                                                                                                                                                                                            |
 | eksternVarsling | nei              | Om det skal sendes sms og/eller epost til mottaker                                         | Må være én av `SMS`, `EPOST` eller `BETINGET_SMS`.                                    | Dersom ekstern varslingstekst ikke er satt blir det sendt en standardtekst.                                                                                                                                                 |
 | produsent       | ja               | Teknisk kilde til varsel-eventet                                                           | Ingen spesielle                                                               | Buildere vil forsøke å hente dette automatisk basert på nais-miljøvariabler. Der disse ikke er tilgjengelige må produsent settes manuelt.                                                                                   |
-
 
 ### Ekstern varsling felt
 
