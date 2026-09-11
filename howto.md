@@ -28,7 +28,7 @@ Alle varsler slettes 1 år etter mottaksdato.
 Tekstlengden kan være opptil 300 tegn for Beskjed, og 500 tegn for Oppgave og Innboks. For brukere med mange varsler kan det fort bli mye informasjon å forholde seg til. Det er derfor anbefalt å holde tekstene klare og konsise. 
 
 > [!NOTE]
-> Markdown i varseltekst på Min Side er ikke støttet. Heller ikke egendefinerte linjeskift. Tekst wrappes dynamisk basert på lengde og evt skjemstørrelse.
+> Markdown i varseltekst på Min Side er ikke støttet. Heller ikke egendefinerte linjeskift. Tekst wrappes dynamisk basert på lengde og skjermstørrelse.
 
 ## Ekstern varsling
 
