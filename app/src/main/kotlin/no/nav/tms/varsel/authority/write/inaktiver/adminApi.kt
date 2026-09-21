@@ -17,7 +17,7 @@ fun Route.adminApi(
     varselUpdater: VarselInaktiverer,
     readRepository: ReadVarselRepository
 ) {
-    post("/varsel/inaktiver") {
+    post("/varsel/admin/inaktiver") {
         val request = call.inaktiverVarselRequest()
 
         varselUpdater.inaktiverVarselForAdmin(request.varselId, request.grunn)
@@ -37,6 +37,11 @@ fun Route.adminApi(
                 timeRange = request.timeRange()
             )
         )
+    }
+
+
+    post("/varsler/admin/aktive") {
+        TODO()
     }
 }
 
@@ -65,6 +70,6 @@ private fun ApplicationCall.timeRange(): Timerange =
         tomQueryParam = this.request.queryParameters["tom"] ?: throw BadRequestException("tom parameter må være satt")
     )
 
-data class AlleVarslerRequest(val ident: String, val fom: String, val tom: String){
-    fun timeRange() = Timerange(fom,tom)
+data class AlleVarslerRequest(val ident: String, val fom: String, val tom: String) {
+    fun timeRange() = Timerange(fom, tom)
 }

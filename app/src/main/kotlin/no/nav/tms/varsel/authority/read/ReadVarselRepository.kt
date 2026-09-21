@@ -7,7 +7,6 @@ import no.nav.tms.common.postgres.JsonbHelper.json
 import no.nav.tms.common.postgres.JsonbHelper.jsonOrNull
 import no.nav.tms.common.postgres.PostgresDatabase
 import no.nav.tms.varsel.action.Sensitivitet
-import no.nav.tms.varsel.authority.common.*
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.read.DetaljertAdminVarsel.Companion.resolveInaktivert
