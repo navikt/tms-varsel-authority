@@ -118,6 +118,7 @@ class AdminVarselApiTest {
     @AfterEach
     fun deleteData() {
         LocalPostgresDatabase.resetInstance()
+        LogVerifier.clear()
     }
 
     @Test
@@ -468,6 +469,25 @@ class AdminVarselApiTest {
 
             }
         }
+    }
+
+    @Nested
+    inner class AuitLog{
+
+
+        @Test
+        fun `Sender innslag til auitlog`()=testVarselApi{
+            //Alle varsel
+            jsonClient.postVarslerAsJson(ident = ident, fom = "2020-01-01", tom = "2025-12-31")
+            LogVerifier.verifyLogCount(1)
+            LogVerifier.verifyAction(action = "audit:access", u)
+            //Aktive varsker
+
+
+            //Inaktivering av varsel
+
+        }
+
     }
 
     private suspend fun HttpClient.postVarslerAsJson(ident: String, fom: String, tom: String): JsonNode =
