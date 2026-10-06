@@ -6,8 +6,15 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-
+    <appender name="auditLogger" class="no.nav.tms.varsel.authority.read.TestAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%m%n%xEx</pattern>
+        </layout>
+    </appender>
     <root level="INFO">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </root>
+    <logger name="auditLog" level="INFO" additivity="false">
+        <appender-ref ref="auditLogger"/>
+    </logger>
 </configuration>

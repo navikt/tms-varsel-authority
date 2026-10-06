@@ -17,6 +17,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.mockk
 import no.nav.tms.kafka.application.isMissingOrNull
+import no.nav.tms.token.support.entraid.token.verification.mock.UserInfo
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verification.Issuer
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
@@ -29,6 +30,12 @@ import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import java.text.DateFormat
 import kotlin.collections.forEach
 
+val entraMockIdUser = UserInfo(
+    navIdent = "12345678",
+    userId = "123456789",
+    displayName = "test@test",
+    userName = "Test Test"
+)
 fun baseTestApplication(
     userIdent: String="1234567819",
     userLoa: LevelOfAssurance = LevelOfAssurance.High,
@@ -45,7 +52,9 @@ fun baseTestApplication(
                     }
                 }
                 entraIdMock(SYSTEM_API) {
-
+                    enableDefaultAuthentication {
+                        this.tokenUserInfo = entraMockIdUser
+                    }
                 }
             }
 

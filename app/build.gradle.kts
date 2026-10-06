@@ -67,6 +67,7 @@ dependencies {
     testImplementation(Ktor.Test.serverTestHost)
     testImplementation(TmsKtorTokenSupport.userTokenVerificationMock)
     testImplementation(TmsKtorTokenSupport.entraIdTokenVerificationMock)
+    testImplementation(Logback.classic)
 }
 
 application {
