@@ -7,10 +7,8 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.nav.tms.varsel.action.Varseltype
-import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
-import no.nav.tms.varsel.authority.write.inaktiver.Timerange
 
 fun Route.detaljertVarselApi(readRepository: ReadVarselRepository) {
 

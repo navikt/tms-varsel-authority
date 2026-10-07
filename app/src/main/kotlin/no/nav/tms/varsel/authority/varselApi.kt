@@ -24,6 +24,7 @@ import no.nav.tms.token.support.entraid.token.verification.entraId
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.token.support.user.token.verification.userToken
 import no.nav.tms.varsel.action.VarselIdException
+import no.nav.tms.varsel.authority.read.adminApi
 import java.text.DateFormat
 
 fun Application.varselApi(

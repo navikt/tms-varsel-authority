@@ -39,4 +39,20 @@ object LocalPostgresDatabase {
             .migrate()
             .let { assert(it.migrationsExecuted == expectedMigrations) }
     }
+
+    fun insertArkivertVarsel(ident: String, varselId: String, jsonBlob: String) {
+        instance.update {
+            queryOf(
+                """
+                insert into varsel_arkiv(varselId, ident, varsel, arkivert)
+                values (:varselId, :ident, :varsel::jsonb, now())
+                """,
+                mapOf(
+                    "varselId" to varselId,
+                    "ident" to ident,
+                    "varsel" to jsonBlob
+                )
+            )
+        }
+    }
 }

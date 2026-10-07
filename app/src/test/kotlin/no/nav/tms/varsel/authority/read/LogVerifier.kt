@@ -8,8 +8,10 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldMatch
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.jvm.Throws
 
 
 class TestAppender : AppenderBase<ILoggingEvent>() {
@@ -52,24 +54,29 @@ object LogVerifier {
         expectedJirasak: String? = null,
     ) {
         val events = appender.getEvents()
-        val actionEvent = events.firstOrNull { it.contains(action) }
-        withClue("Fant ingen auditlog entry for $action") {
-            actionEvent shouldNotBe null
+        val actionEvent = events.firstOrNull { it.contains(action) }?: throw IllegalStateException("No action found for $action")
+
+        val expectedPrefix ="CEF:0|Manuell behandling av varsler|tms-varsel-authority|1.0|$action|tms-varsel-authority audit log|INFO|"
+        withClue("Feil i auditlog prefix format"){
+            actionEvent.split("end=").first() shouldBe expectedPrefix
         }
 
         actionEvent.let { auditlogMessage ->
-            withClue("Feil i auditlog format") {
+            withClue("Feil i auditlog innholdsformat") {
+                auditlogMessage shouldContain "suid="
                 if (expectedAdminIdent != null) {
                     auditlogMessage shouldContain "suid=$expectedAdminIdent"
                 }
+                auditlogMessage shouldContain "duid="
                 if (expectedIdent != null) {
                     auditlogMessage shouldContain "duid=$expectedIdent"
                 }
+                auditlogMessage shouldContain "msg="
                 if (expectedMessage != null) {
                     auditlogMessage shouldContain "msg=$expectedMessage"
                 }
+                auditlogMessage shouldContain "flexString1Label=Jirasak"
                 if (expectedJirasak != null) {
-                    auditlogMessage shouldContain "flexString1Label=Jirasak"
                     auditlogMessage shouldContain "flexString1=$expectedJirasak"
                 }
             }
@@ -77,4 +84,3 @@ object LogVerifier {
     }
     fun clear() = appender.clear()
 }
-

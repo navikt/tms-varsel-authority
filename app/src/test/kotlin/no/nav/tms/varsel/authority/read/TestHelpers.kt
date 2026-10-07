@@ -28,6 +28,10 @@ import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import java.text.DateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import kotlin.collections.forEach
 
 val entraMockIdUser = UserInfo(
@@ -194,3 +198,24 @@ object Matchers {
 }
 
 
+val ApplicationTestBuilder.jsonClient
+    get() = createClient {
+        install(ContentNegotiation) {
+            jackson {
+                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                registerModule(JavaTimeModule())
+                dateFormat = DateFormat.getDateTimeInstance()
+            }
+        }
+    }
+
+fun String.toOsloZonedDateTime() =
+    try {
+        LocalDate.parse(this, DateTimeFormatter.ofPattern("dd-MM-yyyy")).atStartOfDay()
+            .atZone(ZoneId.of("Europe/Oslo"))
+    } catch (ex: DateTimeParseException) {
+        throw IllegalArgumentException(
+            "Failed to parse date string '$this'. Expected format is dd-MM-yyyy",
+            ex
+        )
+    }

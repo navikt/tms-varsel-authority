@@ -17,6 +17,7 @@ import no.nav.tms.varsel.authority.DatabaseVarsel
 import no.nav.tms.varsel.authority.SYSTEM_API
 import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.read.InaktiverVarselRequest
 import no.nav.tms.varsel.authority.read.ReadVarselRepository
 import no.nav.tms.varsel.authority.varselApi
 import no.nav.tms.varsel.authority.write.outgoing.RecordQueueRepository

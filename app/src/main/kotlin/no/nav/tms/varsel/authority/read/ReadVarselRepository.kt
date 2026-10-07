@@ -10,7 +10,6 @@ import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Varseltype
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.read.DetaljertAdminVarsel.Companion.resolveInaktivert
-import no.nav.tms.varsel.authority.write.inaktiver.Timerange
 
 private val log = KotlinLogging.logger { }
 
