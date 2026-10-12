@@ -6,8 +6,22 @@
     <appender name="stdout_json" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
+    <appender name="auditLogger" class="com.papertrailapp.logback.Syslog4jAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%m%n%xEx</pattern>
+        </layout>
+        <syslogConfig class="org.productivity.java.syslog4j.impl.net.tcp.TCPNetSyslogConfig">
+            <host>audit.nais</host>
+            <port>6514</port>
+            <ident>tms-varsel-admin</ident>
+            <maxMessageLength>128000</maxMessageLength>
+        </syslogConfig>
+    </appender>
 
     <root level="INFO">
         <appender-ref ref="stdout_json"/>
     </root>
+    <logger name="auditLog" level="INFO" additivity="false">
+        <appender-ref ref="auditLogger"/>
+    </logger>
 </configuration>
