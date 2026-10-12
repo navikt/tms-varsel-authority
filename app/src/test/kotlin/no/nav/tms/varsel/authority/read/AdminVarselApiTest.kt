@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainOnly
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
@@ -17,6 +18,7 @@ import io.ktor.http.contentType
 import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.mockk.coEvery
+import io.mockk.justRun
 import io.mockk.mockk
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
@@ -38,7 +40,9 @@ import no.nav.tms.varsel.authority.database.TestVarsel
 import no.nav.tms.varsel.authority.database.TestVarsel.Companion.ids
 import no.nav.tms.varsel.authority.database.TestVarsel.Companion.varselIds
 import no.nav.tms.varsel.authority.read.Matchers.shouldHaveField
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertKilde
+import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktivertProducer
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,8 +53,7 @@ import java.time.ZonedDateTime
 import kotlin.collections.forEach
 import kotlin.collections.toList
 
-private val JsonNode.keys: List<String>
-    get() = fieldNames().asSequence().toList()
+
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AdminVarselApiTest {
@@ -116,6 +119,7 @@ class AdminVarselApiTest {
             inaktivtVarselOct2025,
             varselDec2024Inaktivert2025
         )
+        LogVerifier.clear()
     }
 
     @AfterEach
@@ -567,9 +571,37 @@ class AdminVarselApiTest {
 
     @Nested
     inner class InaktiverVarsel {
+        //TODO: trenger vi en grundigere aarask til inaktivering eller holder det med at dte er admin?
         @Test
-        fun `inaktiverer varsel`() = testAdminApi {
-            jsonClient.post("/varsel/inaktiver")
+        fun `inaktiverer varsel`() = testAdminApi(
+            varselInaktiverer = VarselInaktiverer(
+                varselRepository = writeRepository,
+                varselInaktivertProducer = mockk<VarselInaktivertProducer>().apply {
+                    justRun { enqueueVarselInaktivert(any()) }
+                },
+            )
+        ) {
+            jsonClient.post(endpointInaktiver) {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    """
+                    {
+                     "varselId":"${aktivtVarselJun2025.varselId}",
+                     "aarsak": "Bruker har bedt omm inaktiver av varsel. Se Jirasak 14564646"
+                    }
+                """.trimIndent()
+                )
+            }.status shouldBe HttpStatusCode.OK
+
+            val aktiveVarsler = jsonClient.postVarslerAsJson(
+                endpoint = endpointAktive,
+                ident = ident,
+                fom = "2025-01-01",
+                tom = "2025-12-31"
+            ).toList()
+
+            aktiveVarsler.varselIds shouldNotContain aktivtVarselJun2025.varselId
+
         }
     }
 
@@ -723,11 +755,13 @@ class AdminVarselApiTest {
     private fun testAdminApi(
         userIdent: String = ident,
         readVarselRepository: ReadVarselRepository = readRepository,
+        varselInaktiverer: VarselInaktiverer = mockk(relaxed = true),
         block: suspend ApplicationTestBuilder.(HttpClient) -> Unit
     ) = baseTestApplication(
         userIdent = userIdent,
         userLoa = LevelOfAssurance.High,
         readVarselRepository = readVarselRepository,
+        varselInaktiverer = varselInaktiverer,
         authentication = {
             authentication {
                 userTokenMock {
@@ -747,3 +781,5 @@ class AdminVarselApiTest {
 
 private infix fun JsonNode.zoneDateTimeShouldBe(expected: ZonedDateTime) =
     ZonedDateTime.parse(this.asText()).toOffsetDateTime() shouldBe expected.toOffsetDateTime()
+private val JsonNode.keys: List<String>
+    get() = fieldNames().asSequence().toList()

@@ -27,7 +27,7 @@ fun Route.adminApi(
         post("inaktiver") {
             val request = call.inaktiverVarselRequest()
 
-            varselUpdater.inaktiverVarselForAdmin(request.varselId, request.grunn)
+            varselUpdater.inaktiverVarselForAdmin(request.varselId, request.aarsak)
 
             call.respond(HttpStatusCode.OK)
         }
@@ -66,7 +66,7 @@ private suspend fun ApplicationCall.inaktiverVarselRequest() = try {
     throw IllegalArgumentException("Ugyldig format for inaktivering av varsel som admin")
 }
 
-data class InaktiverVarselRequest(val varselId: String, val grunn: String)
+data class InaktiverVarselRequest(val varselId: String, val aarsak: String)
 
 private val ApplicationRequest.identHeader get() = headers["ident"] ?: throw BadRequestException("Mangler ident-header")
 
