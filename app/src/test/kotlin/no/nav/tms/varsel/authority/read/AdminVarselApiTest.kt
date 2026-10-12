@@ -18,7 +18,6 @@ import io.ktor.server.auth.authentication
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotliquery.queryOf
 import no.nav.tms.token.support.entraid.token.verification.mock.entraIdMock
 import no.nav.tms.token.support.user.token.verification.LevelOfAssurance
 import no.nav.tms.token.support.user.token.verificaton.mock.userTokenMock
@@ -46,59 +45,67 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.time.ZonedDateTime
 import kotlin.collections.forEach
 import kotlin.collections.toList
 
+private val JsonNode.keys: List<String>
+    get() = fieldNames().asSequence().toList()
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AdminVarselApiTest {
-    private val ident = "123"
     private val database = LocalPostgresDatabase.getCleanInstance()
     private val readRepository = ReadVarselRepository(database)
     private val writeRepository = WriteVarselRepository(database)
     private val objectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).registerModule(JavaTimeModule())
 
-    val endpointAlle = "/varsel/admin/alle"
-    val endpointAktive = "/varsel/admin/aktive"
-    val aktivtVarselOct2025 =
-        TestVarsel(
-            type = Beskjed,
-            opprettet = "12-10-2025".toOsloZonedDateTime(),
-            ident = ident,
-            varselId = "aktivOct2025"
-        )
-    val inaktivtVarselOct2025 =
-        TestVarsel(
-            type = Beskjed,
-            opprettet = "10-10-2025".toOsloZonedDateTime(),
-            inaktivert = "10-10-2025".toOsloZonedDateTime(),
-            ident = ident,
-            aktiv = false,
-            varselId = "inaktivOct2025"
-        )
-    val aktivtVarselJun2025 =
-        TestVarsel(
-            type = Oppgave,
-            ident = ident,
-            opprettet = "23-06-2025".toOsloZonedDateTime(),
-            varselId = "aktivJun2025"
-        )
-    val varselDec2024Inaktivert2025 =
-        TestVarsel(
-            type = Oppgave,
-            ident = ident,
-            opprettet = "08-12-2024".toOsloZonedDateTime(),
-            inaktivert = "01-01-2025".toOsloZonedDateTime(),
-            aktiv = false,
-            varselId = "varselDec2024Inaktivert2025"
-        )
-    val inaktivtVarselMay2023 =
-        TestVarsel(
-            type = Innboks,
-            ident = ident,
-            opprettet = "10-10-2023".toOsloZonedDateTime(),
-            aktiv = false,
-            varselId = "inaktivMay2023"
-        )
+    companion object {
+        private val ident = "123"
+        val endpointAlle = "/varsel/admin/alle"
+        val endpointAktive = "/varsel/admin/aktive"
+        val endpointInaktiver = "/varsel/admin/inaktiver"
+        val aktivtVarselOct2025 =
+            TestVarsel(
+                type = Beskjed,
+                opprettet = "12-10-2025".toOsloZonedDateTime(),
+                ident = ident,
+                varselId = "aktivOct2025"
+            )
+        val inaktivtVarselOct2025 =
+            TestVarsel(
+                type = Beskjed,
+                opprettet = "10-10-2025".toOsloZonedDateTime(),
+                inaktivert = "10-10-2025".toOsloZonedDateTime(),
+                ident = ident,
+                aktiv = false,
+                varselId = "inaktivOct2025"
+            )
+        val aktivtVarselJun2025 =
+            TestVarsel(
+                type = Oppgave,
+                ident = ident,
+                opprettet = "23-06-2025".toOsloZonedDateTime(),
+                varselId = "aktivJun2025"
+            )
+        val varselDec2024Inaktivert2025 =
+            TestVarsel(
+                type = Oppgave,
+                ident = ident,
+                opprettet = "08-12-2024".toOsloZonedDateTime(),
+                inaktivert = "01-01-2025".toOsloZonedDateTime(),
+                aktiv = false,
+                varselId = "varselDec2024Inaktivert2025"
+            )
+        val inaktivtVarselMay2023 =
+            TestVarsel(
+                type = Innboks,
+                ident = ident,
+                opprettet = "10-10-2023".toOsloZonedDateTime(),
+                aktiv = false,
+                varselId = "inaktivMay2023"
+            )
+    }
+
 
     @BeforeEach
     fun addVarslerToDb() {
@@ -114,7 +121,7 @@ class AdminVarselApiTest {
     @AfterEach
     fun deleteData() {
         LocalPostgresDatabase.resetInstance()
-        LogVerifier.clear()
+
     }
 
     @Nested
@@ -189,8 +196,8 @@ class AdminVarselApiTest {
             ).withLegacyProperties(
                 utløptFrist = true
             )
-            insertArkiverteVarsler(testIdent, arkivertVarsel){currentJsonFormat()}
-            insertArkiverteVarsler(testIdent, arkivertLegacyVarsel){ legacyJsonFormat()}
+            insertArkiverteVarsler(testIdent, arkivertVarsel) { currentJsonFormat() }
+            insertArkiverteVarsler(testIdent, arkivertLegacyVarsel) { legacyJsonFormat() }
             insertTestVarsel(varselData)
 
             val varsler2025Response =
@@ -341,8 +348,8 @@ class AdminVarselApiTest {
                     }
                 """.trimIndent()
 
-            insertArkiverteVarsler(ident, legacyJsonFeb2023, legacyVarselAug2020){legacyJsonFormat()}
-            insertArkiverteVarsler(ident, varselJsonJan2025){currentJsonFormat()}
+            insertArkiverteVarsler(ident, legacyJsonFeb2023, legacyVarselAug2020) { legacyJsonFormat() }
+            insertArkiverteVarsler(ident, varselJsonJan2025) { currentJsonFormat() }
             insertArkivertVarsel(
                 ident = ident,
                 varselId = uventetVarselformatId,
@@ -457,14 +464,14 @@ class AdminVarselApiTest {
                     arkivertOppgaveMedKildeProdusent,
                     arkivertVarselUtenKilde,
                     arkivertVarselMedKildeSystem,
-                ){currentJsonFormat()}
+                ) { currentJsonFormat() }
                 insertArkiverteVarsler(
                     testIdent,
                     legacyBeskjedMedFristUtløptTrue,
                     legacyOppgaveMedFristUtløptFalse,
                     legacyInnboksUtenFristUtløpt,
                     legacyBeskjedUtenFristUtløpt,
-                ){legacyJsonFormat()}
+                ) { legacyJsonFormat() }
 
                 val varsler2025 =
                     jsonClient.postVarslerAsJson(
@@ -510,8 +517,8 @@ class AdminVarselApiTest {
                     utløptFrist = false
                 )
 
-                insertArkiverteVarsler(testIdent, aktivtArkivertVarsel){currentJsonFormat()}
-                insertArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy){legacyJsonFormat()}
+                insertArkiverteVarsler(testIdent, aktivtArkivertVarsel) { currentJsonFormat() }
+                insertArkiverteVarsler(testIdent, aktivtArkivertVarselLegacy) { legacyJsonFormat() }
                 val varsler2025 =
                     jsonClient.postVarslerAsJson(
                         endpoint = endpointAlle,
@@ -530,11 +537,53 @@ class AdminVarselApiTest {
     }
 
     @Nested
+    inner class AktiveVarsler {
+        @Test
+        fun `henter bare aktive varsler for bruker`() = testAdminApi {
+            val aktiveVarsler = jsonClient.postVarslerAsJson(
+                endpoint = endpointAktive,
+                ident = ident,
+                fom = "2025-01-01",
+                tom = "2025-12-31"
+            ).toList()
+
+            aktiveVarsler.varselIds shouldContainOnly listOf(
+                aktivtVarselJun2025,
+                aktivtVarselOct2025
+            ).ids
+
+            aktiveVarsler.first { it["varselId"].asText() == aktivtVarselOct2025.varselId }.let { varsel ->
+                varsel.keys shouldContainOnly listOf("varselId", "tekst", "opprettet", "opprettetAv", "link", "type")
+                varsel["varselId"].asText() shouldBe aktivtVarselOct2025.varselId
+                varsel["tekst"].asText() shouldBe aktivtVarselOct2025.innhold.tekst
+                varsel["link"].asText() shouldBe aktivtVarselOct2025.innhold.link
+                varsel["opprettetAv"].asText() shouldBe aktivtVarselOct2025.produsent.namespace
+                varsel["type"].asText() shouldBe aktivtVarselOct2025.type.name
+                varsel["opprettet"] zoneDateTimeShouldBe aktivtVarselOct2025.opprettet
+
+            }
+        }
+    }
+
+    @Nested
+    inner class InaktiverVarsel {
+        @Test
+        fun `inaktiverer varsel`() = testAdminApi {
+            jsonClient.post("/varsel/inaktiver")
+        }
+    }
+
+    @Nested
     inner class AuditLog {
         private val fom = "2020-01-01"
         private val tom = "2020-12-31"
         private val jirasakRef = "FGT-1283"
         private val aarsak = "behov for mer dokumentasjon"
+
+        @BeforeEach
+        fun cleaLog() {
+            LogVerifier.clear()
+        }
 
         @Test
         fun `Logger henting av varsel til auditlog`() = testAdminApi {
@@ -587,6 +636,7 @@ class AdminVarselApiTest {
             readVarselRepository = mockk<ReadVarselRepository>(relaxed = true).also {
                 coEvery { it.getAlleVarselForUserIncludeArchived(any(), any()) } throws Exception("Feil oppstod")
                 coEvery { it.getVarselSammendragForUser(any(), any(), any()) } throws Exception("Feil oppstod")
+                coEvery { it.getDetaljertVarselForUser(any(), any(), any(), any()) } throws Exception("Feil oppstod")
             }
         ) {
             //Alle varsel
@@ -639,6 +689,7 @@ class AdminVarselApiTest {
             objectMapper.readTree(it.bodyAsText())
         }
 
+
     private data class AlleVarslerRequest(
         val ident: String,
         val fom: String,
@@ -646,7 +697,6 @@ class AdminVarselApiTest {
         val aarsak: String,
         val jiraRef: String?
     )
-
 
     private fun List<JsonNode>.inaktivertValue(id: String): String {
         return find { it["varselId"].asText() == id }.let {
@@ -656,11 +706,16 @@ class AdminVarselApiTest {
         }!!["inaktivert"].asText()
     }
 
-    private fun insertArkiverteVarsler(ident: String, vararg varsler: TestVarsel, jsonFormatter: TestVarsel.()-> String) {
+    private fun insertArkiverteVarsler(
+        ident: String,
+        vararg varsler: TestVarsel,
+        jsonFormatter: TestVarsel.() -> String
+    ) {
         varsler.forEach {
             insertArkivertVarsel(ident, it.varselId, it.jsonFormatter())
         }
     }
+
     private fun insertTestVarsel(vararg varsler: TestVarsel) {
         varsler.forEach { writeRepository.insertVarsel(it.dbVarsel()) }
     }
@@ -688,3 +743,7 @@ class AdminVarselApiTest {
         block = block
     )
 }
+
+
+private infix fun JsonNode.zoneDateTimeShouldBe(expected: ZonedDateTime) =
+    ZonedDateTime.parse(this.asText()).toOffsetDateTime() shouldBe expected.toOffsetDateTime()

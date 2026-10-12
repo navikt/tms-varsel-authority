@@ -139,6 +139,29 @@ data class EksternVarslingArchiveCompatible(
     }
 }
 
+
+data class AktiveAdminVarsler(
+    val varselId: String,
+    val tekst: String,
+    val link: String,
+    val opprettet: ZonedDateTime,
+    val opprettetAv: String,
+    val type: String
+){
+    companion object {
+        fun List<DetaljertVarsel>.toAktiveAdminVarsler(): List<AktiveAdminVarsler> = map {
+            AktiveAdminVarsler(
+                varselId = it.varselId,
+                tekst = it.innhold.tekst,
+                link = it.innhold.link?:"",
+                opprettet = it.opprettet,
+                opprettetAv = it.produsent.namespace,
+                type = it.type.name
+            )
+        }
+    }
+}
+
 private fun ZonedDateTime.dateTimeAndOsloTimesone(): String = withZoneSameInstant(ZoneId.of("Europe/Oslo"))
     .format(DateTimeFormatter.ofPattern("dd.MM.yyyy 'kl' HH:mm '(UTC'XXX')'"))
 

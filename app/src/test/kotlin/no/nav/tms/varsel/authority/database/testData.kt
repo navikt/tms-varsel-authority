@@ -297,4 +297,6 @@ private fun ZonedDateTime.serializeToLegacyDbFormat(): String =
 private fun String.toZonedDateTimeUtc(hour: Int = 9): ZonedDateTime =
     LocalDate.parse(this).atTime(hour, 0).atZone(ZoneOffset.UTC)
 
+
 private fun nowInOsloUtc(): ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MILLIS)
+

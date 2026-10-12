@@ -11,6 +11,7 @@ import no.nav.tms.token.support.entraid.token.verification.EntraIdUserPrincipal
 import no.nav.tms.varsel.authority.common.AdminAuditLog
 import no.nav.tms.varsel.authority.config.Source
 import no.nav.tms.varsel.authority.config.VarselMetricsReporter
+import no.nav.tms.varsel.authority.read.AktiveAdminVarsler.Companion.toAktiveAdminVarsler
 import no.nav.tms.varsel.authority.write.inaktiver.VarselInaktiverer
 import java.time.LocalDate
 import java.time.ZoneId
@@ -50,9 +51,11 @@ fun Route.adminApi(
 
         post("aktive") {
             val request = call.receive<AktiveVarselRequest>()
-            val aktiveVarsler = readRepository.getVarselSammendragForUser(ident = request.ident, aktiv = true)
+            val aktiveVarsler =
+                readRepository.getDetaljertVarselForUser(ident = request.ident, timeRange = null, aktiv = true)
+
             AdminAuditLog.loggHentingAvVarsler(call.entraUser, request)
-            call.respond(aktiveVarsler)
+            call.respond(aktiveVarsler.toAktiveAdminVarsler())
         }
     }
 }
@@ -75,12 +78,6 @@ class Timerange(fomQueryParam: String, tomQueryParam: String) {
         private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     }
 }
-
-private fun ApplicationCall.timeRange(): Timerange =
-    Timerange(
-        fomQueryParam = this.request.queryParameters["fom"] ?: throw BadRequestException("fom parameter må være satt"),
-        tomQueryParam = this.request.queryParameters["tom"] ?: throw BadRequestException("tom parameter må være satt")
-    )
 
 abstract class AdminVarslerRequest(
     val ident: String,
