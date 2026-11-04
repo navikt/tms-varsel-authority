@@ -18,13 +18,6 @@ updates:
         exclude-patterns:
           - "gradle-wrapper"
           - "no.nav.tms.*"
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "08:00"
-      timezone: "Europe/Oslo"
-    groups:
       min-side-libraries:
         patterns:
           - "no.nav.tms.common:*"
