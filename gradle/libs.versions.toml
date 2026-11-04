@@ -1,0 +1,124 @@
+[metadata]
+format.version = "1.1"
+
+[versions]
+caffeine = "3.2.3"
+flyway = "13.10.3"
+graphql = "11.0.0"
+hikariCP = "7.1.0"
+jacksonDatatype = "2.22.2"
+jacksonAnnotations = "2.22"
+junitJupiter = "6.1.3"
+kotest = "6.2.6"
+kotlin = "2.4.21"
+ktor = "3.6.0"
+prometheus = "1.10.0"
+testContainer = "2.0.5"
+tmsCommonLib = "5.3.5"
+tmsKafkaTools = "2.5.1"
+tmsKtorSupport = "6.0.3"
+tmsJarBundling = "0.1.0"
+
+[libraries]
+
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeine"}
+
+flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
+flyway-postgres = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway"}
+
+graphql-client = { group = "com.expediagroup", name = "graphql-kotlin-client", version.ref = "graphql" }
+graphql-ktorClient = { group = "com.expediagroup", name = "graphql-kotlin-ktor-client", version.ref = "graphql" }
+
+hikariCp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCP" }
+
+jackson-datatypeJsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonDatatype" }
+jackson-moduleKotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonDatatype" }
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonAnnotations" }
+
+junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitJupiter" }
+junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitJupiter" }
+junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitJupiter" }
+
+junit-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "6.1.3" }
+
+kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version = "4.3.1" }
+
+kotest-runner = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertion = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
+kotest-extensions = { group = "io.kotest", name = "kotest-extensions", version.ref = "kotest" }
+
+kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+kotlinLogging = { group = "io.github.oshai", name = "kotlin-logging", version = "8.0.4" }
+kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.11.0" }
+
+kotliQuery = { group = "com.github.seratch", name = "kotliquery", version = "1.9.1" }
+
+ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+ktor-server-defaultHeaders = { group = "io.ktor", name = "ktor-server-default-headers", version.ref = "ktor" }
+ktor-server-metrics = { group = "io.ktor", name = "ktor-server-metrics-micrometer", version.ref = "ktor" }
+ktor-server-auth = { group = "io.ktor", name = "ktor-server-auth", version.ref = "ktor" }
+ktor-server-contentNegotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-server-statusPages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
+ktor-server-html = { group = "io.ktor", name = "ktor-server-html-builder", version.ref = "ktor" }
+ktor-server-cors = { group = "io.ktor", name = "ktor-server-cors", version.ref = "ktor" }
+
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-apache5 = { group = "io.ktor", name = "ktor-client-apache5", version.ref = "ktor" }
+ktor-client-contentNegotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
+
+ktor-serialization-jackson = { group = "io.ktor", name = "ktor-serialization-jackson", version.ref = "ktor" }
+
+ktor-test-clientMock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+ktor-test-server = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
+
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version = "1.6.5" }
+logback-encoder = { group = "net.logstash.logback", name = "logstash-logback-encoder", version = "9.0" }
+
+micrometer-registryPrometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version = "1.17.1" }
+
+mockk = { group = "io.mockk", name = "mockk", version = "1.14.11" }
+
+postgresql = { group = "org.postgresql", name = "postgresql", version = "42.7.14" }
+
+prometheus-metricsCore = { group = "io.prometheus", name = "prometheus-metrics-core", version.ref = "prometheus" }
+prometheus-exporter = { group = "io.prometheus", name = "prometheus-metrics-exporter-common", version.ref = "prometheus" }
+
+testContainers-junit = { group = "org.testcontainers", name = "testcontainers-junit-jupiter", version.ref = "testContainer" }
+testContainers-core = { group = "org.testcontainers", name = "testcontainers", version.ref = "testContainer" }
+testContainers-postgresql = { group = "org.testcontainers", name = "testcontainers-postgresql", version.ref = "testContainer" }
+
+tms-commonLib-kubernetes = { group = "no.nav.tms.common", name = "kubernetes", version.ref = "tmsCommonLib" }
+tms-commonLib-metrics = { group = "no.nav.tms.common", name = "metrics", version.ref = "tmsCommonLib" }
+tms-commonLib-observability = { group = "no.nav.tms.common", name = "observability", version.ref = "tmsCommonLib" }
+tms-commonLib-postgres = { group = "no.nav.tms.common", name = "postgres", version.ref = "tmsCommonLib" }
+tms-commonLib-teamLogger = { group = "no.nav.tms.common", name = "team-logger", version.ref = "tmsCommonLib" }
+tms-commonLib-utils = { group = "no.nav.tms.common", name = "utils", version.ref = "tmsCommonLib" }
+
+tms-kafka-application = { group = "no.nav.tms.kafka", name = "kafka-application", version.ref = "tmsKafkaTools" }
+tms-kafka-producerUtils = { group = "no.nav.tms.kafka", name = "kafka-producer-utils", version.ref = "tmsKafkaTools" }
+
+tms-ktorTokenSupport-entraId-verification = { group = "no.nav.tms.token.support", name = "entra-id-token-verification", version.ref = "tmsKtorSupport" }
+tms-ktorTokenSupport-entraId-verificationMock = { group = "no.nav.tms.token.support", name = "entra-id-token-verification-mock", version.ref = "tmsKtorSupport" }
+tms-ktorTokenSupport-entraId-fetcher = { group = "no.nav.tms.token.support", name = "entra-id-token-fetcher", version.ref = "tmsKtorSupport" }
+
+tms-ktorTokenSupport-userToken-loginRoutes = { group = "no.nav.tms.token.support", name = "user-login-routes", version.ref = "tmsKtorSupport" }
+tms-ktorTokenSupport-userToken-verification = { group = "no.nav.tms.token.support", name = "user-token-verification", version.ref = "tmsKtorSupport" }
+tms-ktorTokenSupport-userToken-verificationMock = { group = "no.nav.tms.token.support", name = "user-token-verification-mock", version.ref = "tmsKtorSupport" }
+tms-ktorTokenSupport-userToken-exchange = { group = "no.nav.tms.token.support", name = "user-token-exchange", version.ref = "tmsKtorSupport" }
+
+[bundles]
+flyway = ["flyway-core", "flyway-postgres"]
+jackson = [ "jackson-datatypeJsr310", "jackson-moduleKotlin" ]
+junit = [ "junit-api", "junit-engine", "junit-launcher"]
+kotest = [ "kotest-assertion", "kotest-extensions", "kotest-runner" ]
+ktorServer = [ "ktor-server-auth", "ktor-server-contentNegotiation", "ktor-server-core",  "ktor-server-netty", "ktor-server-statusPages", "ktor-server-defaultHeaders"]
+ktorClient = [ "ktor-client-core", "ktor-client-contentNegotiation", "ktor-client-apache5"]
+logback = [ "logback-classic", "logback-encoder" ]
+testContainers = [ "testContainers-core", "testContainers-junit", "testContainers-postgresql" ]
+graphql = [ "graphql-client", "graphql-ktorClient" ]
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+tms-jarBundling = { id = "no.nav.tms.jarBundling", version.ref = "tmsJarBundling" }
+graphql = { id = "com.expediagroup.graphql", version.ref = "graphql" }

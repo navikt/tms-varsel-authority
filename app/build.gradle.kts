@@ -2,9 +2,9 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    kotlin("jvm").version(Kotlin.version)
+    kotlin("jvm").version(libs.versions.kotlin)
 
-    id(TmsJarBundling.plugin)
+    alias(libs.plugins.tms.jarBundling)
 
     // Apply the application plugin to add support for building a CLI application.
     application
@@ -26,47 +26,41 @@ repositories {
 }
 
 dependencies {
-    implementation(Flyway.core)
-    implementation(Flyway.postgres)
-    implementation(Hikari.cp)
-    implementation(Kafka.clients)
-    implementation(Postgresql.postgresql)
-    implementation(KotlinLogging.logging)
-    implementation(Ktor.Client.core)
-    implementation(Ktor.Client.contentNegotiation)
-    implementation(Ktor.Client.apache5)
-    implementation(Ktor.Server.auth)
-    implementation(Ktor.Server.contentNegotiation)
-    implementation(Ktor.Server.core)
-    implementation(Ktor.Server.statusPages)
-    implementation(Ktor.Serialization.jackson)
-    implementation(Logstash.logbackEncoder)
-    implementation(Prometheus.metricsCore)
-    implementation(TmsKtorTokenSupport.userTokenVerification)
-    implementation(TmsKtorTokenSupport.entraIdTokenVerification)
-    implementation(KotliQuery.kotliquery)
-    implementation(JacksonDatatype.moduleKotlin)
-    implementation(TmsCommonLib.kubernetes)
-    implementation(TmsCommonLib.metrics)
-    implementation(TmsCommonLib.observability)
-    implementation(TmsCommonLib.postgres)
-    implementation(TmsCommonLib.teamLogger)
-    implementation(TmsCommonLib.utils)
-    implementation(TmsKafkaTools.kafkaApplication)
-    implementation(TmsKafkaTools.kafkaProducerUtils)
-    implementation(JacksonDatatype.datatypeJsr310)
     implementation(project(":varsel-action"))
 
-    testImplementation(JunitPlatform.launcher)
-    testImplementation(JunitJupiter.api)
-    testImplementation(JunitJupiter.engine)
-    testImplementation(Mockk.mockk)
-    testImplementation(TestContainers.postgresql)
-    testImplementation(Kotest.runnerJunit5)
-    testImplementation(Kotest.assertionsCore)
-    testImplementation(Ktor.Test.serverTestHost)
-    testImplementation(TmsKtorTokenSupport.userTokenVerificationMock)
-    testImplementation(TmsKtorTokenSupport.entraIdTokenVerificationMock)
+    implementation(libs.bundles.ktorServer)
+    implementation(libs.bundles.logback)
+    implementation(libs.bundles.jackson)
+
+    implementation(libs.flyway.postgres)
+    implementation(libs.hikariCp)
+    implementation(libs.kafka.clients)
+    implementation(libs.kotlinLogging)
+    implementation(libs.kotliQuery)
+    implementation(libs.ktor.serialization.jackson)
+    implementation(libs.ktor.server.contentNegotiation)
+    implementation(libs.postgresql)
+    implementation(libs.prometheus.metricsCore)
+    implementation(libs.tms.commonLib.kubernetes)
+    implementation(libs.tms.commonLib.metrics)
+    implementation(libs.tms.commonLib.observability)
+    implementation(libs.tms.commonLib.postgres)
+    implementation(libs.tms.commonLib.teamLogger)
+    implementation(libs.tms.commonLib.utils)
+    implementation(libs.tms.kafka.application)
+    implementation(libs.tms.kafka.producerUtils)
+    implementation(libs.tms.ktorTokenSupport.userToken.verification)
+    implementation(libs.tms.ktorTokenSupport.entraId.verification)
+
+    testImplementation(libs.bundles.junit)
+    testImplementation(libs.bundles.kotest)
+
+    testImplementation(libs.ktor.client.contentNegotiation)
+    testImplementation(libs.ktor.test.server)
+    testImplementation(libs.mockk)
+    testImplementation(libs.testContainers.postgresql)
+    testImplementation(libs.tms.ktorTokenSupport.userToken.verificationMock)
+    testImplementation(libs.tms.ktorTokenSupport.entraId.verificationMock)
 }
 
 application {

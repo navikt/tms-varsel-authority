@@ -1,7 +1,8 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    kotlin("jvm").version(Kotlin.version)
+    kotlin("jvm").version(libs.versions.kotlin)
+
     `java-library`
     `maven-publish`
 }
@@ -19,14 +20,10 @@ repositories {
 
 dependencies {
     api(project(":varsel-action"))
-    implementation(JacksonDatatype.moduleKotlin)
-    implementation(JacksonDatatype.datatypeJsr310)
+    implementation(libs.bundles.jackson)
 
-    testImplementation(JunitPlatform.launcher)
-    testImplementation(JunitJupiter.api)
-    testImplementation(JunitJupiter.engine)
-    testImplementation(Kotest.runnerJunit5)
-    testImplementation(Kotest.assertionsCore)
+    testImplementation(libs.bundles.junit)
+    testImplementation(libs.bundles.kotest)
 }
 
 tasks {

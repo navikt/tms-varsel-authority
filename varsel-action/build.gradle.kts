@@ -1,7 +1,8 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    kotlin("jvm").version(Kotlin.version)
+    kotlin("jvm").version(libs.versions.kotlin)
+
     `java-library`
     `maven-publish`
 }
@@ -18,12 +19,10 @@ repositories {
 }
 
 dependencies {
-    api(JacksonEx.annotations)
+    api(libs.jackson.annotations)
 
-    testImplementation(JunitPlatform.launcher)
-    testImplementation(JunitJupiter.api)
-    testImplementation(JunitJupiter.engine)
-    testImplementation(Kotest.runnerJunit5)
+    testImplementation(libs.bundles.junit)
+    testImplementation(libs.bundles.kotest)
 }
 
 tasks {
