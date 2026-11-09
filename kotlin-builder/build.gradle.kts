@@ -1,7 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    kotlin("jvm").version(libs.versions.kotlin)
+    kotlin("jvm").version(managed.versions.kotlin)
 
     `java-library`
     `maven-publish`
@@ -20,10 +20,10 @@ repositories {
 
 dependencies {
     api(project(":varsel-action"))
-    implementation(libs.bundles.jackson)
+    implementation(managed.bundles.jackson)
 
-    testImplementation(libs.bundles.junit)
-    testImplementation(libs.bundles.kotest)
+    testImplementation(managed.bundles.junit)
+    testImplementation(managed.bundles.kotest)
 }
 
 tasks {
@@ -36,7 +36,8 @@ tasks {
     }
 }
 
-val libraryVersion: String = properties["lib_version"]?.toString() ?: "latest-local"
+val libraryVersion: String = providers.gradleProperty("lib_version")
+	.orElse("latest-local").toString()
 
 publishing {
     repositories{

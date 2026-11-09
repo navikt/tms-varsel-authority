@@ -28,7 +28,7 @@ internal class EksternVarslingStatusOppdatertSubscriber(
             "varselId",
             "tidspunkt"
         )
-        .withOptionalFields("renotifikasjon", "kanal", "feilmelding", "batch")
+        .withOptionalFields("renotifikasjon", "kanal", "feilmelding", "batch", "varsel", "sendtTekst")
 
 
     override suspend fun receive(jsonMessage: JsonMessage) {
@@ -60,5 +60,12 @@ data class EksternVarslingOppdatert(
     val renotifikasjon: Boolean?,
     val batch: Boolean?,
     val feilmelding: String?,
+    val sendtTekst: SendtTekst?,
     val tidspunkt: ZonedDateTime
+)
+
+data class SendtTekst(
+    val smsTekst: String?,
+    val epostTittel: String?,
+    val epostTekst: String?
 )

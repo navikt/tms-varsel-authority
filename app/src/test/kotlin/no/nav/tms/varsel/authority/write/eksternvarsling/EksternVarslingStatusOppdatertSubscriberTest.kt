@@ -1,6 +1,7 @@
 package no.nav.tms.varsel.authority.write.eksternvarsling
 
 import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldBeNull
@@ -52,7 +53,7 @@ class EksternVarslingStatusOppdatertSubscriberTest {
     }
 
     @Test
-    fun `lagrer forenklet info om hvorvidt ekstern varsling er sendt`() {
+    fun `lagrer info om sending av ekstern varsling`() {
 
         val kanal = "EPOST"
 
@@ -67,6 +68,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             renotifikasjon = false,
             batch = false,
             feilmelding = null,
+            sendtTekst = SendtTekst(
+                smsTekst = null,
+                epostTittel = "Epost-tittel",
+                epostTekst = "Epost-tekst",
+            ),
             tidspunkt = tidspunkt
         )
 
@@ -87,8 +93,13 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.sisteStatus shouldBe EksternStatus.Sendt
 
             it.kanaler shouldContain kanal
-        }
 
+            it.sending.shouldNotBeNull()
+            it.sending.kanal shouldBe kanal
+            it.sending.tittel shouldBe "Epost-tittel"
+            it.sending.tekst shouldBe "Epost-tekst"
+            it.sending.tidspunkt shouldBe tidspunkt
+        }
     }
 
     @Test
@@ -137,8 +148,8 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.feilhistorikk.size shouldBe 2
             it.feilhistorikk[0].feilmelding shouldBe feilmelding1
             it.feilhistorikk[1].feilmelding shouldBe feilmelding2
+            it.sending shouldBe null
         }
-
     }
 
     @Test
@@ -198,10 +209,15 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         val oppdatertEvent = eksternVarslingOppdatert(
             varselId = varselId,
             status = EksternStatus.Sendt,
-            kanal = "EPOST",
+            kanal = "SMS",
             renotifikasjon = true,
             batch = false,
             feilmelding = null,
+            sendtTekst = SendtTekst(
+                smsTekst = "Sms-tekst",
+                epostTittel = null,
+                epostTekst = null
+            ),
             tidspunkt = tidspunkt
         )
 
@@ -219,6 +235,14 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             it.renotifikasjonSendt shouldBe true
             it.sendtSomBatch shouldBe false
             it.renotifikasjonTidspunkt shouldBe tidspunkt
+
+            it.renotifikasjoner.size shouldBe 1
+            it.renotifikasjoner.first().let { renotifikasjon ->
+                renotifikasjon.kanal shouldBe "SMS"
+                renotifikasjon.tittel shouldBe null
+                renotifikasjon.tekst shouldBe "Sms-tekst"
+                renotifikasjon.tidspunkt shouldBe tidspunkt
+            }
         }
 
     }
@@ -237,6 +261,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             kanal = "EPOST",
             renotifikasjon = false,
             batch = false,
+            sendtTekst = SendtTekst(
+                smsTekst = null,
+                epostTittel = "Epost-tittel",
+                epostTekst = "Epost-tekst",
+            ),
             feilmelding = null,
             tidspunkt = tidspunktForstVarslet
         )
@@ -246,6 +275,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
             kanal = "EPOST",
             renotifikasjon = true,
             batch = false,
+            sendtTekst = SendtTekst(
+                smsTekst = null,
+                epostTittel = "Epost-tittel",
+                epostTekst = "Epost-tekst",
+            ),
             feilmelding = null,
             tidspunkt = tidspunktRevarslet
         )
@@ -263,9 +297,11 @@ class EksternVarslingStatusOppdatertSubscriberTest {
 
             it.sendt shouldBe true
             it.sendtTidspunkt shouldBe tidspunktForstVarslet
+            it.sending?.tidspunkt shouldBe tidspunktForstVarslet
 
             it.renotifikasjonSendt shouldBe true
             it.renotifikasjonTidspunkt shouldBe tidspunktRevarslet
+            it.renotifikasjoner.firstOrNull()?.tidspunkt shouldBe tidspunktRevarslet
         }
 
     }
@@ -560,6 +596,47 @@ class EksternVarslingStatusOppdatertSubscriberTest {
         }.let {
             it.shouldNotBeNull()
             it.cause::class shouldBe FeilhistorikkFullException::class
+        }
+    }
+
+    @Test
+    fun `setter ikke 'sending' eller 'renotifikasjoner' dersom sendtTekst mangler`() {
+
+        val varselId = randomUUID().toString()
+        val tidspunkt = ZonedDateTimeHelper.nowAtUtc()
+
+        val varselEvent = opprettVarselEvent("beskjed", varselId)
+        val sendtEvent = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            kanal = "EPOST",
+            sendtTekst = null,
+            tidspunkt = tidspunkt
+        )
+        val renotifikasjonEvent = eksternVarslingOppdatert(
+            varselId = varselId,
+            status = EksternStatus.Sendt,
+            renotifikasjon = true,
+            kanal = "EPOST",
+            sendtTekst = null,
+            tidspunkt = tidspunkt
+        )
+
+        testBroadcaster.broadcastJson(varselEvent)
+        testBroadcaster.broadcastJson(sendtEvent)
+        testBroadcaster.broadcastJson(renotifikasjonEvent)
+
+        val dbVarsel = varselRepository.getVarsel(varselId)
+
+        dbVarsel?.eksternVarslingStatus shouldNotBe null
+
+        dbVarsel?.eksternVarslingStatus?.let {
+            it shouldNotBe null
+            it.sendt shouldBe true
+            it.renotifikasjonSendt shouldBe true
+
+            it.sending shouldBe null
+            it.renotifikasjoner.shouldBeEmpty()
         }
     }
 }

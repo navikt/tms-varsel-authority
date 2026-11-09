@@ -12,7 +12,8 @@ fun eksternVarslingOppdatert(
     renotifikasjon: Boolean? = null,
     batch: Boolean? = null,
     feilmelding: String? = null,
-    tidspunkt: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc()
+    tidspunkt: ZonedDateTime = ZonedDateTimeHelper.nowAtUtc(),
+    sendtTekst: SendtTekst? = null,
 ) = """
 {
     "@event_name": "eksternVarslingStatusOppdatert",
@@ -22,6 +23,7 @@ fun eksternVarslingOppdatert(
     ${renotifikasjon.optionalJson("renotifikasjon")}
     ${batch.optionalJson("batch")}
     ${feilmelding.optionalJson("feilmelding")}
+    ${sendtTekst.optionalJson("sendtTekst")}
     "tidspunkt": "$tidspunkt" 
 }
 """

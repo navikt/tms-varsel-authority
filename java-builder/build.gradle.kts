@@ -18,9 +18,9 @@ repositories {
 
 dependencies {
     api(project(":varsel-action"))
-    implementation(libs.jackson.datatypeJsr310)
+    implementation(managed.jackson.datatypeJsr310)
 
-    testImplementation(libs.bundles.junit)
+    testImplementation(managed.bundles.junit)
 }
 
 tasks {
@@ -33,7 +33,8 @@ tasks {
     }
 }
 
-val libraryVersion: String = properties["lib_version"]?.toString() ?: "latest-local"
+val libraryVersion: String = providers.gradleProperty("lib_version")
+	.orElse("latest-local").toString()
 
 publishing {
     repositories{
