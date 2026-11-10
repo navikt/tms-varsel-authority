@@ -1,5 +1,8 @@
 package no.nav.tms.varsel.authority.read
 
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.client.*
@@ -14,6 +17,7 @@ import no.nav.tms.varsel.action.Sensitivitet
 import no.nav.tms.varsel.action.Varseltype.*
 import no.nav.tms.varsel.authority.DatabaseProdusent
 import no.nav.tms.varsel.authority.DatabaseVarsel
+import no.nav.tms.varsel.authority.EksternVarslingSending
 import no.nav.tms.varsel.authority.EksternVarslingStatus
 import no.nav.tms.varsel.authority.Innhold
 import no.nav.tms.varsel.authority.SYSTEM_API
@@ -22,6 +26,7 @@ import no.nav.tms.varsel.authority.database.LocalPostgresDatabase
 import no.nav.tms.varsel.authority.read.Matchers.shouldFind
 import no.nav.tms.varsel.authority.read.Matchers.shouldMatch
 import no.nav.tms.varsel.authority.database.TestVarsel
+import no.nav.tms.varsel.authority.write.eksternvarsling.SendtTekst
 import no.nav.tms.varsel.authority.write.opprett.WriteVarselRepository
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -143,7 +148,7 @@ class SaksbehandlerVarselApiTest {
     }
 
     @Test
-    fun `leverer info om tidspunkt for første sending og renotifikasjon`() = testVarselApi { client ->
+    fun `leverer ikke detaljert info om sending og ekstern varsling for legacy-varsler der data ikke finnes`() = testVarselApi { client ->
         val sendtTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(9)
         val renotifikasjonTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(2)
 
@@ -151,7 +156,9 @@ class SaksbehandlerVarselApiTest {
             eksternVarslingSendt = true,
             eksternVarslingSendtTidspunkt = sendtTidspunkt,
             renotifikasjonSendt = true,
-            renotifikasjonTidspunkt = renotifikasjonTidspunkt
+            renotifikasjonTidspunkt = renotifikasjonTidspunkt,
+            sending = null,
+            renotifikasjoner = emptyList()
         )
 
         insertVarsel(varselUtenSendtTidspunkt)
@@ -160,8 +167,80 @@ class SaksbehandlerVarselApiTest {
             it.eksternVarsling.shouldNotBeNull()
             it.eksternVarsling.sendt shouldBe true
             it.eksternVarsling.sendtTidspunkt shouldBe sendtTidspunkt
+            it.eksternVarsling.sending.shouldBeNull()
+
             it.eksternVarsling.renotifikasjonSendt shouldBe true
             it.eksternVarsling.renotifikasjonTidspunkt shouldBe renotifikasjonTidspunkt
+            it.eksternVarsling.renotifikasjoner.shouldBeEmpty()
+        }
+    }
+
+    @Test
+    fun `leverer info om tidspunkt for første sending og renotifikasjon`() = testVarselApi { client ->
+        val sendtTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(9)
+        val renotifikasjonTidspunkt = ZonedDateTimeHelper.nowAtUtc().minusDays(2)
+
+        val varselUtenSendtTidspunkt = testVarsel(
+            eksternVarslingSendt = true,
+            eksternVarslingSendtTidspunkt = sendtTidspunkt,
+            sending = sending(
+                sendtTidspunkt
+            ),
+            renotifikasjonSendt = true,
+            renotifikasjonTidspunkt = renotifikasjonTidspunkt,
+            renotifikasjoner = listOf(
+                sending(renotifikasjonTidspunkt),
+            )
+        )
+
+        insertVarsel(varselUtenSendtTidspunkt)
+
+        client.getVarsler("/varsel/detaljert/alle", ident).first().let {
+            it.eksternVarsling.shouldNotBeNull()
+            it.eksternVarsling.sendt shouldBe true
+            it.eksternVarsling.sendtTidspunkt shouldBe sendtTidspunkt
+            it.eksternVarsling.sending.shouldNotBeNull()
+            it.eksternVarsling.sending.tidspunkt shouldBe sendtTidspunkt
+
+            it.eksternVarsling.renotifikasjonSendt shouldBe true
+            it.eksternVarsling.renotifikasjonTidspunkt shouldBe renotifikasjonTidspunkt
+            it.eksternVarsling.renotifikasjoner.shouldNotBeEmpty()
+            it.eksternVarsling.renotifikasjoner.first().tidspunkt shouldBe renotifikasjonTidspunkt
+        }
+    }
+
+    @Test
+    fun `leverer info om tekster sendt i ekstern varsling`() = testVarselApi { client ->
+        val varselUtenSendtTidspunkt = testVarsel(
+            sending = sending(
+                kanal = "sms",
+                tittel = null,
+                tekst = "sms-tekst",
+                tidspunkt = ZonedDateTimeHelper.nowAtUtc()
+            ),
+            renotifikasjoner = listOf(
+                sending(
+                    kanal = "epost",
+                    tittel = "epost-tittel",
+                    tekst = "epost-tekst",
+                    tidspunkt = ZonedDateTimeHelper.nowAtUtc()
+                )
+            )
+        )
+
+        insertVarsel(varselUtenSendtTidspunkt)
+
+        client.getVarsler("/varsel/detaljert/alle", ident).first().let {
+            it.eksternVarsling.shouldNotBeNull()
+            it.eksternVarsling.sending.shouldNotBeNull()
+            it.eksternVarsling.sending.kanal shouldBe "sms"
+            it.eksternVarsling.sending.tittel.shouldBeNull()
+            it.eksternVarsling.sending.tekst shouldBe "sms-tekst"
+
+            it.eksternVarsling.renotifikasjoner.shouldNotBeEmpty()
+            it.eksternVarsling.renotifikasjoner.first().kanal shouldBe "epost"
+            it.eksternVarsling.renotifikasjoner.first().tittel shouldBe "epost-tittel"
+            it.eksternVarsling.renotifikasjoner.first().tekst shouldBe "epost-tekst"
         }
     }
 
@@ -170,7 +249,9 @@ class SaksbehandlerVarselApiTest {
         eksternVarslingSendt: Boolean = false,
         eksternVarslingSendtTidspunkt: ZonedDateTime? = null,
         renotifikasjonSendt: Boolean = false,
-        renotifikasjonTidspunkt: ZonedDateTime? = null
+        renotifikasjonTidspunkt: ZonedDateTime? = null,
+        sending: EksternVarslingSending? = null,
+        renotifikasjoner: List<EksternVarslingSending> = emptyList()
     ): DatabaseVarsel {
         return DatabaseVarsel(
             type = Beskjed,
@@ -188,6 +269,8 @@ class SaksbehandlerVarselApiTest {
                 renotifikasjonSendt = renotifikasjonSendt,
                 renotifikasjonTidspunkt = renotifikasjonTidspunkt,
                 kanaler = listOf("SMS"),
+                sending = sending,
+                renotifikasjoner = renotifikasjoner,
                 feilhistorikk = emptyList(),
                 sisteStatus = null,
                 sistOppdatert = sistOppdatert,
@@ -199,6 +282,18 @@ class SaksbehandlerVarselApiTest {
             metadata = emptyMap()
         )
     }
+
+    private fun sending(
+        tidspunkt: ZonedDateTime,
+        kanal: String = "EPOST",
+        tittel: String? = "tittel",
+        tekst: String = "tekst"
+    ) = EksternVarslingSending(
+        kanal = kanal,
+        tittel = tittel,
+        tekst = tekst,
+        tidspunkt = tidspunkt
+    )
 
     private suspend fun HttpClient.getVarsler(path: String, ident: String): List<DetaljertVarsel> = get(path) {
         headers.append("ident", ident)
