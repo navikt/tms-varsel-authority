@@ -31,35 +31,84 @@ class EksternVarslingStatusUpdater(
         val currentStatus = varsel.eksternVarslingStatus ?: emptyEksternVarsling()
 
         withLoggingContext("type" to varsel.type.name.lowercase()) {
-            mapStatusAndPerformUpdate(varsel.varselId, currentStatus, statusEvent)
+            val updatedStatus = when (statusEvent.status) {
+                Sendt -> applySendtEvent(currentStatus, statusEvent)
+                Feilet -> applyFeiletEvent(currentStatus, statusEvent)
+                else -> {
+                    currentStatus.copy(
+                        sisteStatus = statusEvent.status,
+                        sistOppdatert = nowAtUtc()
+                    )
+                }
+            }
+            eksternVarslingStatusRepository.updateEksternVarslingStatus(varsel.varselId, updatedStatus)
         }
     }
 
-    private fun mapStatusAndPerformUpdate(varselId: String, currentStatus: EksternVarslingStatus, statusEvent: EksternVarslingOppdatert) {
-        val feilhistorikk = if (statusEvent.feilmelding == null) {
-            currentStatus.feilhistorikk
+    private fun applySendtEvent(currentStatus: EksternVarslingStatus, statusEvent: EksternVarslingOppdatert): EksternVarslingStatus {
+        return if (statusEvent.renotifikasjon == true) {
+            currentStatus.copy(
+                sendt = true,
+                renotifikasjonSendt = true,
+                renotifikasjonTidspunkt = statusEvent.tidspunkt,
+                renotifikasjoner = when (val renotifikasjon = mapSending(statusEvent)) {
+                    null -> currentStatus.renotifikasjoner
+                    else -> currentStatus.renotifikasjoner + renotifikasjon
+                },
+                kanaler = (currentStatus.kanaler + statusEvent.kanal).filterNotNull().distinct(),
+                sisteStatus = Sendt,
+                sistOppdatert = nowAtUtc()
+            )
         } else {
-            EksternFeilHistorikkEntry(
-                feilmelding = statusEvent.feilmelding,
-                tidspunkt = statusEvent.tidspunkt,
-            ).let {
-                currentStatus.feilhistorikk + it
-            }.distinct()
+            currentStatus.copy(
+                sendt = true,
+                sendtSomBatch = currentStatus.sendtSomBatch || statusEvent.batch == true,
+                sending = mapSending(statusEvent),
+                sendtTidspunkt = statusEvent.tidspunkt,
+                kanaler = (currentStatus.kanaler + statusEvent.kanal).filterNotNull().distinct(),
+                sisteStatus = Sendt,
+                sistOppdatert = nowAtUtc()
+            )
+        }
+    }
+
+    private fun mapSending(statusEvent: EksternVarslingOppdatert): EksternVarslingSending? {
+        if (statusEvent.sendtTekst == null) {
+            return null
         }
 
-        val updatedStatus = EksternVarslingStatus(
-            sendt = currentStatus.sendt || statusEvent.status == Sendt,
-            sendtSomBatch = currentStatus.sendtSomBatch || (statusEvent.batch == true && statusEvent.status == Sendt),
-            sendtTidspunkt = if (statusEvent.status == Sendt && statusEvent.renotifikasjon == false) statusEvent.tidspunkt else currentStatus.sendtTidspunkt,
-            renotifikasjonSendt = if (statusEvent.renotifikasjon == true) true else currentStatus.renotifikasjonSendt,
-            renotifikasjonTidspunkt = if (statusEvent.renotifikasjon == true) statusEvent.tidspunkt else currentStatus.renotifikasjonTidspunkt,
-            kanaler = (currentStatus.kanaler + statusEvent.kanal).filterNotNull().distinct(),
-            feilhistorikk = feilhistorikk,
-            sisteStatus = statusEvent.status,
+        return when (statusEvent.kanal?.lowercase()) {
+            "epost" -> EksternVarslingSending(
+                kanal = statusEvent.kanal,
+                tittel = statusEvent.sendtTekst.epostTittel!!,
+                tekst = statusEvent.sendtTekst.epostTekst!!,
+                tidspunkt = statusEvent.tidspunkt
+            )
+            "sms" -> EksternVarslingSending(
+                kanal = statusEvent.kanal,
+                tittel = null,
+                tekst = statusEvent.sendtTekst.smsTekst!!,
+                tidspunkt = statusEvent.tidspunkt
+            )
+            else -> null
+        }
+    }
+
+    private fun applyFeiletEvent(currentStatus: EksternVarslingStatus, statusEvent: EksternVarslingOppdatert): EksternVarslingStatus {
+        return currentStatus.copy(
+            feilhistorikk = if (statusEvent.feilmelding == null) {
+                currentStatus.feilhistorikk
+            } else {
+                EksternFeilHistorikkEntry(
+                    feilmelding = statusEvent.feilmelding,
+                    tidspunkt = statusEvent.tidspunkt,
+                ).let {
+                    currentStatus.feilhistorikk + it
+                }.distinct()
+            },
+            sisteStatus = Feilet,
             sistOppdatert = nowAtUtc()
         )
-
-        eksternVarslingStatusRepository.updateEksternVarslingStatus(varselId, updatedStatus)
     }
 
     private fun emptyEksternVarsling() = EksternVarslingStatus(

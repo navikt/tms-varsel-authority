@@ -2,9 +2,9 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    kotlin("jvm").version(libs.versions.kotlin)
+    kotlin("jvm").version(managed.versions.kotlin)
 
-    alias(libs.plugins.tms.jarBundling)
+    alias(managed.plugins.tms.jarBundling)
 
     // Apply the application plugin to add support for building a CLI application.
     application
@@ -28,39 +28,39 @@ repositories {
 dependencies {
     implementation(project(":varsel-action"))
 
-    implementation(libs.bundles.ktorServer)
-    implementation(libs.bundles.logback)
-    implementation(libs.bundles.jackson)
+    implementation(managed.bundles.ktorServer)
+    implementation(managed.bundles.logback)
+    implementation(managed.bundles.jackson)
 
-    implementation(libs.flyway.postgres)
-    implementation(libs.hikariCp)
-    implementation(libs.kafka.clients)
-    implementation(libs.kotlinLogging)
-    implementation(libs.kotliQuery)
-    implementation(libs.ktor.serialization.jackson)
-    implementation(libs.ktor.server.contentNegotiation)
-    implementation(libs.postgresql)
-    implementation(libs.prometheus.metricsCore)
-    implementation(libs.tms.commonLib.kubernetes)
-    implementation(libs.tms.commonLib.metrics)
-    implementation(libs.tms.commonLib.observability)
-    implementation(libs.tms.commonLib.postgres)
-    implementation(libs.tms.commonLib.teamLogger)
-    implementation(libs.tms.commonLib.utils)
-    implementation(libs.tms.kafka.application)
-    implementation(libs.tms.kafka.producerUtils)
-    implementation(libs.tms.ktorTokenSupport.userToken.verification)
-    implementation(libs.tms.ktorTokenSupport.entraId.verification)
+    implementation(managed.flyway.postgres)
+    implementation(managed.hikariCp)
+    implementation(managed.kafka.clients)
+    implementation(managed.kotlinLogging)
+    implementation(managed.kotliQuery)
+    implementation(managed.ktor.serialization.jackson)
+    implementation(managed.ktor.server.contentNegotiation)
+    implementation(managed.postgresql)
+    implementation(managed.prometheus.metricsCore)
+    implementation(managed.tms.commonLib.kubernetes)
+    implementation(managed.tms.commonLib.metrics)
+    implementation(managed.tms.commonLib.observability)
+    implementation(managed.tms.commonLib.postgres)
+    implementation(managed.tms.commonLib.teamLogger)
+    implementation(managed.tms.commonLib.utils)
+    implementation(managed.tms.kafka.application)
+    implementation(managed.tms.kafka.producerUtils)
+    implementation(managed.tms.ktorTokenSupport.userToken.verification)
+    implementation(managed.tms.ktorTokenSupport.entraId.verification)
 
-    testImplementation(libs.bundles.junit)
-    testImplementation(libs.bundles.kotest)
+    testImplementation(managed.bundles.junit)
+    testImplementation(managed.bundles.kotest)
 
-    testImplementation(libs.ktor.client.contentNegotiation)
-    testImplementation(libs.ktor.test.server)
-    testImplementation(libs.mockk)
-    testImplementation(libs.testContainers.postgresql)
-    testImplementation(libs.tms.ktorTokenSupport.userToken.verificationMock)
-    testImplementation(libs.tms.ktorTokenSupport.entraId.verificationMock)
+    testImplementation(managed.ktor.client.contentNegotiation)
+    testImplementation(managed.ktor.test.server)
+    testImplementation(managed.mockk)
+    testImplementation(managed.testContainers.postgresql)
+    testImplementation(managed.tms.ktorTokenSupport.userToken.verificationMock)
+    testImplementation(managed.tms.ktorTokenSupport.entraId.verificationMock)
 }
 
 application {
