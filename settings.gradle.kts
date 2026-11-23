@@ -34,6 +34,7 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("managed") {
             from("no.nav.tms:tms-dependency-admin:20261105.14.1")
+            version("tmsKtorSupport", "6.0.4-test-3")
         }
     }
 }
