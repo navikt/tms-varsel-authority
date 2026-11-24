@@ -35,6 +35,8 @@ dependencyResolutionManagement {
         create("managed") {
             from("no.nav.tms:tms-dependency-admin:20261105.14.1")
             version("tmsKtorSupport", "6.0.4-test-3")
+            version("tmsCommonLib", "5.3.7-test")
+            version("tmsKafkaTools", "2.5.2-test")
         }
     }
 }
