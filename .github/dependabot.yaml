@@ -31,9 +31,9 @@ updates:
       time: "08:00"
       timezone: "Europe/Oslo"
     groups:
-      central-admin:
+      min-side-catalog:
         patterns:
-          - "no.nav.tms:*"
+          - "no.nav.tms:tms-dependency-admin:*"
       gradle-major:
         patterns:
           - "*"
