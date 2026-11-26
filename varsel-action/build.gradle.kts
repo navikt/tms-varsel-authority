@@ -1,8 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    kotlin("jvm").version(managed.versions.kotlin)
-
+    alias(managed.plugins.kotlin)
     `java-library`
     `maven-publish`
 }
