@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm").version(managed.versions.kotlin)
+    alias(managed.plugins.kotlin)
 }
 
 

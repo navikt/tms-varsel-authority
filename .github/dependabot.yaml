@@ -8,6 +8,8 @@ registries:
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    registries:
+      - nav-maven
     schedule:
       interval: "weekly"
       time: "08:00"
