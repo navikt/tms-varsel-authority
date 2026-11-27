@@ -8,6 +8,8 @@ registries:
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
+    registries:
+      - nav-maven
     schedule:
       interval: "weekly"
       time: "08:00"
